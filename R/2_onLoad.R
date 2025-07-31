@@ -212,16 +212,18 @@ check_environment_setup <- function() {
     recommendations = character(0)
   )
   
-  # Check required environment variables
-  required_vars <- c(
+  # Tier 1: Always required variables
+  always_required <- c(
+    "CS9_AUTO",
+    "CS9_PATH",
     "CS9_DBCONFIG_ACCESS",
-    "CS9_DBCONFIG_DRIVER", 
-    "CS9_DBCONFIG_SERVER",
-    "CS9_DBCONFIG_USER"
+    "CS9_DBCONFIG_DRIVER",
+    "CS9_DBCONFIG_PORT",
+    "CS9_DBCONFIG_SERVER"
   )
   
   missing_vars <- character(0)
-  for(var in required_vars) {
+  for(var in always_required) {
     if(Sys.getenv(var) == "") {
       missing_vars <- c(missing_vars, var)
     }
@@ -229,11 +231,40 @@ check_environment_setup <- function() {
   
   if(length(missing_vars) > 0) {
     result$status <- "error"
-    result$issues <- c(result$issues, paste("Missing environment variables:", paste(missing_vars, collapse = ", ")))
+    result$issues <- c(result$issues, paste("Missing required environment variables:", paste(missing_vars, collapse = ", ")))
     result$recommendations <- c(result$recommendations, 
       "Set required environment variables before loading CS9",
       "Refer to CS9 documentation for environment setup instructions"
     )
+  }
+  
+  # Tier 2: PostgreSQL-specific variables (only if using PostgreSQL Unicode driver)
+  driver <- Sys.getenv("CS9_DBCONFIG_DRIVER")
+  if(driver == "PostgreSQL Unicode") {
+    postgresql_required <- c(
+      "CS9_DBCONFIG_USER",
+      "CS9_DBCONFIG_PASSWORD", 
+      "CS9_DBCONFIG_SCHEMA_CONFIG",
+      "CS9_DBCONFIG_DB_CONFIG",
+      "CS9_DBCONFIG_SCHEMA_ANON",
+      "CS9_DBCONFIG_DB_ANON"
+    )
+    
+    missing_postgresql_vars <- character(0)
+    for(var in postgresql_required) {
+      if(Sys.getenv(var) == "") {
+        missing_postgresql_vars <- c(missing_postgresql_vars, var)
+      }
+    }
+    
+    if(length(missing_postgresql_vars) > 0) {
+      result$status <- "error"
+      result$issues <- c(result$issues, paste("Missing PostgreSQL-specific variables:", paste(missing_postgresql_vars, collapse = ", ")))
+      result$recommendations <- c(result$recommendations, 
+        "PostgreSQL Unicode driver requires additional authentication and schema variables",
+        "Set PostgreSQL-specific environment variables for database access"
+      )
+    }
   }
   
   # Check database configuration
