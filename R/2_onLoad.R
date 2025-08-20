@@ -281,6 +281,8 @@ validate_environment <- function() {
 #'
 #' @param verbose Logical. If TRUE (default), prints detailed diagnostic output. 
 #'   If FALSE, runs validation silently and only returns result object.
+#' @param use_startup_message Logical. If TRUE, uses packageStartupMessage() 
+#'   for output (suppressible). If FALSE (default), uses cat() for console output.
 #' @return A list containing environment setup status and recommendations:
 #' \itemize{
 #'   \item status: "ok", "warning", or "error"
@@ -303,7 +305,7 @@ validate_environment <- function() {
 #' The installation vignette: \code{vignette("installation", package = "cs9")}
 #' 
 #' @export
-check_environment_setup <- function(verbose = TRUE) {
+check_environment_setup <- function(verbose = TRUE, use_startup_message = FALSE) {
   # Run core validation
   result <- validate_environment()
   
@@ -322,27 +324,30 @@ check_environment_setup <- function(verbose = TRUE) {
   
   # Print results only if verbose mode
   if(verbose) {
-    cat("CS9 Environment Check Results:\n")
-    cat("Status:", result$status, "\n\n")
+    # Choose output method based on context
+    output_fn <- if(use_startup_message) packageStartupMessage else cat
+    
+    output_fn("CS9 Environment Check Results:\n")
+    output_fn("Status: ", result$status, "\n\n")
     
     if(length(result$issues) > 0) {
-      cat("Issues found:\n")
+      output_fn("Issues found:\n")
       for(issue in result$issues) {
-        cat(" -", issue, "\n")
+        output_fn(" - ", issue, "\n")
       }
-      cat("\n")
+      output_fn("\n")
     }
     
     if(length(result$recommendations) > 0) {
-      cat("Recommendations:\n")
+      output_fn("Recommendations:\n")
       for(rec in result$recommendations) {
-        cat(" -", rec, "\n") 
+        output_fn(" - ", rec, "\n") 
       }
-      cat("\n")
+      output_fn("\n")
     }
     
     if(result$status == "ok") {
-      cat("CS9 environment is properly configured\n")
+      output_fn("CS9 environment is properly configured\n")
     }
   }
   
