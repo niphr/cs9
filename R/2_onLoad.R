@@ -1,12 +1,26 @@
 .onLoad <- function(libname, pkgname) {
-  # Initialize environment variables with error handling
-  env_result <- tryCatch({
-    set_env_vars()
-    TRUE
+  # Step 1: Validate environment variables (silent mode)
+  env_check <- tryCatch({
+    validate_environment()
   }, error = function(e) {
-    packageStartupMessage("Warning: Environment variable setup failed: ", e$message)
-    FALSE
+    list(status = "error", issues = paste("Environment validation failed:", e$message), recommendations = character(0))
   })
+  
+  # Step 2: Set environment variables only if validation passes
+  env_result <- FALSE
+  if(env_check$status == "error") {
+    packageStartupMessage("Environment setup failed: ", paste(env_check$issues, collapse = "; "))
+    packageStartupMessage("Run cs9::check_environment_setup() for detailed diagnostics")
+  } else {
+    # Only set variables if validation passes
+    env_result <- tryCatch({
+      set_env_vars()
+      TRUE
+    }, error = function(e) {
+      packageStartupMessage("Warning: Environment variable setup failed: ", e$message)
+      FALSE
+    })
+  }
   
   # Set up progress bars and plnr options (non-critical)
   set_progressr()
@@ -199,13 +213,8 @@ set_plnr <- function() {
   plnr::set_opts(force_verbose = TRUE)
 }
 
-#' Check Environment Setup
-#'
-#' Diagnostic function to check CS9 environment configuration
-#'
-#' @return A list containing environment setup status and recommendations
-#' @export
-check_environment_setup <- function() {
+# Internal helper function for environment validation
+validate_environment <- function() {
   result <- list(
     status = "ok",
     issues = character(0),
@@ -267,42 +276,94 @@ check_environment_setup <- function() {
     }
   }
   
-  # Check database configuration
+  return(result)
+}
+
+#' Check Environment Setup
+#'
+#' @description
+#' Diagnostic function to check CS9 environment configuration. This function 
+#' validates required environment variables and database connectivity, providing 
+#' detailed feedback for troubleshooting configuration issues.
+#'
+#' @details
+#' CS9 requires specific environment variables for database connectivity and 
+#' configuration. This function checks for:
+#' \itemize{
+#'   \item Required environment variables (CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, etc.)
+#'   \item Database configuration availability
+#'   \item Database table initialization status
+#' }
+#' 
+#' When CS9 is installed from CRAN without database configuration, the package
+#' loads with limited functionality. Use this function to diagnose what needs
+#' to be configured for full database-driven surveillance functionality.
+#'
+#' @param verbose Logical. If TRUE (default), prints detailed diagnostic output. 
+#'   If FALSE, runs validation silently and only returns result object.
+#' @return A list containing environment setup status and recommendations:
+#' \itemize{
+#'   \item status: "ok", "warning", or "error"
+#'   \item issues: Character vector of identified problems
+#'   \item recommendations: Character vector of suggested fixes
+#' }
+#' 
+#' @examples
+#' # Check environment setup with verbose output
+#' check_environment_setup()
+#' 
+#' # Check silently and examine results
+#' result <- check_environment_setup(verbose = FALSE)
+#' if(result$status != "ok") {
+#'   cat("Issues found:", result$issues, "\n")
+#'   cat("Recommendations:", result$recommendations, "\n")
+#' }
+#' 
+#' @seealso
+#' The installation vignette: \code{vignette("installation", package = "cs9")}
+#' 
+#' @export
+check_environment_setup <- function(verbose = TRUE) {
+  # Run core validation
+  result <- validate_environment()
+  
+  # Add runtime checks (database configs and tables) - only relevant after set_env_vars() has run
   if(length(config$dbconfigs) == 0) {
     result$status <- if(result$status == "ok") "warning" else result$status
     result$issues <- c(result$issues, "No database configurations available")
     result$recommendations <- c(result$recommendations, "Verify CS9_DBCONFIG_ACCESS is properly set")
   }
   
-  # Check database table availability
   if(length(config$tables) == 0) {
     result$status <- if(result$status == "ok") "warning" else result$status  
     result$issues <- c(result$issues, "No configuration tables initialized")
     result$recommendations <- c(result$recommendations, "Check database connectivity and permissions")
   }
   
-  # Print results
-  cat("CS9 Environment Check Results:\n")
-  cat("Status:", result$status, "\n\n")
-  
-  if(length(result$issues) > 0) {
-    cat("Issues found:\n")
-    for(issue in result$issues) {
-      cat(" -", issue, "\n")
+  # Print results only if verbose mode
+  if(verbose) {
+    cat("CS9 Environment Check Results:\n")
+    cat("Status:", result$status, "\n\n")
+    
+    if(length(result$issues) > 0) {
+      cat("Issues found:\n")
+      for(issue in result$issues) {
+        cat(" -", issue, "\n")
+      }
+      cat("\n")
     }
-    cat("\n")
-  }
-  
-  if(length(result$recommendations) > 0) {
-    cat("Recommendations:\n")
-    for(rec in result$recommendations) {
-      cat(" -", rec, "\n") 
+    
+    if(length(result$recommendations) > 0) {
+      cat("Recommendations:\n")
+      for(rec in result$recommendations) {
+        cat(" -", rec, "\n") 
+      }
+      cat("\n")
     }
-    cat("\n")
-  }
-  
-  if(result$status == "ok") {
-    cat("✓ CS9 environment is properly configured\n")
+    
+    if(result$status == "ok") {
+      cat("CS9 environment is properly configured\n")
+    }
   }
   
   invisible(result)

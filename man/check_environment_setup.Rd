@@ -4,11 +4,50 @@
 \alias{check_environment_setup}
 \title{Check Environment Setup}
 \usage{
-check_environment_setup()
+check_environment_setup(verbose = TRUE)
+}
+\arguments{
+\item{verbose}{Logical. If TRUE (default), prints detailed diagnostic output.
+If FALSE, runs validation silently and only returns result object.}
 }
 \value{
-A list containing environment setup status and recommendations
+A list containing environment setup status and recommendations:
+\itemize{
+\item status: "ok", "warning", or "error"
+\item issues: Character vector of identified problems
+\item recommendations: Character vector of suggested fixes
+}
 }
 \description{
-Diagnostic function to check CS9 environment configuration
+Diagnostic function to check CS9 environment configuration. This function
+validates required environment variables and database connectivity, providing
+detailed feedback for troubleshooting configuration issues.
+}
+\details{
+CS9 requires specific environment variables for database connectivity and
+configuration. This function checks for:
+\itemize{
+\item Required environment variables (CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, etc.)
+\item Database configuration availability
+\item Database table initialization status
+}
+
+When CS9 is installed from CRAN without database configuration, the package
+loads with limited functionality. Use this function to diagnose what needs
+to be configured for full database-driven surveillance functionality.
+}
+\examples{
+# Check environment setup with verbose output
+check_environment_setup()
+
+# Check silently and examine results
+result <- check_environment_setup(verbose = FALSE)
+if(result$status != "ok") {
+  cat("Issues found:", result$issues, "\n")
+  cat("Recommendations:", result$recommendations, "\n")
+}
+
+}
+\seealso{
+The installation vignette: \code{vignette("installation", package = "cs9")}
 }

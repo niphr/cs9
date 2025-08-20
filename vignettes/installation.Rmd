@@ -7,13 +7,42 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette details the infrastructure requirements of cs9.
+This vignette explains CS9 installation options and infrastructure requirements.
 
-We strongly recommend that you use cs9 within a Docker environment.
+## Installation Options
+
+CS9 can be installed in two configurations:
+
+### 1. CRAN Installation (Limited Functionality)
+
+Install CS9 directly from CRAN for documentation, examples, and development tools:
+
+```r
+install.packages("cs9")
+library(cs9)
+```
+
+**What works with CRAN installation:**
+- Package documentation and help files
+- Function examples and vignettes
+- Environment diagnostic tools (`cs9::check_environment_setup()`)
+- Code templates and development utilities
+- Basic configuration management
+
+**Limitations:**
+- No database connectivity
+- Cannot run surveillance tasks
+- Limited to documentation and development aids
+
+### 2. Full Installation (Database-Driven Surveillance)
+
+For complete surveillance functionality, you need database infrastructure and proper configuration.
+
+We strongly recommend using CS9 within a Docker environment for production deployments.
 
 ## Databases
 
-Currently cs9 only works with MSSQL databases.
+CS9 works with PostgreSQL and MariaDB databases. PostgreSQL is the recommended and most tested option.
 
 ## Environmental variables
 
@@ -21,28 +50,65 @@ The following environmental variables must be available from within R. R only lo
 
 | Variable                        | Value                           | Description                                                           |
 |------------------|------------------|------------------------------------|
-| CS9_AUTO                        | 0                               | Is this auto or interactive                                           |
-| CS9_PATH                        | '/input'                        | The base path that will be inserted when using the cs9::path function |
+| CS9_AUTO                        | 0                               | Is this auto or interactive mode                                      |
+| CS9_PATH                        | ''                              | The base path for cs9::path function (empty string is default)        |
 |                                 |                                 |                                                                       |
-| CS9_DBCONFIG_ACCESS             | 'config/anon'                   |                                                                       |
-| CS9_DBCONFIG_DRIVER             | 'ODBC Driver 17 for SQL Server' |                                                                       |
-| CS9_DBCONFIG_PORT               | 1433                            |                                                                       |
-| CS9_DBCONFIG_USER               | 'SA'                            |                                                                       |
-| CS9_DBCONFIG_PASSWORD           | 'yourStrongPassword100'         |                                                                       |
-| CS9_DBCONFIG_TRUSTED_CONNECTION | 'no'                            |                                                                       |
-| CS9_DBCONFIG_SSLMODE | 'no'                            |                                                                       |
-| CS9_DBCONFIG_SERVER             | 'dm-prod'                       |                                                                       |
+| CS9_DBCONFIG_ACCESS             | 'config/anon'                   | Database access levels separated by forward slashes                   |
+| CS9_DBCONFIG_DRIVER             | 'PostgreSQL Unicode'            | PostgreSQL driver (recommended)                                       |
+| CS9_DBCONFIG_PORT               | 5432                            | PostgreSQL default port                                               |
+| CS9_DBCONFIG_SERVER             | 'localhost'                     | Database server hostname                                              |
+| CS9_DBCONFIG_USER               | 'username'                      | Database username                                                     |
+| CS9_DBCONFIG_PASSWORD           | 'yourStrongPassword100'         | Database password                                                     |
+| CS9_DBCONFIG_SSLMODE            | 'prefer'                        | SSL connection mode for PostgreSQL                                    |
 |                                 |                                 |                                                                       |
-| CS9_DBCONFIG_SCHEMA_CONFIG      | 'dbo'                           |                                                                       |
-| CS9_DBCONFIG_DB_CONFIG          | 'sc_interactive_config'         |                                                                       |
+| CS9_DBCONFIG_SCHEMA_CONFIG      | 'schema_name'                   | Schema name for config database                                       |
+| CS9_DBCONFIG_DB_CONFIG          | 'database_name'                 | Database name for config tables                                       |
 |                                 |                                 |                                                                       |
-| CS9_DBCONFIG_SCHEMA_ANON        | 'dbo'                           |                                                                       |
-| CS9_DBCONFIG_DB_ANON            | 'sc_interactive_anon'           |                                                                       |
+| CS9_DBCONFIG_SCHEMA_ANON        | 'schema_name'                   | Schema name for anonymous data database                               |
+| CS9_DBCONFIG_DB_ANON            | 'database_name'                 | Database name for anonymous data                                      |
 |                                 |                                 |                                                                       |
-|                                 |                                 |                                                                       |
+
+## Package Behavior Without Database Configuration
+
+If you install CS9 from CRAN without setting up the database configuration, the package will load with limited functionality. You will see messages like:
+
+```
+Environment setup failed: Missing required environment variables: CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER
+CS9 database configuration not available. Package loaded with limited functionality.
+Use cs9::check_environment_setup() to diagnose configuration issues.
+```
+
+You can use `cs9::check_environment_setup()` to diagnose what needs to be configured for full functionality.
 
 ## Docker
 
-An example docker-compose file is available [here](https://github.com/csids/docker-examples-csids/blob/main/csids-cs9-single-user-docker-compose/docker-compose.yml).
+CS9 is designed to work within a containerized environment for production use. An example docker-compose file is available [here](https://github.com/csids/docker-examples-csids/blob/main/csids-cs9-single-user-docker-compose/docker-compose.yml).
+
+For getting started, we recommend cloning the [cs9example](https://github.com/csids/cs9example) repository, which provides a complete template for implementing a surveillance system with CS9.
+
+## Transitioning from CRAN to Full Setup
+
+If you installed CS9 from CRAN and want to enable full surveillance functionality:
+
+1. **Check Current Status**
+   ```r
+   cs9::check_environment_setup()
+   ```
+
+2. **Set Up Database**
+   - Install PostgreSQL or MariaDB
+   - Create databases for your surveillance system
+   - Note connection parameters (host, port, username, password)
+
+3. **Configure Environment Variables**
+   - Add the variables listed below to your `.Renviron` file
+   - Restart R session
+   - Run `cs9::check_environment_setup()` to verify configuration
+
+4. **Test Full Functionality**
+   ```r
+   # This should now work without errors
+   ss <- cs9::SurveillanceSystem_v9$new(name = "test_system")
+   ```
 
 
