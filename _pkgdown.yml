@@ -4,9 +4,14 @@ template:
   package: csidstemplatepkgdown
 
 articles:
-- title: Fundamentals
-  navbar: Fundamentals
+- title: Getting Started
+  navbar: Getting Started
   contents:
+  - getting-started
   - installation
+- title: Advanced Usage
+  navbar: Advanced Usage  
+  contents:
+  - creating-a-task
   - file-layout
 
