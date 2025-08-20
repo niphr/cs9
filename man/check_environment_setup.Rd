@@ -4,11 +4,14 @@
 \alias{check_environment_setup}
 \title{Check Environment Setup}
 \usage{
-check_environment_setup(verbose = TRUE)
+check_environment_setup(verbose = TRUE, use_startup_message = FALSE)
 }
 \arguments{
 \item{verbose}{Logical. If TRUE (default), prints detailed diagnostic output.
 If FALSE, runs validation silently and only returns result object.}
+
+\item{use_startup_message}{Logical. If TRUE, uses packageStartupMessage()
+for output (suppressible). If FALSE (default), uses cat() for console output.}
 }
 \value{
 A list containing environment setup status and recommendations:
