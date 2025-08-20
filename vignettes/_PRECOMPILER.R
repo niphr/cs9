@@ -5,8 +5,7 @@
 vignettes <- c(
   "cs9",
   "creating-a-task", 
-  "file-layout",
-  "getting-started"
+  "file-layout"
 )
 
 # Precompile each vignette

@@ -1,8 +1,8 @@
 ---
-title: "Introduction"
+title: "Introduction to CS9"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Introduction}
+  %\VignetteIndexEntry{Introduction to CS9}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options:
@@ -13,7 +13,30 @@ editor_options:
 
 
 
-## Definitions
+## What is CS9?
+
+Core Surveillance 9 (CS9) is a comprehensive R framework designed for building real-time disease surveillance systems. It provides the infrastructure needed for:
+
+- **Real-time data processing**: Automated pipelines for surveillance data
+- **Database-driven workflows**: Robust data storage and retrieval
+- **Task scheduling**: Parallel processing and workflow orchestration  
+- **Epidemiological analysis**: Built-in support for surveillance concepts
+- **Production deployment**: Docker-ready infrastructure for operational systems
+
+CS9 is particularly suited for public health organizations, epidemiologists, and researchers who need to process surveillance data systematically and reliably.
+
+## When Should You Use CS9?
+
+CS9 is ideal when you need to:
+
+- Process surveillance data on a regular schedule (daily, weekly)
+- Maintain historical data with proper database management
+- Run complex analysis pipelines with dependencies between tasks
+- Deploy surveillance systems in production environments
+- Handle multiple data sources and analysis outputs
+- Ensure data validation and quality control
+
+## Key Concepts and Definitions
 
 <table class='gmisc_table' style='border-collapse: collapse; margin-top: 1em; margin-bottom: 1em;' >
 <thead>
@@ -25,75 +48,57 @@ editor_options:
 <tbody>
 <tr>
 <td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>argset</td>
-<td style='border-right: 1px solid black; text-align: left;'>A named list containing arguments.</td>
-</tr>
-<tr>
-<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>plnr analysis</td>
-<td style='border-right: 1px solid black; text-align: left;'>These are the fundamental units that are scheduled in plnr:
-<ul>
-  <li>1 argset</li>
-  <li>1 function that takes two (or more) arguments:
-    <ul>
-      <li>data (named list)</li>
-      <li>argset (named list)</li>
-      <li>... (optional arguments)</li>
-    </ul>
-  </li>
-</ul></td>
+<td style='border-right: 1px solid black; text-align: left;'>A named list containing arguments passed between functions.</td>
 </tr>
 <tr>
 <td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>data_selector_fn</td>
-<td style='border-right: 1px solid black; text-align: left;'>A function that takes two arguments:
-<ul>
-  <li>argset (named list)</li>
-  <li>tables (named list)</li>
-</ul>
-This function provides a named list to be used as the `data` argument to `action_fn`</td>
+<td style='border-right: 1px solid black; text-align: left;'>A function that extracts data for each plan. Takes argset and tables as arguments and returns a named list for use as data.</td>
 </tr>
 <tr>
 <td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>action_fn</td>
-<td style='border-right: 1px solid black; text-align: left;'>A function that takes three arguments:
-<ul>
-  <li>data (named list, returned from data_selector_fn)</li>
-  <li>argset (named list)</li>
-  <li>tables (named list)</li>
-</ul>
-This is the thing that **'does stuff'** in Core Surveillance 9.</td>
+<td style='border-right: 1px solid black; text-align: left;'>The core function that performs analysis work. Takes data (from data_selector_fn), argset, and tables as arguments.</td>
 </tr>
 <tr>
-<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>sc analysis</td>
-<td style='border-right: 1px solid black; text-align: left;'>A `sc analysis` is essentially a `plnr analysis` with database tables:
-<ul>
-  <li>1 argset</li>
-  <li>1 action_fn</li>
-</ul></td>
+<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>analysis</td>
+<td style='border-right: 1px solid black; text-align: left;'>Individual computation within a plan. Combines 1 argset with 1 action_fn.</td>
 </tr>
 <tr>
 <td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>plan</td>
-<td style='border-right: 1px solid black; text-align: left;'><ul>
-  <li>1 data-pull (using data_selector_fn)</li>
-  <li>1 list of sc analyses</li>
-</ul></td>
+<td style='border-right: 1px solid black; text-align: left;'>Data processing unit containing 1 data-pull (using data_selector_fn) and multiple analyses.</td>
 </tr>
 <tr>
-<td style='border-bottom: 2px solid grey; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>task</td>
-<td style='border-bottom: 2px solid grey; border-right: 1px solid black; text-align: left;'>This is is the unit that Airflow schedules.
-<ul>
-  <li>1 list of plans</li>
-</ul>
-We sometimes run the list of plans in parallel.</td>
+<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>task</td>
+<td style='border-right: 1px solid black; text-align: left;'>The fundamental unit scheduled in CS9. Contains multiple plans and can run in parallel. This is what Airflow schedules.</td>
+</tr>
+<tr>
+<td style='border-bottom: 2px solid grey; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>schema</td>
+<td style='border-bottom: 2px solid grey; border-right: 1px solid black; text-align: left;'>Database table definition with field types, validation rules, and access control.</td>
 </tr>
 </tbody>
 </table>
 
-## Tasks
+## Surveillance System Architecture
 
-A task is the basic operational unit of cs9. It is based on [plnr](https://www.csids.no/plnr/).
+CS9 organizes surveillance work around a hierarchical structure:
 
-In short, you can think of a task as multiple [plnr plans](https://www.csids.no/plnr/) plus [csdb tables](https://www.csids.no/csdb/reference/DBTable_v9.html).
+**Tasks** → **Plans** → **Analyses**
+
+- **Tasks**: The fundamental unit of work - things like "download weather data", "calculate disease trends", or "generate reports"
+- **Plans**: Data processing units within tasks - typically organized by time periods, geographic areas, or data subsets  
+- **Analyses**: Individual computations within plans - the actual analytical work performed on the data
+
+### Example Workflow
+
+A typical CS9 surveillance system might include:
+
+1. **Data Import Task**: Download data from external APIs or files
+2. **Data Cleaning Task**: Validate, standardize, and quality-check incoming data  
+3. **Analysis Task**: Calculate surveillance indicators, trends, or alerts
+4. **Reporting Task**: Generate outputs like Excel files, plots, or automated reports
+5. **Delivery Task**: Send results via email, upload to websites, or trigger alerts
 
 <figure>
-<img id="figure-1" src="cs9-task-general.png" width="100%" />
+<img id="figure-1" src="resources/sc9/picture1.png" width="100%" />
 <figcaption>Figure 1. A general task showing the many options of a task.</figcaption>
 </figure>
 
@@ -125,14 +130,46 @@ Obviously, if a plan's data-pull is larger, it will use more RAM. If you need to
 
 <a href="#figure-1">Figure 1</a> shows only 2 location based analyses, but in reality there are 356 municipalities in Norway in 2021. If <a href="#figure-1">figure 1</a> had 2 plans (1 for 2021 data, 1 for 2020 data) and 356 analyses for each plan (1 for each location_code) then we would be taking an analysis-heavy approach.
 
-## Putting it together
+## Getting Started: The cs9example Template
+
+The best way to start with CS9 is to use the [cs9example](https://github.com/csids/cs9example) repository as a template. This provides a complete, working surveillance system that you can customize.
+
+### File Organization
 
 <figure>
 <img id="figure-2" src="cs9-file-locations.png" width="100%" />
-<figcaption>Figure 2. A typical file setup for an implementation of Core Surveillance 9. $plan_argset_fn$ is rarely used, and is therefore shown as blacked out in the most of the tasks..</figcaption>
+<figcaption>Figure 2. A typical file setup for an implementation of Core Surveillance 9. $plan_argset_fn$ is rarely used, and is therefore shown as blacked out in the most of the tasks.</figcaption>
 </figure>
 
-<a href="#figure-2">Figure 2</a> shows a typical implementation of Core Surveillance 9.
+The cs9example demonstrates the standard file organization:
+
+
+```
+#> https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L1-L15
+#> 
+#>  1 | # ******************************************************************************
+#>  2 | # ******************************************************************************
+#>  3 | #
+#>  4 | # 00_env_and_namespace.R
+#>  5 | #
+#>  6 | # PURPOSE 1:
+#>  7 | #   Use roxygen2 to import ggplot2, data.table, %>%, and %<>% into the namespace,
+#>  8 | #   because these are the most commonly used packages/functions.
+#>  9 | #
+#> 10 | # PURPOSE 2:
+#> 11 | #   Declaration of environments that can be used globally.
+#> 12 | #
+#> 13 | # PURPOSE 3:
+#> 14 | #   Fix issues/integration with other packages.
+#> 15 | #
+```
+
+- **00_env_and_namespace.R**: Package setup and global environment
+- **01_definitions.R**: Global definitions (borders, age groups, etc.)  
+- **02_surveillance_systems.R**: Initialize the surveillance system
+- **03_tables.R**: Database table definitions
+- **04_tasks.R**: Task configurations
+- **10_onLoad.R**: Package loading sequence
 
 `03_tables.R` contains all of the database table definitions using `global$ss$add_table()` commands.
 
@@ -140,11 +177,25 @@ Obviously, if a plan's data-pull is larger, it will use more RAM. If you need to
 
 Then we have a one file for each task that contains the `action_fn`, `data_selector_fn` and other functions that are relevant to the task at hand.
 
-## Example
+## Infrastructure Requirements
 
-We will now go through an example of how a person would design and implement tasks relating to weather
+CS9 requires database infrastructure to function. After installing from CRAN, you'll need to:
 
-### Surveillance system
+1. **Set up a PostgreSQL database** (recommended) or MariaDB
+2. **Configure environment variables** for database connection
+3. **Use Docker for deployment** (recommended for production)
+
+Without database setup, CS9 loads with limited functionality. You can check what's needed with:
+
+```r
+cs9::check_environment_setup()
+```
+
+## Complete Example: Weather Surveillance Task
+
+We will now go through a complete example of how a person would design and implement a weather surveillance task.
+
+### Surveillance System Setup
 
 We begin by creating a surveillance system. This is the hub that coordinates everything.
 
@@ -153,7 +204,7 @@ We begin by creating a surveillance system. This is the hub that coordinates eve
 ss <- cs9::SurveillanceSystem_v9$new()
 ```
 
-### add_table
+### Database Table Definition
 
 As documented in more detail [here](analytics_db_schemas_introduction.html), we create a database table that fits our needs (recording weather data), and we then add it to the surveillance system.
 
@@ -205,7 +256,7 @@ ss$add_table(
 )
 ```
 
-### add_task
+### Task Configuration
 
 To "register" our task, we use the RStudio addin `task_from_config`.
 
@@ -504,8 +555,8 @@ tables <- ss$shortcut_get_tables("example_weather_import_data_from_api")
 print(data)
 #> $data
 #> {xml_document}
-#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T09:56:06Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T09:00:00Z" ...
+#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T11:03:44Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T10:00:00Z" ...
 #> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20 ...
 #> 
 #> $hash
@@ -694,7 +745,7 @@ ss$run_task("example_weather_import_data_from_api")
 #>          date     tg    tx    tn
 #>        <Date> <lgcl> <num> <num>
 #> 1: 2025-08-21     NA  15.8   8.0
-#> 2: 2025-08-22     NA  15.9   8.3
+#> 2: 2025-08-22     NA  15.8   8.2
 #> 3: 2025-08-23     NA  16.1   7.8
 #> 4: 2025-08-24     NA  17.2  10.3
 #> 5: 2025-08-25     NA  18.0   8.9
@@ -728,7 +779,7 @@ ss$run_task("example_weather_import_data_from_api")
 #>    calyearmonth       date     tg    tx    tn
 #>          <char>     <Date> <lgcl> <num> <num>
 #> 1:         <NA> 2025-08-21     NA  15.8   8.0
-#> 2:         <NA> 2025-08-22     NA  15.9   8.3
+#> 2:         <NA> 2025-08-22     NA  15.8   8.2
 #> 3:         <NA> 2025-08-23     NA  16.1   7.8
 #> 4:         <NA> 2025-08-24     NA  17.2  10.3
 #> 5:         <NA> 2025-08-25     NA  18.0   8.9
@@ -739,7 +790,7 @@ ss$run_task("example_weather_import_data_from_api")
 #> Error in super$upsert_data(newdata, drop_indexes, verbose): upsert_load_data_infile not validated in anon_example_weather. granularity_time
 ```
 
-## Different types of tasks
+## Different Types of Tasks
 
 ### Importing data
 
@@ -974,11 +1025,23 @@ This approach ensures you start with a working, tested framework rather than bui
 
 ## Next Steps
 
-- **Explore cs9example**: Review the complete implementation
-- **Set up infrastructure**: Configure database and environment variables
-- **Clone and customize**: Use cs9example as your template
-- **Deploy**: Follow production deployment patterns
+1. **Evaluate CS9**: Install from CRAN and explore the documentation
+2. **Review cs9example**: Study the complete example implementation  
+3. **Set up infrastructure**: Configure database and environment
+4. **Clone cs9example**: Use it as a template for your surveillance system
+5. **Customize**: Modify the example for your specific surveillance needs
 
-For detailed setup instructions, see the [Installation](installation.html) vignette.
-For file organization details, see the [File Layout](file-layout.html) vignette.
-For step-by-step task creation, see the [Creating a Task](creating-a-task.html) vignette.
+For detailed infrastructure setup, see the [Installation](installation.html) vignette.
+
+For learning how to create tasks, see the [Creating a Task](creating-a-task.html) vignette.
+
+For understanding the file organization, see the [File Layout](file-layout.html) vignette.
+
+## Resources
+
+- **cs9 Package**: Available on CRAN and at https://github.com/csids/cs9
+- **cs9example Template**: https://github.com/csids/cs9example  
+- **Documentation**: https://www.csids.no/cs9/
+- **Docker Examples**: https://github.com/csids/docker-examples-csids
+
+CS9 is part of the [csverse](https://www.csids.no/packages.html) - a collection of R packages for surveillance and epidemiological analysis.

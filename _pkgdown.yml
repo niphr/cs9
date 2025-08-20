@@ -4,14 +4,13 @@ template:
   package: csidstemplatepkgdown
 
 articles:
-- title: Getting Started
-  navbar: Getting Started
+- title: Get started
+  navbar: ~
   contents:
-  - getting-started
+  - cs9
+- title: Articles
+  contents:
   - installation
-- title: Advanced Usage
-  navbar: Advanced Usage  
-  contents:
-  - creating-a-task
   - file-layout
+  - creating-a-task
 
