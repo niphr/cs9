@@ -15,6 +15,8 @@ Read the introduction vignette [here](https://www.csids.no/cs9/articles/cs9.html
 
 The [csverse](https://www.csids.no/packages.html) is a set of R packages developed to help solve problems that frequently occur when performing disease surveillance.
 
+These packages can be installed directly from CRAN.
+
 ```
 install.packages("attrib")
 install.packages("cs9")
