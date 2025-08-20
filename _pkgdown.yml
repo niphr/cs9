@@ -4,13 +4,15 @@ template:
   package: csidstemplatepkgdown
 
 articles:
-- title: Get started
-  navbar: ~
-  contents:
-  - cs9
-- title: Articles
-  contents:
-  - installation
-  - file-layout
-  - creating-a-task
+  - name: intro
+    title: Get started
+    navbar: cs9        # makes the navbar link go straight to this vignette
+    contents:
+      - cs9
 
+  - name: articles
+    title: Articles
+    contents:
+      - installation
+      - file-layout
+      - creating-a-task

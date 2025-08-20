@@ -672,16 +672,9 @@ ss$tables(
 )
 ```
 
-## Real-World Implementation: cs9example
+## Implementation
 
 The concepts shown above are demonstrated in a complete, working surveillance system at [cs9example](https://github.com/csids/cs9example). This repository provides the recommended template for implementing CS9 in practice.
-
-### Production File Organization
-
-```{r echo=FALSE}
-x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R")
-print(x, lines = 1:15, include_url = TRUE)
-```
 
 The cs9example follows the standard production pattern:
 
@@ -697,7 +690,7 @@ Here's how a real surveillance task is implemented in cs9example:
 
 ```{r echo=FALSE}
 x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R")
-print(x, lines = 1:30, include_url = TRUE)
+print(x, include_url = TRUE)
 ```
 
 This demonstrates the complete workflow:
@@ -707,7 +700,7 @@ This demonstrates the complete workflow:
 - **Database Integration**: Stores results in structured tables
 - **Error Handling**: Robust error management for production use
 
-### Deployment Patterns
+### Deployment patterns
 
 CS9 systems typically follow this deployment pattern:
 
@@ -716,7 +709,7 @@ CS9 systems typically follow this deployment pattern:
 3. **Production**: Deploy in Docker containers with Airflow scheduling
 4. **Monitoring**: Use built-in logging and configuration tracking
 
-### Getting Started with cs9example
+### Getting started
 
 To implement your own surveillance system:
 
@@ -728,7 +721,7 @@ To implement your own surveillance system:
 
 This approach ensures you start with a working, tested framework rather than building from scratch.
 
-## Next Steps
+## Next steps
 
 1. **Evaluate CS9**: Install from CRAN and explore the documentation
 2. **Review cs9example**: Study the complete example implementation
@@ -750,3 +743,4 @@ For understanding the file organization, see the [File Layout](file-layout.html)
 - **Docker Examples**: https://github.com/csids/docker-examples-csids
 
 CS9 is part of the [csverse](https://www.csids.no/packages.html) - a collection of R packages for surveillance and epidemiological analysis.
+

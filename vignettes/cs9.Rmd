@@ -538,9 +538,9 @@ tables <- ss$shortcut_get_tables("example_weather_import_data_from_api")
 print(data)
 #> $data
 #> {xml_document}
-#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T12:50:04Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T12:00:00Z" runended="2025-08-20T12:29:48Z ...
-#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20T12:00:00Z" to="2025-08-20T12:0 ...
+#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T13:25:18Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T12:00:00Z" runended="2025-08-20T12: ...
+#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20T13:00:00Z" to="2025-08-2 ...
 #> 
 #> $hash
 #> $hash$current
@@ -892,32 +892,9 @@ ss$tables(
 )
 ```
 
-## Real-World Implementation: cs9example
+## Implementation
 
 The concepts shown above are demonstrated in a complete, working surveillance system at [cs9example](https://github.com/csids/cs9example). This repository provides the recommended template for implementing CS9 in practice.
-
-### Production File Organization
-
-
-```
-#> https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R#L1-L15
-#> 
-#>  1 | # ******************************************************************************
-#>  2 | # ******************************************************************************
-#>  3 | #
-#>  4 | # 02_surveillance_systems.R
-#>  5 | #
-#>  6 | # PURPOSE 1:
-#>  7 | #   Initialize surveillance systems
-#>  8 | #
-#>  9 | # ******************************************************************************
-#> 10 | # ******************************************************************************
-#> 11 | 
-#> 12 | set_surveillance_systems <- function() {
-#> 13 |   global$ss <- cs9::SurveillanceSystem_v9$new()
-#> 14 | }
-#> 15 | NA
-```
 
 The cs9example follows the standard production pattern:
 
@@ -933,38 +910,126 @@ Here's how a real surveillance task is implemented in cs9example:
 
 
 ```
-#> https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L1-L30
+#> https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R
 #> 
-#>  1 | # **** action **** ----
-#>  2 | #' weather_download_and_import_rawdata (action)
-#>  3 | #' @param data Data
-#>  4 | #' @param argset Argset
-#>  5 | #' @param tables DB tables
-#>  6 | #' @export
-#>  7 | weather_download_and_import_rawdata_action <- function(data, argset, tables) {
-#>  8 |   # cs9::run_task_sequentially_as_rstudio_job_using_load_all("weather_download_and_import_rawdata")
-#>  9 |   # To be run outside of rstudio: cs9example::global$ss$run_task("weather_download_and_import_rawdata")
-#> 10 | 
-#> 11 |   if (plnr::is_run_directly()) {
-#> 12 |     # global$ss$shortcut_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
-#> 13 | 
-#> 14 |     index_plan <- 1
-#> 15 |     index_analysis <- 1
-#> 16 | 
-#> 17 |     data <- global$ss$shortcut_get_data("weather_download_and_import_rawdata", index_plan = index_plan)
-#> 18 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan, index_analysis = index_analysis)
-#> 19 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
-#> 20 |   }
-#> 21 | 
-#> 22 |   # special case that runs before everything
-#> 23 |   if (argset$first_analysis == TRUE) {
-#> 24 | 
-#> 25 |   }
-#> 26 | 
-#> 27 |   a <- data$data$properties$timeseries
-#> 28 |   res <- vector("list", length=length(a) - 1)
-#> 29 |   for(i in seq_along(res)){
-#> 30 |     # i = 1
+#>   1 | # **** action **** ----
+#>   2 | #' weather_download_and_import_rawdata (action)
+#>   3 | #' @param data Data
+#>   4 | #' @param argset Argset
+#>   5 | #' @param tables DB tables
+#>   6 | #' @export
+#>   7 | weather_download_and_import_rawdata_action <- function(data, argset, tables) {
+#>   8 |   # cs9::run_task_sequentially_as_rstudio_job_using_load_all("weather_download_and_import_rawdata")
+#>   9 |   # To be run outside of rstudio: cs9example::global$ss$run_task("weather_download_and_import_rawdata")
+#>  10 | 
+#>  11 |   if (plnr::is_run_directly()) {
+#>  12 |     # global$ss$shortcut_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
+#>  13 | 
+#>  14 |     index_plan <- 1
+#>  15 |     index_analysis <- 1
+#>  16 | 
+#>  17 |     data <- global$ss$shortcut_get_data("weather_download_and_import_rawdata", index_plan = index_plan)
+#>  18 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan, index_analysis = index_analysis)
+#>  19 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
+#>  20 |   }
+#>  21 | 
+#>  22 |   # special case that runs before everything
+#>  23 |   if (argset$first_analysis == TRUE) {
+#>  24 | 
+#>  25 |   }
+#>  26 | 
+#>  27 |   a <- data$data$properties$timeseries
+#>  28 |   res <- vector("list", length=length(a) - 1)
+#>  29 |   for(i in seq_along(res)){
+#>  30 |     # i = 1
+#>  31 |     time_from <- a[[i]]$time
+#>  32 |     if("next_1_hours" %in% names(a[[i]]$data)){
+#>  33 |       time_var <- "next_1_hours"
+#>  34 |     } else {
+#>  35 |       time_var <- "next_6_hours"
+#>  36 |     }
+#>  37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
+#>  38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
+#>  39 | 
+#>  40 |     res[[i]] <- data.frame(
+#>  41 |       time_from = as.character(time_from),
+#>  42 |       temp = as.numeric(temp),
+#>  43 |       precip = as.numeric(precip)
+#>  44 |     )
+#>  45 |   }
+#>  46 | 
+#>  47 |   res <- rbindlist(res)
+#>  48 |   res <- res[stringr::str_sub(time_from, 12, 13) %in% c("00", "06", "12", "18")]
+#>  49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
+#>  50 |   res <- res[
+#>  51 |     ,
+#>  52 |     .(
+#>  53 |       temp_max = max(temp),
+#>  54 |       temp_min = min(temp),
+#>  55 |       precip = sum(precip)
+#>  56 |     ),
+#>  57 |     keyby = .(date)
+#>  58 |   ]
+#>  59 | 
+#>  60 |   # we look at the downloaded data
+#>  61 |   # res
+#>  62 | 
+#>  63 |   # we now need to format it
+#>  64 |   res[, granularity_time := "date"]
+#>  65 |   res[, sex := "total"]
+#>  66 |   res[, age := "total"]
+#>  67 |   res[, location_code := argset$location_code]
+#>  68 |   res[, border := global$border]
+#>  69 | 
+#>  70 |   # fill in missing structural variables
+#>  71 |   cstidy::set_csfmt_rts_data_v2(res)
+#>  72 | 
+#>  73 |   # we look at the downloaded data
+#>  74 |   # res
+#>  75 | 
+#>  76 |   # put data in db table
+#>  77 |   tables$anon_example_weather_rawdata$upsert_data(res)
+#>  78 | 
+#>  79 |   # special case that runs after everything
+#>  80 |   if (argset$last_analysis == TRUE) {
+#>  81 | 
+#>  82 |   }
+#>  83 | }
+#>  84 | 
+#>  85 | # **** data_selector **** ----
+#>  86 | #' weather_download_and_import_rawdata (data selector)
+#>  87 | #' @param argset Argset
+#>  88 | #' @param tables DB tables
+#>  89 | #' @export
+#>  90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
+#>  91 |   if (plnr::is_run_directly()) {
+#>  92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
+#>  93 | 
+#>  94 |     index_plan <- 1
+#>  95 | 
+#>  96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
+#>  97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
+#>  98 |   }
+#>  99 | 
+#> 100 |   # find the mid lat/long for the specified location_code
+#> 101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
+#> 102 |     lat = mean(lat),
+#> 103 |     long = mean(long)
+#> 104 |   )]
+#> 105 | 
+#> 106 |   # download the forecast for the specified location_code
+#> 107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
+#> 108 |   d <- httr::content(d)
+#> 109 | 
+#> 110 |   # The variable returned must be a named list
+#> 111 |   retval <- list(
+#> 112 |     "data" = d
+#> 113 |   )
+#> 114 | 
+#> 115 |   retval
+#> 116 | }
+#> 117 | 
+#> 118 | # **** functions **** ----
 ```
 
 This demonstrates the complete workflow:
@@ -974,7 +1039,7 @@ This demonstrates the complete workflow:
 - **Database Integration**: Stores results in structured tables
 - **Error Handling**: Robust error management for production use
 
-### Deployment Patterns
+### Deployment patterns
 
 CS9 systems typically follow this deployment pattern:
 
@@ -983,7 +1048,7 @@ CS9 systems typically follow this deployment pattern:
 3. **Production**: Deploy in Docker containers with Airflow scheduling
 4. **Monitoring**: Use built-in logging and configuration tracking
 
-### Getting Started with cs9example
+### Getting started
 
 To implement your own surveillance system:
 
@@ -995,7 +1060,7 @@ To implement your own surveillance system:
 
 This approach ensures you start with a working, tested framework rather than building from scratch.
 
-## Next Steps
+## Next steps
 
 1. **Evaluate CS9**: Install from CRAN and explore the documentation
 2. **Review cs9example**: Study the complete example implementation
@@ -1017,3 +1082,4 @@ For understanding the file organization, see the [File Layout](file-layout.html)
 - **Docker Examples**: https://github.com/csids/docker-examples-csids
 
 CS9 is part of the [csverse](https://www.csids.no/packages.html) - a collection of R packages for surveillance and epidemiological analysis.
+
