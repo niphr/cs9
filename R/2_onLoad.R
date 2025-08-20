@@ -1,49 +1,29 @@
 .onLoad <- function(libname, pkgname) {
-  # Step 1: Validate environment variables (silent mode)
-  env_check <- tryCatch({
-    validate_environment()
-  }, error = function(e) {
-    list(status = "error", issues = paste("Environment validation failed:", e$message), recommendations = character(0))
-  })
-  
-  # Step 2: Set environment variables only if validation passes
-  env_result <- FALSE
-  if(env_check$status == "error") {
-    packageStartupMessage("Environment setup failed: ", paste(env_check$issues, collapse = "; "))
-    packageStartupMessage("Run cs9::check_environment_setup() for detailed diagnostics")
-  } else {
-    # Only set variables if validation passes
-    env_result <- tryCatch({
-      set_env_vars()
-      TRUE
-    }, error = function(e) {
-      packageStartupMessage("Warning: Environment variable setup failed: ", e$message)
-      FALSE
-    })
-  }
+  # Silent setup only - no user messages
   
   # Set up progress bars and plnr options (non-critical)
   set_progressr()
   set_plnr()
-
-  # Only attempt database setup if environment variables were set successfully
-  if(!env_result || length(config$dbconfigs) == 0){
-    packageStartupMessage("CS9 database configuration not available. Package loaded with limited functionality.")
-    packageStartupMessage("Use cs9::check_environment_setup() to diagnose configuration issues.")
-  } else {
-    # Attempt database table setup with error handling
-    db_result <- tryCatch({
+  
+  # Attempt environment variable setup silently
+  tryCatch({
+    set_env_vars()
+  }, error = function(e) {
+    # Silent failure - diagnostics available via check_environment_setup()
+  })
+  
+  # Attempt database table setup silently
+  tryCatch({
+    if(length(config$dbconfigs) > 0) {
       setup_database_tables()
-      TRUE
-    }, error = function(e) {
-      packageStartupMessage("Warning: Database table setup failed: ", e$message)
-      packageStartupMessage("CS9 loaded with limited functionality. Check database connectivity.")
-      FALSE
-    })
-  }
+    }
+  }, error = function(e) {
+    # Silent failure - diagnostics available via check_environment_setup()
+  })
 
   invisible()
 }
+
 
 # Database table setup function (extracted from .onLoad)
 setup_database_tables <- function() {

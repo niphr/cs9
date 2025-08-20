@@ -14,4 +14,7 @@
     "\n",
     "https://www.csids.no/cs9/"
   ))
+  
+  # Show environment diagnostics when package is attached
+  check_environment_setup(verbose = TRUE)
 }
