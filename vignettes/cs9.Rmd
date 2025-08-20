@@ -19,7 +19,7 @@ Core Surveillance 9 (CS9) is a comprehensive R framework designed for building r
 
 - **Real-time data processing**: Automated pipelines for surveillance data
 - **Database-driven workflows**: Robust data storage and retrieval
-- **Task scheduling**: Parallel processing and workflow orchestration  
+- **Task scheduling**: Parallel processing and workflow orchestration
 - **Epidemiological analysis**: Built-in support for surveillance concepts
 - **Production deployment**: Docker-ready infrastructure for operational systems
 
@@ -84,7 +84,7 @@ CS9 organizes surveillance work around a hierarchical structure:
 **Tasks** → **Plans** → **Analyses**
 
 - **Tasks**: The fundamental unit of work - things like "download weather data", "calculate disease trends", or "generate reports"
-- **Plans**: Data processing units within tasks - typically organized by time periods, geographic areas, or data subsets  
+- **Plans**: Data processing units within tasks - typically organized by time periods, geographic areas, or data subsets
 - **Analyses**: Individual computations within plans - the actual analytical work performed on the data
 
 ### Example Workflow
@@ -92,13 +92,13 @@ CS9 organizes surveillance work around a hierarchical structure:
 A typical CS9 surveillance system might include:
 
 1. **Data Import Task**: Download data from external APIs or files
-2. **Data Cleaning Task**: Validate, standardize, and quality-check incoming data  
+2. **Data Cleaning Task**: Validate, standardize, and quality-check incoming data
 3. **Analysis Task**: Calculate surveillance indicators, trends, or alerts
 4. **Reporting Task**: Generate outputs like Excel files, plots, or automated reports
 5. **Delivery Task**: Send results via email, upload to websites, or trigger alerts
 
 <figure>
-<img id="figure-1" src="resources/sc9/picture1.png" width="100%" />
+<img id="figure-1" src="cs9-task-general.png" width="100%" />
 <figcaption>Figure 1. A general task showing the many options of a task.</figcaption>
 </figure>
 
@@ -165,7 +165,7 @@ The cs9example demonstrates the standard file organization:
 ```
 
 - **00_env_and_namespace.R**: Package setup and global environment
-- **01_definitions.R**: Global definitions (borders, age groups, etc.)  
+- **01_definitions.R**: Global definitions (borders, age groups, etc.)
 - **02_surveillance_systems.R**: Initialize the surveillance system
 - **03_tables.R**: Database table definitions
 - **04_tasks.R**: Task configurations
@@ -207,11 +207,6 @@ ss <- cs9::SurveillanceSystem_v9$new()
 ### Database Table Definition
 
 As documented in more detail [here](analytics_db_schemas_introduction.html), we create a database table that fits our needs (recording weather data), and we then add it to the surveillance system.
-
-
-```
-#> Error in knitr::include_graphics(system.file("vignette_resources/tasks/addins_1.png", : Cannot find the file(s): ""
-```
 
 
 ``` r
@@ -258,12 +253,7 @@ ss$add_table(
 
 ### Task Configuration
 
-To "register" our task, we use the RStudio addin `task_from_config`.
-
-
-```
-#> Error in knitr::include_graphics(system.file("vignette_resources/tasks/addins_2.png", : Cannot find the file(s): ""
-```
+To "register" our task, we use `ss$add_task`:
 
 
 ``` r
@@ -418,13 +408,6 @@ A named list containing the schemas used in this task.
 
 ### data_selector_fn
 
-Use the addins dropdown to easily add in boilerplate code.
-
-
-```
-#> Error in knitr::include_graphics(system.file("vignette_resources/tasks/addins_3.png", : Cannot find the file(s): ""
-```
-
 The `data_selector_fn` is used to extract the data for each plan.
 
 The lines inside `if(plnr::is_run_directly()){` are used to help developers. You can run the code manually/interactively to "load" the values of `argset` and `schema`.
@@ -556,8 +539,8 @@ print(data)
 #> $data
 #> {xml_document}
 #> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T12:50:04Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T12:00:00Z" ...
-#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20 ...
+#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T12:00:00Z" runended="2025-08-20T12:29:48Z ...
+#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20T12:00:00Z" to="2025-08-20T12:0 ...
 #> 
 #> $hash
 #> $hash$current
@@ -754,39 +737,28 @@ ss$run_task("example_weather_import_data_from_api")
 #> 8: 2025-08-28     NA  19.8   9.8
 #> 9: 2025-08-29     NA  20.5  10.3
 #> [1] "Data after missing structural variables filled in"
-#>    granularity_time granularity_geo country_iso3 location_code border    age
-#>              <char>          <char>       <char>        <char>  <int> <char>
-#> 1:              day          county          nor      county03   2020  total
-#> 2:              day          county          nor      county03   2020  total
-#> 3:              day          county          nor      county03   2020  total
-#> 4:              day          county          nor      county03   2020  total
-#> 5:              day          county          nor      county03   2020  total
-#> 6:              day          county          nor      county03   2020  total
-#> 7:              day          county          nor      county03   2020  total
-#> 8:              day          county          nor      county03   2020  total
-#> 9:              day          county          nor      county03   2020  total
-#>       sex isoyear isoweek isoyearweek season seasonweek calyear calmonth
-#>    <char>   <int>   <int>      <char> <char>      <num>   <int>    <int>
-#> 1:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 2:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 3:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 4:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 5:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 6:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 7:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 8:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 9:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#>    calyearmonth       date     tg    tx    tn
-#>          <char>     <Date> <lgcl> <num> <num>
-#> 1:         <NA> 2025-08-21     NA  15.6   8.0
-#> 2:         <NA> 2025-08-22     NA  15.9   7.5
-#> 3:         <NA> 2025-08-23     NA  16.1   7.8
-#> 4:         <NA> 2025-08-24     NA  17.2  10.3
-#> 5:         <NA> 2025-08-25     NA  18.0   8.9
-#> 6:         <NA> 2025-08-26     NA  18.8   9.0
-#> 7:         <NA> 2025-08-27     NA  18.9   9.7
-#> 8:         <NA> 2025-08-28     NA  19.8   9.8
-#> 9:         <NA> 2025-08-29     NA  20.5  10.3
+#>    granularity_time granularity_geo country_iso3 location_code border    age    sex isoyear isoweek
+#>              <char>          <char>       <char>        <char>  <int> <char> <char>   <int>   <int>
+#> 1:              day          county          nor      county03   2020  total  total      NA      NA
+#> 2:              day          county          nor      county03   2020  total  total      NA      NA
+#> 3:              day          county          nor      county03   2020  total  total      NA      NA
+#> 4:              day          county          nor      county03   2020  total  total      NA      NA
+#> 5:              day          county          nor      county03   2020  total  total      NA      NA
+#> 6:              day          county          nor      county03   2020  total  total      NA      NA
+#> 7:              day          county          nor      county03   2020  total  total      NA      NA
+#> 8:              day          county          nor      county03   2020  total  total      NA      NA
+#> 9:              day          county          nor      county03   2020  total  total      NA      NA
+#>    isoyearweek season seasonweek calyear calmonth calyearmonth       date     tg    tx    tn
+#>         <char> <char>      <num>   <int>    <int>       <char>     <Date> <lgcl> <num> <num>
+#> 1:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-21     NA  15.6   8.0
+#> 2:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-22     NA  15.9   7.5
+#> 3:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-23     NA  16.1   7.8
+#> 4:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-24     NA  17.2  10.3
+#> 5:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-25     NA  18.0   8.9
+#> 6:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-26     NA  18.8   9.0
+#> 7:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-27     NA  18.9   9.7
+#> 8:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-28     NA  19.8   9.8
+#> 9:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-29     NA  20.5  10.3
 #> Error in super$upsert_data(newdata, drop_indexes, verbose): upsert_load_data_infile not validated in anon_example_weather. granularity_time
 ```
 
@@ -1026,7 +998,7 @@ This approach ensures you start with a working, tested framework rather than bui
 ## Next Steps
 
 1. **Evaluate CS9**: Install from CRAN and explore the documentation
-2. **Review cs9example**: Study the complete example implementation  
+2. **Review cs9example**: Study the complete example implementation
 3. **Set up infrastructure**: Configure database and environment
 4. **Clone cs9example**: Use it as a template for your surveillance system
 5. **Customize**: Modify the example for your specific surveillance needs
@@ -1040,7 +1012,7 @@ For understanding the file organization, see the [File Layout](file-layout.html)
 ## Resources
 
 - **cs9 Package**: Available on CRAN and at https://github.com/csids/cs9
-- **cs9example Template**: https://github.com/csids/cs9example  
+- **cs9example Template**: https://github.com/csids/cs9example
 - **Documentation**: https://www.csids.no/cs9/
 - **Docker Examples**: https://github.com/csids/docker-examples-csids
 

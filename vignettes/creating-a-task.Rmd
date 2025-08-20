@@ -280,8 +280,8 @@ Now you have a boilerplate for a task definition.
 
 
 ```
-Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r': HTTP status was
-'404 Not Found'
+Warning in file(con, "r"): cannot open URL
+'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r': HTTP status was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r'
 https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L21-L43
 
@@ -608,7 +608,8 @@ The entire data selector function should now look like this.
 
 ```
 Warning in file(con, "r"): cannot open URL
-'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_download_and_import_rawdata.r': HTTP status was '404 Not Found'
+'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_download_and_import_rawdata.r': HTTP
+status was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_download_and_import_rawdata.r'
 https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L88-L119
 
