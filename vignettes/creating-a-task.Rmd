@@ -94,55 +94,55 @@ If you go into the script `03_db_schemas.r` you can see a function called `set_d
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/03_db_schemas.r': HTTP status
 was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/03_db_schemas.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L18-L64
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L18-L64
 
-18 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan, index_analysis = index_analysis)
-19 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
-20 |   }
+18 | #
+19 | # ******************************************************************************
+20 | # ******************************************************************************
 21 | 
-22 |   # special case that runs before everything
-23 |   if (argset$first_analysis == TRUE) {
-24 | 
-25 |   }
+22 | #' @import ggplot2
+23 | #' @import data.table
+24 | #' @importFrom magrittr %>% %<>%
+25 | 1
 26 | 
-27 |   a <- data$data$properties$timeseries
-28 |   res <- vector("list", length=length(a) - 1)
-29 |   for(i in seq_along(res)){
-30 |     # i = 1
-31 |     time_from <- a[[i]]$time
-32 |     if("next_1_hours" %in% names(a[[i]]$data)){
-33 |       time_var <- "next_1_hours"
-34 |     } else {
-35 |       time_var <- "next_6_hours"
-36 |     }
-37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
-38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
-39 | 
-40 |     res[[i]] <- data.frame(
-41 |       time_from = as.character(time_from),
-42 |       temp = as.numeric(temp),
-43 |       precip = as.numeric(precip)
-44 |     )
-45 |   }
-46 | 
-47 |   res <- rbindlist(res)
-48 |   res <- res[stringr::str_sub(time_from, 12, 13) %in% c("00", "06", "12", "18")]
-49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
-50 |   res <- res[
-51 |     ,
-52 |     .(
-53 |       temp_max = max(temp),
-54 |       temp_min = min(temp),
-55 |       precip = sum(precip)
-56 |     ),
-57 |     keyby = .(date)
-58 |   ]
-59 | 
-60 |   # we look at the downloaded data
-61 |   # res
-62 | 
-63 |   # we now need to format it
-64 |   res[, granularity_time := "date"]
+27 | #' Declaration of environments that can be used globally
+28 | #' @export global
+29 | global <- new.env()
+30 | 
+31 | # https://github.com/rstudio/rmarkdown/issues/1632
+32 | # An error is thrown when rendering multiple rmarkdown documents in parallel.
+33 | clean_tmpfiles_mod <- function() {
+34 |   # message("Calling clean_tmpfiles_mod()")
+35 | }
+36 | NA
+37 | NA
+38 | NA
+39 | NA
+40 | NA
+41 | NA
+42 | NA
+43 | NA
+44 | NA
+45 | NA
+46 | NA
+47 | NA
+48 | NA
+49 | NA
+50 | NA
+51 | NA
+52 | NA
+53 | NA
+54 | NA
+55 | NA
+56 | NA
+57 | NA
+58 | NA
+59 | NA
+60 | NA
+61 | NA
+62 | NA
+63 | NA
+64 | NA
 ```
 
 We are now going to recreate this schema.
@@ -155,11 +155,11 @@ Start by replacing `GROUPING_VARIANT` in `anon_GROUPING_VARIANT` with the name o
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L20-L22
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L20-L22
 
-20 |   }
+20 | # ******************************************************************************
 21 | 
-22 |   # special case that runs before everything
+22 | #' @import ggplot2
 ```
 Fill this inn for `name_grouping` and `name_variant`. The name of the schema is then `anon_example_weather_rawdata`.
 
@@ -171,11 +171,11 @@ The validators are pre-made and you do not have to change anything.
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L61-L63
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L61-L63
 
-61 |   # res
-62 | 
-63 |   # we now need to format it
+61 | NA
+62 | NA
+63 | NA
 ```
 
 These are validators that check:
@@ -187,27 +187,27 @@ These are validators that check:
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L25-L43
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L25-L43
 
-25 |   }
+25 | 1
 26 | 
-27 |   a <- data$data$properties$timeseries
-28 |   res <- vector("list", length=length(a) - 1)
-29 |   for(i in seq_along(res)){
-30 |     # i = 1
-31 |     time_from <- a[[i]]$time
-32 |     if("next_1_hours" %in% names(a[[i]]$data)){
-33 |       time_var <- "next_1_hours"
-34 |     } else {
-35 |       time_var <- "next_6_hours"
-36 |     }
-37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
-38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
-39 | 
-40 |     res[[i]] <- data.frame(
-41 |       time_from = as.character(time_from),
-42 |       temp = as.numeric(temp),
-43 |       precip = as.numeric(precip)
+27 | #' Declaration of environments that can be used globally
+28 | #' @export global
+29 | global <- new.env()
+30 | 
+31 | # https://github.com/rstudio/rmarkdown/issues/1632
+32 | # An error is thrown when rendering multiple rmarkdown documents in parallel.
+33 | clean_tmpfiles_mod <- function() {
+34 |   # message("Calling clean_tmpfiles_mod()")
+35 | }
+36 | NA
+37 | NA
+38 | NA
+39 | NA
+40 | NA
+41 | NA
+42 | NA
+43 | NA
 ```
 
 The field `info` should contain a short description of the data table.
@@ -218,11 +218,11 @@ Add the spesific column names and types needed. In our case we want to store the
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L45-L47
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L45-L47
 
-45 |   }
-46 | 
-47 |   res <- rbindlist(res)
+45 | NA
+46 | NA
+47 | NA
 ```
 
 These are the extra columns that contain the context-specific data in this dataset.
@@ -234,15 +234,15 @@ The combination of these columns represents a unique row in the dataset. In this
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L49-L55
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L49-L55
 
-49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
-50 |   res <- res[
-51 |     ,
-52 |     .(
-53 |       temp_max = max(temp),
-54 |       temp_min = min(temp),
-55 |       precip = sum(precip)
+49 | NA
+50 | NA
+51 | NA
+52 | NA
+53 | NA
+54 | NA
+55 | NA
 ```
 
 
@@ -251,13 +251,13 @@ https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawd
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L56-L60
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L56-L60
 
-56 |     ),
-57 |     keyby = .(date)
-58 |   ]
-59 | 
-60 |   # we look at the downloaded data
+56 | NA
+57 | NA
+58 | NA
+59 | NA
+60 | NA
 ```
 
 Censoring that is applied to the datasets. In this example we do not apply censoring hence remove the boiler plate suggestions.
@@ -283,31 +283,31 @@ Now you have a boilerplate for a task definition.
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r': HTTP status was
 '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L21-L43
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L21-L43
 
 21 | 
-22 |   # special case that runs before everything
-23 |   if (argset$first_analysis == TRUE) {
-24 | 
-25 |   }
+22 | #' @import ggplot2
+23 | #' @import data.table
+24 | #' @importFrom magrittr %>% %<>%
+25 | 1
 26 | 
-27 |   a <- data$data$properties$timeseries
-28 |   res <- vector("list", length=length(a) - 1)
-29 |   for(i in seq_along(res)){
-30 |     # i = 1
-31 |     time_from <- a[[i]]$time
-32 |     if("next_1_hours" %in% names(a[[i]]$data)){
-33 |       time_var <- "next_1_hours"
-34 |     } else {
-35 |       time_var <- "next_6_hours"
-36 |     }
-37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
-38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
-39 | 
-40 |     res[[i]] <- data.frame(
-41 |       time_from = as.character(time_from),
-42 |       temp = as.numeric(temp),
-43 |       precip = as.numeric(precip)
+27 | #' Declaration of environments that can be used globally
+28 | #' @export global
+29 | global <- new.env()
+30 | 
+31 | # https://github.com/rstudio/rmarkdown/issues/1632
+32 | # An error is thrown when rendering multiple rmarkdown documents in parallel.
+33 | clean_tmpfiles_mod <- function() {
+34 |   # message("Calling clean_tmpfiles_mod()")
+35 | }
+36 | NA
+37 | NA
+38 | NA
+39 | NA
+40 | NA
+41 | NA
+42 | NA
+43 | NA
 ```
 
 #### Task name
@@ -317,11 +317,11 @@ Replace `TASK_NAME` by your task name. For example `weather_download_and_import_
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L22-L24
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L22-L24
 
-22 |   # special case that runs before everything
-23 |   if (argset$first_analysis == TRUE) {
-24 | 
+22 | #' @import ggplot2
+23 | #' @import data.table
+24 | #' @importFrom magrittr %>% %<>%
 ```
 
 Now the name of the task is defined to be `weather_download_and_import_rawdata`.
@@ -330,9 +330,9 @@ Now the name of the task is defined to be `weather_download_and_import_rawdata`.
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L25-L25
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L25-L25
 
-25 |   }
+25 | 1
 ```
 
 We specify that the plans will run sequentially with 1 CPU core. If the number of CPU cores is 2 or higher then the first and last plans will run sequentially, and all the plans in the middle will run in parallel. The first and last plans always run sequentially because this allows us to write "special" code for the first and last plans (i.e. "do this before everything runs" and "do this after everything runs").
@@ -341,13 +341,13 @@ We specify that the plans will run sequentially with 1 CPU core. If the number o
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L26-L30
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L26-L30
 
 26 | 
-27 |   a <- data$data$properties$timeseries
-28 |   res <- vector("list", length=length(a) - 1)
-29 |   for(i in seq_along(res)){
-30 |     # i = 1
+27 | #' Declaration of environments that can be used globally
+28 | #' @export global
+29 | global <- new.env()
+30 | 
 ```
 
 We specify the plan/analysis structure here. You may use one of the following combinations:
@@ -433,9 +433,9 @@ for_each_plan
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L31-L31
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L31-L31
 
-31 |     time_from <- a[[i]]$time
+31 | # https://github.com/rstudio/rmarkdown/issues/1632
 ```
 
 Here we can specify a named list, where each of the named elements will be translated into argset elements that are available for all plans/analyses.
@@ -444,10 +444,10 @@ Here we can specify a named list, where each of the named elements will be trans
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L32-L33
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L32-L33
 
-32 |     if("next_1_hours" %in% names(a[[i]]$data)){
-33 |       time_var <- "next_1_hours"
+32 | # An error is thrown when rendering multiple rmarkdown documents in parallel.
+33 | clean_tmpfiles_mod <- function() {
 ```
 
 If you include a schema called `output`, then these options will let you upsert/insert the returned value from `action_fn_name` at the end of each plan. This is an important nuance, because when you write/develop your task, you can (typically) only write one function (`action_fn_name`) that is applied to all analyses. This means that if your `action_fn` wants to upsert/insert data to a schema, it (typically) will do this within *every* analysis. If you have an analysis-heavy task, then this will be a lot of frequent traffic to the databases, which may affect performance. By using these flags, you can restrict the upsert/insert to the end of the plan, which may increase performance.
@@ -464,9 +464,9 @@ In our case the package is `scskeleton` and the TASK is `weather_download_and_im
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L34-L34
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L34-L34
 
-34 |     } else {
+34 |   # message("Calling clean_tmpfiles_mod()")
 ```
 
 
@@ -482,9 +482,9 @@ Try and guess what this would be in our example.
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L35-L35
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L35-L35
 
-35 |       time_var <- "next_6_hours"
+35 | }
 ```
 
 
@@ -496,14 +496,14 @@ In our example we do not yet have data so we only specify the schema we have ear
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L36-L41
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L36-L41
 
-36 |     }
-37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
-38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
-39 | 
-40 |     res[[i]] <- data.frame(
-41 |       time_from = as.character(time_from),
+36 | NA
+37 | NA
+38 | NA
+39 | NA
+40 | NA
+41 | NA
 ```
 
 #### Task description
@@ -536,16 +536,16 @@ Just like that, a pre-made boilerplate is ready to go! Find the data_selector pa
 Warning in file(con, "r"): cannot open URL
 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_download_and_import_rawdata.r': HTTP status was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_download_and_import_rawdata.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L94-L101
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L94-L101
 
- 94 |     index_plan <- 1
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
-101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
+ 94 | NA
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
+101 | NA
 ```
 
 At the top of all `data_selector_fn`s you will see a section of code wrapped inside `if (plnr::is_run_directly()) {`. This code will **only** be run if it is manually highlighted inside RStudio and then "run". This is extremely beneficial to the user, because it means that the user can easily write small pieces of code that are only used during development, which will not be run when the code is run "properly".
@@ -573,17 +573,17 @@ Use xml2::read_xml() to read the content. Take a peak below and implement it you
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L103-L111
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L103-L111
 
-103 |     long = mean(long)
-104 |   )]
-105 | 
-106 |   # download the forecast for the specified location_code
-107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
-108 |   d <- httr::content(d)
-109 | 
-110 |   # The variable returned must be a named list
-111 |   retval <- list(
+103 | NA
+104 | NA
+105 | NA
+106 | NA
+107 | NA
+108 | NA
+109 | NA
+110 | NA
+111 | NA
 ```
 
 
@@ -595,12 +595,12 @@ In your task replace "NAME" by the name for your data for example "data".
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L113-L116
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L113-L116
 
-113 |   )
-114 | 
-115 |   retval
-116 | }
+113 | NA
+114 | NA
+115 | NA
+116 | NA
 ```
 
 The entire data selector function should now look like this.
@@ -610,39 +610,39 @@ The entire data selector function should now look like this.
 Warning in file(con, "r"): cannot open URL
 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_download_and_import_rawdata.r': HTTP status was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_download_and_import_rawdata.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L88-L119
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L88-L119
 
- 88 | #' @param tables DB tables
- 89 | #' @export
- 90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
- 91 |   if (plnr::is_run_directly()) {
- 92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
- 93 | 
- 94 |     index_plan <- 1
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
-101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
-102 |     lat = mean(lat),
-103 |     long = mean(long)
-104 |   )]
-105 | 
-106 |   # download the forecast for the specified location_code
-107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
-108 |   d <- httr::content(d)
-109 | 
-110 |   # The variable returned must be a named list
-111 |   retval <- list(
-112 |     "data" = d
-113 |   )
-114 | 
-115 |   retval
-116 | }
-117 | 
-118 | # **** functions **** ----
+ 88 | NA
+ 89 | NA
+ 90 | NA
+ 91 | NA
+ 92 | NA
+ 93 | NA
+ 94 | NA
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
+101 | NA
+102 | NA
+103 | NA
+104 | NA
+105 | NA
+106 | NA
+107 | NA
+108 | NA
+109 | NA
+110 | NA
+111 | NA
+112 | NA
+113 | NA
+114 | NA
+115 | NA
+116 | NA
+117 | NA
+118 | NA
 119 | NA
 ```
 
@@ -664,16 +664,16 @@ What do you actually want to *do* with them? Find the action part in your script
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L95-L102
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L95-L102
 
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
-101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
-102 |     lat = mean(lat),
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
+101 | NA
+102 | NA
 ```
 
 At the top of all `action_fn`s you will again see a section of code wrapped inside `if (plnr::is_run_directly()) {`. This works exactly the same as for the data_selector_fn.
@@ -686,12 +686,12 @@ Look at the arguments for `weather_download_and_import_rawdata_data_selector` an
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L21-L24
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L21-L24
 
 21 | 
-22 |   # special case that runs before everything
-23 |   if (argset$first_analysis == TRUE) {
-24 | 
+22 | #' @import ggplot2
+23 | #' @import data.table
+24 | #' @importFrom magrittr %>% %<>%
 ```
 
 This code is only run if it is the first analysis. It is typically used to drop rows in a database, so that the following code may `insert` data (faster) instead of using `upsert` data (slower). If you ran the full task at the beginning of this tutorial you can insert `schema$anon_example_weather_rawdata$drop_all_rows()` inside here to delete the stored data.
@@ -703,63 +703,63 @@ In this tutorial we do not go in to much detail about how the data is collected 
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L26-L80
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L26-L80
 
 26 | 
-27 |   a <- data$data$properties$timeseries
-28 |   res <- vector("list", length=length(a) - 1)
-29 |   for(i in seq_along(res)){
-30 |     # i = 1
-31 |     time_from <- a[[i]]$time
-32 |     if("next_1_hours" %in% names(a[[i]]$data)){
-33 |       time_var <- "next_1_hours"
-34 |     } else {
-35 |       time_var <- "next_6_hours"
-36 |     }
-37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
-38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
-39 | 
-40 |     res[[i]] <- data.frame(
-41 |       time_from = as.character(time_from),
-42 |       temp = as.numeric(temp),
-43 |       precip = as.numeric(precip)
-44 |     )
-45 |   }
-46 | 
-47 |   res <- rbindlist(res)
-48 |   res <- res[stringr::str_sub(time_from, 12, 13) %in% c("00", "06", "12", "18")]
-49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
-50 |   res <- res[
-51 |     ,
-52 |     .(
-53 |       temp_max = max(temp),
-54 |       temp_min = min(temp),
-55 |       precip = sum(precip)
-56 |     ),
-57 |     keyby = .(date)
-58 |   ]
-59 | 
-60 |   # we look at the downloaded data
-61 |   # res
-62 | 
-63 |   # we now need to format it
-64 |   res[, granularity_time := "date"]
-65 |   res[, sex := "total"]
-66 |   res[, age := "total"]
-67 |   res[, location_code := argset$location_code]
-68 |   res[, border := global$border]
-69 | 
-70 |   # fill in missing structural variables
-71 |   cstidy::set_csfmt_rts_data_v2(res)
-72 | 
-73 |   # we look at the downloaded data
-74 |   # res
-75 | 
-76 |   # put data in db table
-77 |   tables$anon_example_weather_rawdata$upsert_data(res)
-78 | 
-79 |   # special case that runs after everything
-80 |   if (argset$last_analysis == TRUE) {
+27 | #' Declaration of environments that can be used globally
+28 | #' @export global
+29 | global <- new.env()
+30 | 
+31 | # https://github.com/rstudio/rmarkdown/issues/1632
+32 | # An error is thrown when rendering multiple rmarkdown documents in parallel.
+33 | clean_tmpfiles_mod <- function() {
+34 |   # message("Calling clean_tmpfiles_mod()")
+35 | }
+36 | NA
+37 | NA
+38 | NA
+39 | NA
+40 | NA
+41 | NA
+42 | NA
+43 | NA
+44 | NA
+45 | NA
+46 | NA
+47 | NA
+48 | NA
+49 | NA
+50 | NA
+51 | NA
+52 | NA
+53 | NA
+54 | NA
+55 | NA
+56 | NA
+57 | NA
+58 | NA
+59 | NA
+60 | NA
+61 | NA
+62 | NA
+63 | NA
+64 | NA
+65 | NA
+66 | NA
+67 | NA
+68 | NA
+69 | NA
+70 | NA
+71 | NA
+72 | NA
+73 | NA
+74 | NA
+75 | NA
+76 | NA
+77 | NA
+78 | NA
+79 | NA
+80 | NA
 ```
 
 Every analysis will perform this code.
@@ -770,7 +770,7 @@ Run through it line by line and pay special attention to how the data from the d
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L26-L26
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L26-L26
 
 26 | 
 ```
@@ -781,15 +781,15 @@ Here you see that we access the data that was passed to us from `data_selector_f
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L68-L74
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L68-L74
 
-68 |   res[, border := global$border]
-69 | 
-70 |   # fill in missing structural variables
-71 |   cstidy::set_csfmt_rts_data_v2(res)
-72 | 
-73 |   # we look at the downloaded data
-74 |   # res
+68 | NA
+69 | NA
+70 | NA
+71 | NA
+72 | NA
+73 | NA
+74 | NA
 ```
 
 We have 16 structural data columns that we expect. These columns typically have a lot of redundancy (e.g. date, isoyear, isoyearweek). To make things easier, we provide a function called `cstidy::set_csfmt_rts_data_v1` that uses the information present in the dataset to try and impute the missing structural data.
@@ -798,9 +798,9 @@ We have 16 structural data columns that we expect. These columns typically have 
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L80-L80
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L80-L80
 
-80 |   if (argset$last_analysis == TRUE) {
+80 | NA
 ```
 
 Here we insert the data to the database table.
@@ -813,12 +813,12 @@ If you want to deleate the data use `schema$NAME_DATABASE$drop_all_rows()` in ou
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L21-L24
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L21-L24
 
 21 | 
-22 |   # special case that runs before everything
-23 |   if (argset$first_analysis == TRUE) {
-24 | 
+22 | #' @import ggplot2
+23 | #' @import data.table
+24 | #' @importFrom magrittr %>% %<>%
 ```
 
 This code is only run if it is the last analysis. It is typically used to copy an internal database table (i.e. one that the public is not directly viewing) to an external database (i.e. one that the public is directly viewing).
@@ -831,94 +831,94 @@ By distinguishing between internal database tables (e.g. anon_webkhtint_test) an
 The action function should look like this.
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L1-L86
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L1-L86
 
- 1 | # **** action **** ----
- 2 | #' weather_download_and_import_rawdata (action)
- 3 | #' @param data Data
- 4 | #' @param argset Argset
- 5 | #' @param tables DB tables
- 6 | #' @export
- 7 | weather_download_and_import_rawdata_action <- function(data, argset, tables) {
- 8 |   # cs9::run_task_sequentially_as_rstudio_job_using_load_all("weather_download_and_import_rawdata")
- 9 |   # To be run outside of rstudio: cs9example::global$ss$run_task("weather_download_and_import_rawdata")
-10 | 
-11 |   if (plnr::is_run_directly()) {
-12 |     # global$ss$shortcut_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
-13 | 
-14 |     index_plan <- 1
-15 |     index_analysis <- 1
-16 | 
-17 |     data <- global$ss$shortcut_get_data("weather_download_and_import_rawdata", index_plan = index_plan)
-18 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan, index_analysis = index_analysis)
-19 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
-20 |   }
+ 1 | # ******************************************************************************
+ 2 | # ******************************************************************************
+ 3 | #
+ 4 | # 00_env_and_namespace.R
+ 5 | #
+ 6 | # PURPOSE 1:
+ 7 | #   Use roxygen2 to import ggplot2, data.table, %>%, and %<>% into the namespace,
+ 8 | #   because these are the most commonly used packages/functions.
+ 9 | #
+10 | # PURPOSE 2:
+11 | #   Declaration of environments that can be used globally.
+12 | #
+13 | # PURPOSE 3:
+14 | #   Fix issues/integration with other packages.
+15 | #
+16 | #   Most notably is the issue with rmarkdown, where an error is thrown when
+17 | #   rendering multiple rmarkdown documents in parallel.
+18 | #
+19 | # ******************************************************************************
+20 | # ******************************************************************************
 21 | 
-22 |   # special case that runs before everything
-23 |   if (argset$first_analysis == TRUE) {
-24 | 
-25 |   }
+22 | #' @import ggplot2
+23 | #' @import data.table
+24 | #' @importFrom magrittr %>% %<>%
+25 | 1
 26 | 
-27 |   a <- data$data$properties$timeseries
-28 |   res <- vector("list", length=length(a) - 1)
-29 |   for(i in seq_along(res)){
-30 |     # i = 1
-31 |     time_from <- a[[i]]$time
-32 |     if("next_1_hours" %in% names(a[[i]]$data)){
-33 |       time_var <- "next_1_hours"
-34 |     } else {
-35 |       time_var <- "next_6_hours"
-36 |     }
-37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
-38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
-39 | 
-40 |     res[[i]] <- data.frame(
-41 |       time_from = as.character(time_from),
-42 |       temp = as.numeric(temp),
-43 |       precip = as.numeric(precip)
-44 |     )
-45 |   }
-46 | 
-47 |   res <- rbindlist(res)
-48 |   res <- res[stringr::str_sub(time_from, 12, 13) %in% c("00", "06", "12", "18")]
-49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
-50 |   res <- res[
-51 |     ,
-52 |     .(
-53 |       temp_max = max(temp),
-54 |       temp_min = min(temp),
-55 |       precip = sum(precip)
-56 |     ),
-57 |     keyby = .(date)
-58 |   ]
-59 | 
-60 |   # we look at the downloaded data
-61 |   # res
-62 | 
-63 |   # we now need to format it
-64 |   res[, granularity_time := "date"]
-65 |   res[, sex := "total"]
-66 |   res[, age := "total"]
-67 |   res[, location_code := argset$location_code]
-68 |   res[, border := global$border]
-69 | 
-70 |   # fill in missing structural variables
-71 |   cstidy::set_csfmt_rts_data_v2(res)
-72 | 
-73 |   # we look at the downloaded data
-74 |   # res
-75 | 
-76 |   # put data in db table
-77 |   tables$anon_example_weather_rawdata$upsert_data(res)
-78 | 
-79 |   # special case that runs after everything
-80 |   if (argset$last_analysis == TRUE) {
-81 | 
-82 |   }
-83 | }
-84 | 
-85 | # **** data_selector **** ----
-86 | #' weather_download_and_import_rawdata (data selector)
+27 | #' Declaration of environments that can be used globally
+28 | #' @export global
+29 | global <- new.env()
+30 | 
+31 | # https://github.com/rstudio/rmarkdown/issues/1632
+32 | # An error is thrown when rendering multiple rmarkdown documents in parallel.
+33 | clean_tmpfiles_mod <- function() {
+34 |   # message("Calling clean_tmpfiles_mod()")
+35 | }
+36 | NA
+37 | NA
+38 | NA
+39 | NA
+40 | NA
+41 | NA
+42 | NA
+43 | NA
+44 | NA
+45 | NA
+46 | NA
+47 | NA
+48 | NA
+49 | NA
+50 | NA
+51 | NA
+52 | NA
+53 | NA
+54 | NA
+55 | NA
+56 | NA
+57 | NA
+58 | NA
+59 | NA
+60 | NA
+61 | NA
+62 | NA
+63 | NA
+64 | NA
+65 | NA
+66 | NA
+67 | NA
+68 | NA
+69 | NA
+70 | NA
+71 | NA
+72 | NA
+73 | NA
+74 | NA
+75 | NA
+76 | NA
+77 | NA
+78 | NA
+79 | NA
+80 | NA
+81 | NA
+82 | NA
+83 | NA
+84 | NA
+85 | NA
+86 | NA
 ```
 
 Try and restart, load all and run the code line by line.
@@ -958,56 +958,56 @@ First we start by creating a schema for the data we want this task to store. The
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/03_db_schemas.r': HTTP status
 was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/03_db_schemas.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L66-L113
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L66-L113
 
- 66 |   res[, age := "total"]
- 67 |   res[, location_code := argset$location_code]
- 68 |   res[, border := global$border]
- 69 | 
- 70 |   # fill in missing structural variables
- 71 |   cstidy::set_csfmt_rts_data_v2(res)
- 72 | 
- 73 |   # we look at the downloaded data
- 74 |   # res
- 75 | 
- 76 |   # put data in db table
- 77 |   tables$anon_example_weather_rawdata$upsert_data(res)
- 78 | 
- 79 |   # special case that runs after everything
- 80 |   if (argset$last_analysis == TRUE) {
- 81 | 
- 82 |   }
- 83 | }
- 84 | 
- 85 | # **** data_selector **** ----
- 86 | #' weather_download_and_import_rawdata (data selector)
- 87 | #' @param argset Argset
- 88 | #' @param tables DB tables
- 89 | #' @export
- 90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
- 91 |   if (plnr::is_run_directly()) {
- 92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
- 93 | 
- 94 |     index_plan <- 1
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
-101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
-102 |     lat = mean(lat),
-103 |     long = mean(long)
-104 |   )]
-105 | 
-106 |   # download the forecast for the specified location_code
-107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
-108 |   d <- httr::content(d)
-109 | 
-110 |   # The variable returned must be a named list
-111 |   retval <- list(
-112 |     "data" = d
-113 |   )
+ 66 | NA
+ 67 | NA
+ 68 | NA
+ 69 | NA
+ 70 | NA
+ 71 | NA
+ 72 | NA
+ 73 | NA
+ 74 | NA
+ 75 | NA
+ 76 | NA
+ 77 | NA
+ 78 | NA
+ 79 | NA
+ 80 | NA
+ 81 | NA
+ 82 | NA
+ 83 | NA
+ 84 | NA
+ 85 | NA
+ 86 | NA
+ 87 | NA
+ 88 | NA
+ 89 | NA
+ 90 | NA
+ 91 | NA
+ 92 | NA
+ 93 | NA
+ 94 | NA
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
+101 | NA
+102 | NA
+103 | NA
+104 | NA
+105 | NA
+106 | NA
+107 | NA
+108 | NA
+109 | NA
+110 | NA
+111 | NA
+112 | NA
+113 | NA
 ```
 
 ### 2. Task definition (task_from_config)
@@ -1022,13 +1022,13 @@ The next step is to define the task in `04_tasks.r` . For this task the aim is t
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r': HTTP status was
 '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L52-L56
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L52-L56
 
-52 |     .(
-53 |       temp_max = max(temp),
-54 |       temp_min = min(temp),
-55 |       precip = sum(precip)
-56 |     ),
+52 | NA
+53 | NA
+54 | NA
+55 | NA
+56 | NA
 ```
 
 For this particular task, we have decided to only implement one plan containing one analysis, which will process all of the data at once.
@@ -1039,15 +1039,15 @@ If we were only aggregating municipality data to the county level, we could have
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L62-L68
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L62-L68
 
-62 | 
-63 |   # we now need to format it
-64 |   res[, granularity_time := "date"]
-65 |   res[, sex := "total"]
-66 |   res[, age := "total"]
-67 |   res[, location_code := argset$location_code]
-68 |   res[, border := global$border]
+62 | NA
+63 | NA
+64 | NA
+65 | NA
+66 | NA
+67 | NA
+68 | NA
 ```
 
 We need to specify the schemas that are used for both input and output.
@@ -1059,34 +1059,34 @@ We need to specify the schemas that are used for both input and output.
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r': HTTP status was
 '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L45-L70
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L45-L70
 
-45 |   }
-46 | 
-47 |   res <- rbindlist(res)
-48 |   res <- res[stringr::str_sub(time_from, 12, 13) %in% c("00", "06", "12", "18")]
-49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
-50 |   res <- res[
-51 |     ,
-52 |     .(
-53 |       temp_max = max(temp),
-54 |       temp_min = min(temp),
-55 |       precip = sum(precip)
-56 |     ),
-57 |     keyby = .(date)
-58 |   ]
-59 | 
-60 |   # we look at the downloaded data
-61 |   # res
-62 | 
-63 |   # we now need to format it
-64 |   res[, granularity_time := "date"]
-65 |   res[, sex := "total"]
-66 |   res[, age := "total"]
-67 |   res[, location_code := argset$location_code]
-68 |   res[, border := global$border]
-69 | 
-70 |   # fill in missing structural variables
+45 | NA
+46 | NA
+47 | NA
+48 | NA
+49 | NA
+50 | NA
+51 | NA
+52 | NA
+53 | NA
+54 | NA
+55 | NA
+56 | NA
+57 | NA
+58 | NA
+59 | NA
+60 | NA
+61 | NA
+62 | NA
+63 | NA
+64 | NA
+65 | NA
+66 | NA
+67 | NA
+68 | NA
+69 | NA
+70 | NA
 ```
 
 ### 3. data_selector_fn
@@ -1102,7 +1102,7 @@ Next fill inn the name of the input schema instead of `SCHEMA_NAME`, connecting 
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_clean_data.r': HTTP
 status was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_clean_data.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L200-L200
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L200-L200
 
 200 | NA
 ```
@@ -1119,7 +1119,7 @@ Fill inn the mandatory filters as best you can and take a peak below if you are 
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L201-L212
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L201-L212
 
 201 | NA
 202 | NA
@@ -1156,7 +1156,7 @@ Use one of these functions and replace the dplyr::select part in your data selec
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L213-L237
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L213-L237
 
 213 | NA
 214 | NA
@@ -1190,7 +1190,7 @@ https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawd
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L238-L238
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L238-L238
 
 238 | NA
 ```
@@ -1201,7 +1201,7 @@ This executes the SQL call to the database.
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L239-L243
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L239-L243
 
 239 | NA
 240 | NA
@@ -1223,7 +1223,7 @@ Check that you data selector function works by saving, restarting, and loading a
 #### Example of the data_selector function
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L184-L251
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L184-L251
 
 184 | NA
 185 | NA
@@ -1343,26 +1343,26 @@ Next we want to merge the information we have on weather data for the municipali
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L67-L84
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L67-L84
 
-67 |   res[, location_code := argset$location_code]
-68 |   res[, border := global$border]
-69 | 
-70 |   # fill in missing structural variables
-71 |   cstidy::set_csfmt_rts_data_v2(res)
-72 | 
-73 |   # we look at the downloaded data
-74 |   # res
-75 | 
-76 |   # put data in db table
-77 |   tables$anon_example_weather_rawdata$upsert_data(res)
-78 | 
-79 |   # special case that runs after everything
-80 |   if (argset$last_analysis == TRUE) {
-81 | 
-82 |   }
-83 | }
-84 | 
+67 | NA
+68 | NA
+69 | NA
+70 | NA
+71 | NA
+72 | NA
+73 | NA
+74 | NA
+75 | NA
+76 | NA
+77 | NA
+78 | NA
+79 | NA
+80 | NA
+81 | NA
+82 | NA
+83 | NA
+84 | NA
 ```
 
 #### Aggregate to a county level
@@ -1371,32 +1371,32 @@ Now aggregate the data to a county level with the help of `fhidata::norway_locat
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L86-L109
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L86-L109
 
- 86 | #' weather_download_and_import_rawdata (data selector)
- 87 | #' @param argset Argset
- 88 | #' @param tables DB tables
- 89 | #' @export
- 90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
- 91 |   if (plnr::is_run_directly()) {
- 92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
- 93 | 
- 94 |     index_plan <- 1
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
-101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
-102 |     lat = mean(lat),
-103 |     long = mean(long)
-104 |   )]
-105 | 
-106 |   # download the forecast for the specified location_code
-107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
-108 |   d <- httr::content(d)
-109 | 
+ 86 | NA
+ 87 | NA
+ 88 | NA
+ 89 | NA
+ 90 | NA
+ 91 | NA
+ 92 | NA
+ 93 | NA
+ 94 | NA
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
+101 | NA
+102 | NA
+103 | NA
+104 | NA
+105 | NA
+106 | NA
+107 | NA
+108 | NA
+109 | NA
 ```
 
 
@@ -1406,16 +1406,16 @@ There is no overlap in municipalities, hence aggregating to a national level can
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L111-L127
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L111-L127
 
-111 |   retval <- list(
-112 |     "data" = d
-113 |   )
-114 | 
-115 |   retval
-116 | }
-117 | 
-118 | # **** functions **** ----
+111 | NA
+112 | NA
+113 | NA
+114 | NA
+115 | NA
+116 | NA
+117 | NA
+118 | NA
 119 | NA
 120 | NA
 121 | NA
@@ -1438,7 +1438,7 @@ Combine all the different granularity geos by using rbindlist and storing it to 
 As a challenge try and aggregate the daily data to weekly data! You can use `lubridate::isoyear()` and `lubridate::isoweek()` functions to get the ISO year and week of a date.
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L134-L153
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L134-L153
 
 134 | NA
 135 | NA
@@ -1471,7 +1471,7 @@ Rbindlist binds the two data tables together.
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L155-L173
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L155-L173
 
 155 | NA
 156 | NA
@@ -1500,7 +1500,7 @@ Insert the final data table into the database specified in the task description
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L175-L176
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L175-L176
 
 175 | NA
 176 | NA
@@ -1514,126 +1514,126 @@ Run the entire task by running `tm_run_task("weather_clean_data")`. If you ran t
 #### Full example
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L1-L182
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L1-L182
 
-  1 | # **** action **** ----
-  2 | #' weather_download_and_import_rawdata (action)
-  3 | #' @param data Data
-  4 | #' @param argset Argset
-  5 | #' @param tables DB tables
-  6 | #' @export
-  7 | weather_download_and_import_rawdata_action <- function(data, argset, tables) {
-  8 |   # cs9::run_task_sequentially_as_rstudio_job_using_load_all("weather_download_and_import_rawdata")
-  9 |   # To be run outside of rstudio: cs9example::global$ss$run_task("weather_download_and_import_rawdata")
- 10 | 
- 11 |   if (plnr::is_run_directly()) {
- 12 |     # global$ss$shortcut_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
- 13 | 
- 14 |     index_plan <- 1
- 15 |     index_analysis <- 1
- 16 | 
- 17 |     data <- global$ss$shortcut_get_data("weather_download_and_import_rawdata", index_plan = index_plan)
- 18 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan, index_analysis = index_analysis)
- 19 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 20 |   }
+  1 | # ******************************************************************************
+  2 | # ******************************************************************************
+  3 | #
+  4 | # 00_env_and_namespace.R
+  5 | #
+  6 | # PURPOSE 1:
+  7 | #   Use roxygen2 to import ggplot2, data.table, %>%, and %<>% into the namespace,
+  8 | #   because these are the most commonly used packages/functions.
+  9 | #
+ 10 | # PURPOSE 2:
+ 11 | #   Declaration of environments that can be used globally.
+ 12 | #
+ 13 | # PURPOSE 3:
+ 14 | #   Fix issues/integration with other packages.
+ 15 | #
+ 16 | #   Most notably is the issue with rmarkdown, where an error is thrown when
+ 17 | #   rendering multiple rmarkdown documents in parallel.
+ 18 | #
+ 19 | # ******************************************************************************
+ 20 | # ******************************************************************************
  21 | 
- 22 |   # special case that runs before everything
- 23 |   if (argset$first_analysis == TRUE) {
- 24 | 
- 25 |   }
+ 22 | #' @import ggplot2
+ 23 | #' @import data.table
+ 24 | #' @importFrom magrittr %>% %<>%
+ 25 | 1
  26 | 
- 27 |   a <- data$data$properties$timeseries
- 28 |   res <- vector("list", length=length(a) - 1)
- 29 |   for(i in seq_along(res)){
- 30 |     # i = 1
- 31 |     time_from <- a[[i]]$time
- 32 |     if("next_1_hours" %in% names(a[[i]]$data)){
- 33 |       time_var <- "next_1_hours"
- 34 |     } else {
- 35 |       time_var <- "next_6_hours"
- 36 |     }
- 37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
- 38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
- 39 | 
- 40 |     res[[i]] <- data.frame(
- 41 |       time_from = as.character(time_from),
- 42 |       temp = as.numeric(temp),
- 43 |       precip = as.numeric(precip)
- 44 |     )
- 45 |   }
- 46 | 
- 47 |   res <- rbindlist(res)
- 48 |   res <- res[stringr::str_sub(time_from, 12, 13) %in% c("00", "06", "12", "18")]
- 49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
- 50 |   res <- res[
- 51 |     ,
- 52 |     .(
- 53 |       temp_max = max(temp),
- 54 |       temp_min = min(temp),
- 55 |       precip = sum(precip)
- 56 |     ),
- 57 |     keyby = .(date)
- 58 |   ]
- 59 | 
- 60 |   # we look at the downloaded data
- 61 |   # res
- 62 | 
- 63 |   # we now need to format it
- 64 |   res[, granularity_time := "date"]
- 65 |   res[, sex := "total"]
- 66 |   res[, age := "total"]
- 67 |   res[, location_code := argset$location_code]
- 68 |   res[, border := global$border]
- 69 | 
- 70 |   # fill in missing structural variables
- 71 |   cstidy::set_csfmt_rts_data_v2(res)
- 72 | 
- 73 |   # we look at the downloaded data
- 74 |   # res
- 75 | 
- 76 |   # put data in db table
- 77 |   tables$anon_example_weather_rawdata$upsert_data(res)
- 78 | 
- 79 |   # special case that runs after everything
- 80 |   if (argset$last_analysis == TRUE) {
- 81 | 
- 82 |   }
- 83 | }
- 84 | 
- 85 | # **** data_selector **** ----
- 86 | #' weather_download_and_import_rawdata (data selector)
- 87 | #' @param argset Argset
- 88 | #' @param tables DB tables
- 89 | #' @export
- 90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
- 91 |   if (plnr::is_run_directly()) {
- 92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
- 93 | 
- 94 |     index_plan <- 1
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
-101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
-102 |     lat = mean(lat),
-103 |     long = mean(long)
-104 |   )]
-105 | 
-106 |   # download the forecast for the specified location_code
-107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
-108 |   d <- httr::content(d)
-109 | 
-110 |   # The variable returned must be a named list
-111 |   retval <- list(
-112 |     "data" = d
-113 |   )
-114 | 
-115 |   retval
-116 | }
-117 | 
-118 | # **** functions **** ----
+ 27 | #' Declaration of environments that can be used globally
+ 28 | #' @export global
+ 29 | global <- new.env()
+ 30 | 
+ 31 | # https://github.com/rstudio/rmarkdown/issues/1632
+ 32 | # An error is thrown when rendering multiple rmarkdown documents in parallel.
+ 33 | clean_tmpfiles_mod <- function() {
+ 34 |   # message("Calling clean_tmpfiles_mod()")
+ 35 | }
+ 36 | NA
+ 37 | NA
+ 38 | NA
+ 39 | NA
+ 40 | NA
+ 41 | NA
+ 42 | NA
+ 43 | NA
+ 44 | NA
+ 45 | NA
+ 46 | NA
+ 47 | NA
+ 48 | NA
+ 49 | NA
+ 50 | NA
+ 51 | NA
+ 52 | NA
+ 53 | NA
+ 54 | NA
+ 55 | NA
+ 56 | NA
+ 57 | NA
+ 58 | NA
+ 59 | NA
+ 60 | NA
+ 61 | NA
+ 62 | NA
+ 63 | NA
+ 64 | NA
+ 65 | NA
+ 66 | NA
+ 67 | NA
+ 68 | NA
+ 69 | NA
+ 70 | NA
+ 71 | NA
+ 72 | NA
+ 73 | NA
+ 74 | NA
+ 75 | NA
+ 76 | NA
+ 77 | NA
+ 78 | NA
+ 79 | NA
+ 80 | NA
+ 81 | NA
+ 82 | NA
+ 83 | NA
+ 84 | NA
+ 85 | NA
+ 86 | NA
+ 87 | NA
+ 88 | NA
+ 89 | NA
+ 90 | NA
+ 91 | NA
+ 92 | NA
+ 93 | NA
+ 94 | NA
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
+101 | NA
+102 | NA
+103 | NA
+104 | NA
+105 | NA
+106 | NA
+107 | NA
+108 | NA
+109 | NA
+110 | NA
+111 | NA
+112 | NA
+113 | NA
+114 | NA
+115 | NA
+116 | NA
+117 | NA
+118 | NA
 119 | NA
 120 | NA
 121 | NA
@@ -1709,13 +1709,13 @@ This means we need 11 plans, one for each county. We use input data generated by
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L84-L88
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L84-L88
 
-84 | 
-85 | # **** data_selector **** ----
-86 | #' weather_download_and_import_rawdata (data selector)
-87 | #' @param argset Argset
-88 | #' @param tables DB tables
+84 | NA
+85 | NA
+86 | NA
+87 | NA
+88 | NA
 ```
 
 The benefits of placing the output directories and filenames in the task declaration are:
@@ -1739,55 +1739,55 @@ Try putting everything you have learned so fare together and create this task by
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/03_db_schemas.r': HTTP status
 was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/03_db_schemas.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L66-L112
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L66-L112
 
- 66 |   res[, age := "total"]
- 67 |   res[, location_code := argset$location_code]
- 68 |   res[, border := global$border]
- 69 | 
- 70 |   # fill in missing structural variables
- 71 |   cstidy::set_csfmt_rts_data_v2(res)
- 72 | 
- 73 |   # we look at the downloaded data
- 74 |   # res
- 75 | 
- 76 |   # put data in db table
- 77 |   tables$anon_example_weather_rawdata$upsert_data(res)
- 78 | 
- 79 |   # special case that runs after everything
- 80 |   if (argset$last_analysis == TRUE) {
- 81 | 
- 82 |   }
- 83 | }
- 84 | 
- 85 | # **** data_selector **** ----
- 86 | #' weather_download_and_import_rawdata (data selector)
- 87 | #' @param argset Argset
- 88 | #' @param tables DB tables
- 89 | #' @export
- 90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
- 91 |   if (plnr::is_run_directly()) {
- 92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
- 93 | 
- 94 |     index_plan <- 1
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
-101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
-102 |     lat = mean(lat),
-103 |     long = mean(long)
-104 |   )]
-105 | 
-106 |   # download the forecast for the specified location_code
-107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
-108 |   d <- httr::content(d)
-109 | 
-110 |   # The variable returned must be a named list
-111 |   retval <- list(
-112 |     "data" = d
+ 66 | NA
+ 67 | NA
+ 68 | NA
+ 69 | NA
+ 70 | NA
+ 71 | NA
+ 72 | NA
+ 73 | NA
+ 74 | NA
+ 75 | NA
+ 76 | NA
+ 77 | NA
+ 78 | NA
+ 79 | NA
+ 80 | NA
+ 81 | NA
+ 82 | NA
+ 83 | NA
+ 84 | NA
+ 85 | NA
+ 86 | NA
+ 87 | NA
+ 88 | NA
+ 89 | NA
+ 90 | NA
+ 91 | NA
+ 92 | NA
+ 93 | NA
+ 94 | NA
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
+101 | NA
+102 | NA
+103 | NA
+104 | NA
+105 | NA
+106 | NA
+107 | NA
+108 | NA
+109 | NA
+110 | NA
+111 | NA
+112 | NA
 ```
 
 This schema has already been created by the previous task `weather_clean_data`.
@@ -1799,50 +1799,50 @@ This schema has already been created by the previous task `weather_clean_data`.
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r': HTTP status was
 '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/04_tasks.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L72-L100
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L72-L100
 
- 72 | 
- 73 |   # we look at the downloaded data
- 74 |   # res
- 75 | 
- 76 |   # put data in db table
- 77 |   tables$anon_example_weather_rawdata$upsert_data(res)
- 78 | 
- 79 |   # special case that runs after everything
- 80 |   if (argset$last_analysis == TRUE) {
- 81 | 
- 82 |   }
- 83 | }
- 84 | 
- 85 | # **** data_selector **** ----
- 86 | #' weather_download_and_import_rawdata (data selector)
- 87 | #' @param argset Argset
- 88 | #' @param tables DB tables
- 89 | #' @export
- 90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
- 91 |   if (plnr::is_run_directly()) {
- 92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
- 93 | 
- 94 |     index_plan <- 1
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
+ 72 | NA
+ 73 | NA
+ 74 | NA
+ 75 | NA
+ 76 | NA
+ 77 | NA
+ 78 | NA
+ 79 | NA
+ 80 | NA
+ 81 | NA
+ 82 | NA
+ 83 | NA
+ 84 | NA
+ 85 | NA
+ 86 | NA
+ 87 | NA
+ 88 | NA
+ 89 | NA
+ 90 | NA
+ 91 | NA
+ 92 | NA
+ 93 | NA
+ 94 | NA
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
 ```
 
 #### Plan/analysis structure
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L79-L83
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L79-L83
 
-79 |   # special case that runs after everything
-80 |   if (argset$last_analysis == TRUE) {
-81 | 
-82 |   }
-83 | }
+79 | NA
+80 | NA
+81 | NA
+82 | NA
+83 | NA
 ```
 
 Here we choose a plan-heavy approach (11 plans, 1 analysis per plan) to minimize the amount of data loaded into RAM at any point in time.
@@ -1851,13 +1851,13 @@ Here we choose a plan-heavy approach (11 plans, 1 analysis per plan) to minimize
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L84-L88
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L84-L88
 
-84 | 
-85 | # **** data_selector **** ----
-86 | #' weather_download_and_import_rawdata (data selector)
-87 | #' @param argset Argset
-88 | #' @param tables DB tables
+84 | NA
+85 | NA
+86 | NA
+87 | NA
+88 | NA
 ```
 
 
@@ -1868,125 +1868,125 @@ https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawd
 Warning in file(con, "r"): cannot open URL 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_export_plots.r': HTTP
 status was '404 Not Found'
 Error in file(con, "r"): cannot open the connection to 'https://raw.githubusercontent.com/sykdomspulsen-org/sc-tutorial-end/main/R/weather_export_plots.r'
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L45-L110
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L45-L110
 
- 45 |   }
- 46 | 
- 47 |   res <- rbindlist(res)
- 48 |   res <- res[stringr::str_sub(time_from, 12, 13) %in% c("00", "06", "12", "18")]
- 49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
- 50 |   res <- res[
- 51 |     ,
- 52 |     .(
- 53 |       temp_max = max(temp),
- 54 |       temp_min = min(temp),
- 55 |       precip = sum(precip)
- 56 |     ),
- 57 |     keyby = .(date)
- 58 |   ]
- 59 | 
- 60 |   # we look at the downloaded data
- 61 |   # res
- 62 | 
- 63 |   # we now need to format it
- 64 |   res[, granularity_time := "date"]
- 65 |   res[, sex := "total"]
- 66 |   res[, age := "total"]
- 67 |   res[, location_code := argset$location_code]
- 68 |   res[, border := global$border]
- 69 | 
- 70 |   # fill in missing structural variables
- 71 |   cstidy::set_csfmt_rts_data_v2(res)
- 72 | 
- 73 |   # we look at the downloaded data
- 74 |   # res
- 75 | 
- 76 |   # put data in db table
- 77 |   tables$anon_example_weather_rawdata$upsert_data(res)
- 78 | 
- 79 |   # special case that runs after everything
- 80 |   if (argset$last_analysis == TRUE) {
- 81 | 
- 82 |   }
- 83 | }
- 84 | 
- 85 | # **** data_selector **** ----
- 86 | #' weather_download_and_import_rawdata (data selector)
- 87 | #' @param argset Argset
- 88 | #' @param tables DB tables
- 89 | #' @export
- 90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
- 91 |   if (plnr::is_run_directly()) {
- 92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
- 93 | 
- 94 |     index_plan <- 1
- 95 | 
- 96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
- 97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
- 98 |   }
- 99 | 
-100 |   # find the mid lat/long for the specified location_code
-101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
-102 |     lat = mean(lat),
-103 |     long = mean(long)
-104 |   )]
-105 | 
-106 |   # download the forecast for the specified location_code
-107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
-108 |   d <- httr::content(d)
-109 | 
-110 |   # The variable returned must be a named list
+ 45 | NA
+ 46 | NA
+ 47 | NA
+ 48 | NA
+ 49 | NA
+ 50 | NA
+ 51 | NA
+ 52 | NA
+ 53 | NA
+ 54 | NA
+ 55 | NA
+ 56 | NA
+ 57 | NA
+ 58 | NA
+ 59 | NA
+ 60 | NA
+ 61 | NA
+ 62 | NA
+ 63 | NA
+ 64 | NA
+ 65 | NA
+ 66 | NA
+ 67 | NA
+ 68 | NA
+ 69 | NA
+ 70 | NA
+ 71 | NA
+ 72 | NA
+ 73 | NA
+ 74 | NA
+ 75 | NA
+ 76 | NA
+ 77 | NA
+ 78 | NA
+ 79 | NA
+ 80 | NA
+ 81 | NA
+ 82 | NA
+ 83 | NA
+ 84 | NA
+ 85 | NA
+ 86 | NA
+ 87 | NA
+ 88 | NA
+ 89 | NA
+ 90 | NA
+ 91 | NA
+ 92 | NA
+ 93 | NA
+ 94 | NA
+ 95 | NA
+ 96 | NA
+ 97 | NA
+ 98 | NA
+ 99 | NA
+100 | NA
+101 | NA
+102 | NA
+103 | NA
+104 | NA
+105 | NA
+106 | NA
+107 | NA
+108 | NA
+109 | NA
+110 | NA
 ```
 
 ### 4. action_fn
 
 
 ```
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L1-L43
+https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L1-L43
 
- 1 | # **** action **** ----
- 2 | #' weather_download_and_import_rawdata (action)
- 3 | #' @param data Data
- 4 | #' @param argset Argset
- 5 | #' @param tables DB tables
- 6 | #' @export
- 7 | weather_download_and_import_rawdata_action <- function(data, argset, tables) {
- 8 |   # cs9::run_task_sequentially_as_rstudio_job_using_load_all("weather_download_and_import_rawdata")
- 9 |   # To be run outside of rstudio: cs9example::global$ss$run_task("weather_download_and_import_rawdata")
-10 | 
-11 |   if (plnr::is_run_directly()) {
-12 |     # global$ss$shortcut_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
-13 | 
-14 |     index_plan <- 1
-15 |     index_analysis <- 1
-16 | 
-17 |     data <- global$ss$shortcut_get_data("weather_download_and_import_rawdata", index_plan = index_plan)
-18 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan, index_analysis = index_analysis)
-19 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
-20 |   }
+ 1 | # ******************************************************************************
+ 2 | # ******************************************************************************
+ 3 | #
+ 4 | # 00_env_and_namespace.R
+ 5 | #
+ 6 | # PURPOSE 1:
+ 7 | #   Use roxygen2 to import ggplot2, data.table, %>%, and %<>% into the namespace,
+ 8 | #   because these are the most commonly used packages/functions.
+ 9 | #
+10 | # PURPOSE 2:
+11 | #   Declaration of environments that can be used globally.
+12 | #
+13 | # PURPOSE 3:
+14 | #   Fix issues/integration with other packages.
+15 | #
+16 | #   Most notably is the issue with rmarkdown, where an error is thrown when
+17 | #   rendering multiple rmarkdown documents in parallel.
+18 | #
+19 | # ******************************************************************************
+20 | # ******************************************************************************
 21 | 
-22 |   # special case that runs before everything
-23 |   if (argset$first_analysis == TRUE) {
-24 | 
-25 |   }
+22 | #' @import ggplot2
+23 | #' @import data.table
+24 | #' @importFrom magrittr %>% %<>%
+25 | 1
 26 | 
-27 |   a <- data$data$properties$timeseries
-28 |   res <- vector("list", length=length(a) - 1)
-29 |   for(i in seq_along(res)){
-30 |     # i = 1
-31 |     time_from <- a[[i]]$time
-32 |     if("next_1_hours" %in% names(a[[i]]$data)){
-33 |       time_var <- "next_1_hours"
-34 |     } else {
-35 |       time_var <- "next_6_hours"
-36 |     }
-37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
-38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
-39 | 
-40 |     res[[i]] <- data.frame(
-41 |       time_from = as.character(time_from),
-42 |       temp = as.numeric(temp),
-43 |       precip = as.numeric(precip)
+27 | #' Declaration of environments that can be used globally
+28 | #' @export global
+29 | global <- new.env()
+30 | 
+31 | # https://github.com/rstudio/rmarkdown/issues/1632
+32 | # An error is thrown when rendering multiple rmarkdown documents in parallel.
+33 | clean_tmpfiles_mod <- function() {
+34 |   # message("Calling clean_tmpfiles_mod()")
+35 | }
+36 | NA
+37 | NA
+38 | NA
+39 | NA
+40 | NA
+41 | NA
+42 | NA
+43 | NA
 ```
 
 ## Final package

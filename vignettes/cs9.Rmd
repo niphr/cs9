@@ -130,10 +130,6 @@ Obviously, if a plan's data-pull is larger, it will use more RAM. If you need to
 
 <a href="#figure-1">Figure 1</a> shows only 2 location based analyses, but in reality there are 356 municipalities in Norway in 2021. If <a href="#figure-1">figure 1</a> had 2 plans (1 for 2021 data, 1 for 2020 data) and 356 analyses for each plan (1 for each location_code) then we would be taking an analysis-heavy approach.
 
-## Getting started: the cs9example template
-
-The best way to start with CS9 is to use the [cs9example](https://github.com/csids/cs9example) repository as a template. This provides a complete, working surveillance system that you can customize.
-
 ### File organization
 
 <figure>
@@ -181,9 +177,9 @@ Then we have a one file for each task that contains the `action_fn`, `data_selec
 
 CS9 requires database infrastructure to function. After installing from CRAN, you'll need to:
 
-1. **Set up a PostgreSQL database** (recommended) or MariaDB
-2. **Configure environment variables** for database connection
-3. **Use Docker for deployment** (recommended for production)
+1. Set up a PostgreSQL database
+2. Configure environment variables for database connection
+3. Use Docker for deployment (recommended for production)
 
 Without database setup, CS9 loads with limited functionality. You can check what's needed with:
 
@@ -191,9 +187,9 @@ Without database setup, CS9 loads with limited functionality. You can check what
 cs9::check_environment_setup()
 ```
 
-## Complete example: weather surveillance task
+## Example
 
-We will now go through a complete example of how a person would design and implement a weather surveillance task.
+We will now go through an example of how a person would design and implement a weather surveillance task.
 
 ### Surveillance system setup
 
@@ -206,7 +202,7 @@ ss <- cs9::SurveillanceSystem_v9$new()
 
 ### Database table definition
 
-As documented in more detail [here](analytics_db_schemas_introduction.html), we create a database table that fits our needs (recording weather data), and we then add it to the surveillance system.
+As documented in more detail [here](https://www.csids.no/csdb/reference/DBTable_v9.html), we create a database table that fits our needs (recording weather data), and we then add it to the surveillance system.
 
 
 ``` r
@@ -538,9 +534,9 @@ tables <- ss$shortcut_get_tables("example_weather_import_data_from_api")
 print(data)
 #> $data
 #> {xml_document}
-#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T13:25:18Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T12:00:00Z" ...
-#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20 ...
+#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T13:58:17Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T13:00:00Z" runended="2025-08-20T13:27:14Z" nextrun="2025-08-20T14:27:14Z" from=" ...
+#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20T13:00:00Z" to="2025-08-20T13:00:00Z">\n    <location altitude="252" l ...
 #> 
 #> $hash
 #> $hash$current
@@ -727,8 +723,8 @@ ss$run_task("example_weather_import_data_from_api")
 #> Key: <date>
 #>          date     tg    tx    tn
 #>        <Date> <lgcl> <num> <num>
-#> 1: 2025-08-21     NA  15.6   8.0
-#> 2: 2025-08-22     NA  15.9   7.5
+#> 1: 2025-08-21     NA  15.8   8.1
+#> 2: 2025-08-22     NA  16.0   7.9
 #> 3: 2025-08-23     NA  16.1   7.8
 #> 4: 2025-08-24     NA  17.2  10.3
 #> 5: 2025-08-25     NA  18.0   8.9
@@ -737,32 +733,21 @@ ss$run_task("example_weather_import_data_from_api")
 #> 8: 2025-08-28     NA  19.8   9.8
 #> 9: 2025-08-29     NA  20.5  10.3
 #> [1] "Data after missing structural variables filled in"
-#>    granularity_time granularity_geo country_iso3 location_code border    age
-#>              <char>          <char>       <char>        <char>  <int> <char>
-#> 1:              day          county          nor      county03   2020  total
-#> 2:              day          county          nor      county03   2020  total
-#> 3:              day          county          nor      county03   2020  total
-#> 4:              day          county          nor      county03   2020  total
-#> 5:              day          county          nor      county03   2020  total
-#> 6:              day          county          nor      county03   2020  total
-#> 7:              day          county          nor      county03   2020  total
-#> 8:              day          county          nor      county03   2020  total
-#> 9:              day          county          nor      county03   2020  total
-#>       sex isoyear isoweek isoyearweek season seasonweek calyear calmonth
-#>    <char>   <int>   <int>      <char> <char>      <num>   <int>    <int>
-#> 1:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 2:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 3:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 4:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 5:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 6:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 7:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 8:  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 9:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#>    granularity_time granularity_geo country_iso3 location_code border    age    sex isoyear isoweek isoyearweek season seasonweek calyear calmonth
+#>              <char>          <char>       <char>        <char>  <int> <char> <char>   <int>   <int>      <char> <char>      <num>   <int>    <int>
+#> 1:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 2:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 3:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 4:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 5:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 6:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 7:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 8:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 9:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
 #>    calyearmonth       date     tg    tx    tn
 #>          <char>     <Date> <lgcl> <num> <num>
-#> 1:         <NA> 2025-08-21     NA  15.6   8.0
-#> 2:         <NA> 2025-08-22     NA  15.9   7.5
+#> 1:         <NA> 2025-08-21     NA  15.8   8.1
+#> 2:         <NA> 2025-08-22     NA  16.0   7.9
 #> 3:         <NA> 2025-08-23     NA  16.1   7.8
 #> 4:         <NA> 2025-08-24     NA  17.2  10.3
 #> 5:         <NA> 2025-08-25     NA  18.0   8.9
@@ -903,154 +888,7 @@ ss$tables(
 )
 ```
 
-## Implementation
-
-The concepts shown above are demonstrated in a complete, working surveillance system at [cs9example](https://github.com/csids/cs9example). This repository provides the recommended template for implementing CS9 in practice.
-
-The cs9example follows the standard production pattern:
-
-1. **Environment Setup**: Global definitions and package configuration
-2. **Surveillance System**: Initialize the main CS9 system object
-3. **Database Tables**: Define all schemas and validation rules
-4. **Task Configuration**: Set up all surveillance tasks
-5. **Task Implementation**: Individual files for each surveillance task
-
-### Example production task
-
-Here's how a real surveillance task is implemented in cs9example:
-
-
-```
-#> https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R
-#> 
-#>   1 | # **** action **** ----
-#>   2 | #' weather_download_and_import_rawdata (action)
-#>   3 | #' @param data Data
-#>   4 | #' @param argset Argset
-#>   5 | #' @param tables DB tables
-#>   6 | #' @export
-#>   7 | weather_download_and_import_rawdata_action <- function(data, argset, tables) {
-#>   8 |   # cs9::run_task_sequentially_as_rstudio_job_using_load_all("weather_download_and_import_rawdata")
-#>   9 |   # To be run outside of rstudio: cs9example::global$ss$run_task("weather_download_and_import_rawdata")
-#>  10 | 
-#>  11 |   if (plnr::is_run_directly()) {
-#>  12 |     # global$ss$shortcut_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
-#>  13 | 
-#>  14 |     index_plan <- 1
-#>  15 |     index_analysis <- 1
-#>  16 | 
-#>  17 |     data <- global$ss$shortcut_get_data("weather_download_and_import_rawdata", index_plan = index_plan)
-#>  18 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan, index_analysis = index_analysis)
-#>  19 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
-#>  20 |   }
-#>  21 | 
-#>  22 |   # special case that runs before everything
-#>  23 |   if (argset$first_analysis == TRUE) {
-#>  24 | 
-#>  25 |   }
-#>  26 | 
-#>  27 |   a <- data$data$properties$timeseries
-#>  28 |   res <- vector("list", length=length(a) - 1)
-#>  29 |   for(i in seq_along(res)){
-#>  30 |     # i = 1
-#>  31 |     time_from <- a[[i]]$time
-#>  32 |     if("next_1_hours" %in% names(a[[i]]$data)){
-#>  33 |       time_var <- "next_1_hours"
-#>  34 |     } else {
-#>  35 |       time_var <- "next_6_hours"
-#>  36 |     }
-#>  37 |     temp <- a[[i]]$data[["instant"]]$details$air_temperature
-#>  38 |     precip <- a[[i]]$data[[time_var]]$details$precipitation_amount
-#>  39 | 
-#>  40 |     res[[i]] <- data.frame(
-#>  41 |       time_from = as.character(time_from),
-#>  42 |       temp = as.numeric(temp),
-#>  43 |       precip = as.numeric(precip)
-#>  44 |     )
-#>  45 |   }
-#>  46 | 
-#>  47 |   res <- rbindlist(res)
-#>  48 |   res <- res[stringr::str_sub(time_from, 12, 13) %in% c("00", "06", "12", "18")]
-#>  49 |   res[, date := as.Date(stringr::str_sub(time_from, 1, 10))]
-#>  50 |   res <- res[
-#>  51 |     ,
-#>  52 |     .(
-#>  53 |       temp_max = max(temp),
-#>  54 |       temp_min = min(temp),
-#>  55 |       precip = sum(precip)
-#>  56 |     ),
-#>  57 |     keyby = .(date)
-#>  58 |   ]
-#>  59 | 
-#>  60 |   # we look at the downloaded data
-#>  61 |   # res
-#>  62 | 
-#>  63 |   # we now need to format it
-#>  64 |   res[, granularity_time := "date"]
-#>  65 |   res[, sex := "total"]
-#>  66 |   res[, age := "total"]
-#>  67 |   res[, location_code := argset$location_code]
-#>  68 |   res[, border := global$border]
-#>  69 | 
-#>  70 |   # fill in missing structural variables
-#>  71 |   cstidy::set_csfmt_rts_data_v2(res)
-#>  72 | 
-#>  73 |   # we look at the downloaded data
-#>  74 |   # res
-#>  75 | 
-#>  76 |   # put data in db table
-#>  77 |   tables$anon_example_weather_rawdata$upsert_data(res)
-#>  78 | 
-#>  79 |   # special case that runs after everything
-#>  80 |   if (argset$last_analysis == TRUE) {
-#>  81 | 
-#>  82 |   }
-#>  83 | }
-#>  84 | 
-#>  85 | # **** data_selector **** ----
-#>  86 | #' weather_download_and_import_rawdata (data selector)
-#>  87 | #' @param argset Argset
-#>  88 | #' @param tables DB tables
-#>  89 | #' @export
-#>  90 | weather_download_and_import_rawdata_data_selector <- function(argset, tables) {
-#>  91 |   if (plnr::is_run_directly()) {
-#>  92 |     # sc::tm_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
-#>  93 | 
-#>  94 |     index_plan <- 1
-#>  95 | 
-#>  96 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan)
-#>  97 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
-#>  98 |   }
-#>  99 | 
-#> 100 |   # find the mid lat/long for the specified location_code
-#> 101 |   gps <- csmaps::nor_municip_map_b2024_default_dt[location_code == argset$location_code,.(
-#> 102 |     lat = mean(lat),
-#> 103 |     long = mean(long)
-#> 104 |   )]
-#> 105 | 
-#> 106 |   # download the forecast for the specified location_code
-#> 107 |   d <- httr::GET(glue::glue("https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={gps$lat}&lon={gps$long}"))
-#> 108 |   d <- httr::content(d)
-#> 109 | 
-#> 110 |   # The variable returned must be a named list
-#> 111 |   retval <- list(
-#> 112 |     "data" = d
-#> 113 |   )
-#> 114 | 
-#> 115 |   retval
-#> 116 | }
-#> 117 | 
-#> 118 | # **** functions **** ----
-```
-
-This demonstrates the complete workflow:
-
-- **Data Selector**: Extracts data from external APIs
-- **Action Function**: Processes and validates data
-- **Database Integration**: Stores results in structured tables
-- **Error Handling**: Robust error management for production use
-
-### Deployment patterns
+## Deployment patterns
 
 CS9 systems typically follow this deployment pattern:
 
@@ -1059,7 +897,7 @@ CS9 systems typically follow this deployment pattern:
 3. **Production**: Deploy in Docker containers with Airflow scheduling
 4. **Monitoring**: Use built-in logging and configuration tracking
 
-### Getting started
+## Getting started
 
 To implement your own surveillance system:
 
@@ -1084,13 +922,4 @@ For detailed infrastructure setup, see the [Installation](installation.html) vig
 For learning how to create tasks, see the [Creating a Task](creating-a-task.html) vignette.
 
 For understanding the file organization, see the [File Layout](file-layout.html) vignette.
-
-## Resources
-
-- **cs9 Package**: Available on CRAN and at https://github.com/csids/cs9
-- **cs9example Template**: https://github.com/csids/cs9example
-- **Documentation**: https://www.csids.no/cs9/
-- **Docker Examples**: https://github.com/csids/docker-examples-csids
-
-CS9 is part of the [csverse](https://www.csids.no/packages.html) - a collection of R packages for surveillance and epidemiological analysis.
 
