@@ -353,3 +353,131 @@ Production systems process data incrementally:
 ```
 
 This real-world usage demonstrates CS9's capabilities for complex data processing pipelines with robust validation, temporal calculations, and production deployment patterns.
+
+## CRAN Deployment Considerations
+
+### Package Distribution Strategy
+
+**Infrastructure Requirements vs CRAN Compatibility**
+CS9 is fundamentally designed for database-driven surveillance systems, which creates unique challenges for CRAN distribution:
+
+- **Core Architecture**: Requires PostgreSQL/MariaDB backend for full functionality
+- **CRAN Environment**: Minimal, no external database connections available
+- **Solution**: Graceful degradation approach with clear user guidance
+
+### Environment Configuration Best Practices
+
+**Robust .onLoad() Implementation**
+```r
+.onLoad <- function(libname, pkgname) {
+  # Phase 1: Environment variable setup with error handling
+  env_result <- tryCatch({
+    set_env_vars()
+    TRUE
+  }, error = function(e) {
+    packageStartupMessage("Warning: Environment setup failed: ", e$message)
+    FALSE
+  })
+  
+  # Phase 2: Database setup (only if environment configured)
+  if(!env_result || length(config$dbconfigs) == 0){
+    packageStartupMessage("CS9 database configuration not available. Package loaded with limited functionality.")
+    packageStartupMessage("Use cs9::check_environment_setup() to diagnose configuration issues.")
+  } else {
+    # Attempt database connection with graceful failure
+    db_result <- tryCatch({
+      setup_database_tables()
+      TRUE
+    }, error = function(e) {
+      packageStartupMessage("Warning: Database table setup failed: ", e$message)
+      packageStartupMessage("CS9 loaded with limited functionality.")
+      FALSE
+    })
+  }
+}
+```
+
+**Key Patterns**:
+- **Modular setup**: Separate environment and database initialization
+- **Error isolation**: Use tryCatch for each setup phase
+- **User guidance**: Provide clear next steps when setup fails
+- **Diagnostic tools**: Include `check_environment_setup()` function
+
+### Required Environment Variables
+
+**Database Configuration**
+```bash
+# Essential variables for CS9 operation
+CS9_DBCONFIG_ACCESS="config/anon/restr"
+CS9_DBCONFIG_DRIVER="PostgreSQL"
+CS9_DBCONFIG_SERVER="localhost"
+CS9_DBCONFIG_USER="username"
+CS9_DBCONFIG_PASSWORD="password"
+
+# Schema-specific configuration
+CS9_DBCONFIG_SCHEMA_CONFIG="schema_name"  
+CS9_DBCONFIG_DB_CONFIG="database_name"
+
+# Optional variables with defaults
+CS9_PATH=""                    # Defaults to empty string
+CS9_AUTO="0"                   # Defaults to FALSE
+```
+
+### Testing Strategy for CRAN
+
+**No Traditional Tests Approach**
+- **Removed**: `/tests/` directory entirely for CRAN submission
+- **Rationale**: Database infrastructure cannot be mocked in CRAN environment
+- **Alternative**: Comprehensive documentation with `\dontrun{}` examples
+- **Local testing**: Use `devtools::load_all()` in development environment
+
+**Documentation Testing**
+```r
+# Examples that work in CRAN environment (no database)
+#' @examples
+#' \dontrun{
+#' # Requires database configuration
+#' ss <- cs9::SurveillanceSystem_v9$new()
+#' ss$add_table(...)
+#' }
+#' 
+#' # Simple examples that work without database
+#' cs9::check_environment_setup()
+```
+
+### User Setup Guidance
+
+**Installation Instructions**
+Users need clear guidance for post-installation setup:
+
+1. **Database Setup**: PostgreSQL/MariaDB instance required
+2. **Environment Variables**: Set CS9_DBCONFIG_* variables
+3. **Verification**: Use `cs9::check_environment_setup()` 
+4. **Troubleshooting**: Clear error messages guide configuration
+
+**Diagnostic Function Pattern**
+```r
+#' Check Environment Setup
+#' @export
+check_environment_setup <- function() {
+  # Check required environment variables
+  # Validate database configuration
+  # Test database connectivity
+  # Provide actionable recommendations
+  # Return structured results
+}
+```
+
+### Version Control Best Practices
+
+**Build Artifact Management**
+- **Never commit**: `..Rcheck/` directories from `R CMD check`
+- **Git hygiene**: Use `git status` before commits
+- **Cleanup workflow**: `git reset --soft HEAD~1` to fix commits
+
+**CRAN Submission Branches**
+- **Main branch**: Essential CRAN requirements only
+- **Feature branches**: Optional robustness improvements
+- **Clean separation**: Must-have vs nice-to-have changes
+
+This approach ensures CS9 can be distributed via CRAN while maintaining its core database-driven architecture and providing clear guidance for users setting up the full surveillance infrastructure.

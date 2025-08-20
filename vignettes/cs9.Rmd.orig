@@ -109,8 +109,7 @@ We sometimes run the list of plans in parallel.
     )
   )
 ))
-tab <- fhiplot::htmltable_quick_style(d, widths = c(20, 80)) %>%
-  htmlTable::htmlTable(
+tab <- htmlTable::htmlTable(d,
     rnames = FALSE,
     align = "|l|l|",
     align.header = "|l|l|",
@@ -169,9 +168,9 @@ Obviously, if a plan's data-pull is larger, it will use more RAM. If you need to
 
 <a href="#figure-2">Figure 2</a> shows a typical implementation of Core Surveillance 9.
 
-`config_db.r` contains all of the [Core Surveillance 9 db tables](analytics_db_schemas_introduction.html) definitions. i.e. A long list of `sc::add_schema_v8` commands.
+`03_tables.R` contains all of the database table definitions using `global$ss$add_table()` commands.
 
-`config_tasks.r` contains all of the task definitions. i.e. A long list of `sc::add_task_from_config_v8` commands.
+`04_tasks.R` contains all of the task definitions using `global$ss$add_task()` commands.
 
 Then we have a one file for each task that contains the `action_fn`, `data_selector_fn` and other functions that are relevant to the task at hand.
 
@@ -389,7 +388,7 @@ print(tables)
 #' @export
 example_weather_import_data_from_api_data_selector = function(argset, tables){
   if(plnr::is_run_directly()){
-    # sc::tm_get_plans_argsets_as_dt("example_weather_import_data_from_api")
+    # global$ss$shortcut_get_plans_argsets_as_dt("example_weather_import_data_from_api")
 
     index_plan <- 1
 
@@ -443,7 +442,7 @@ example_weather_import_data_from_api_action <- function(data, argset, tables) {
   # tm_run_task("example_weather_import_data_from_api")
 
   if(plnr::is_run_directly()){
-    # sc::tm_get_plans_argsets_as_dt("example_weather_import_data_from_api")
+    # global$ss$shortcut_get_plans_argsets_as_dt("example_weather_import_data_from_api")
 
     index_plan <- 1
     index_analysis <- 1
@@ -520,7 +519,7 @@ example_weather_import_data_from_api_action <- function(data, argset, tables) {
   # special case that runs after everything
   # copy to anon_web?
   if(argset$last_analysis == TRUE){
-    # sc::copy_into_new_table_where(
+    # cs9::copy_into_new_table_where(
     #   table_from = "anon_X",
     #   table_to = "anon_web_X"
     # )
@@ -659,3 +658,70 @@ ss$tables(
   )
 )
 ```
+
+## Real-World Implementation: cs9example
+
+The concepts shown above are demonstrated in a complete, working surveillance system at [cs9example](https://github.com/csids/cs9example). This repository provides the recommended template for implementing CS9 in practice.
+
+### Production File Organization
+
+```{r echo=FALSE}
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R")
+print(x, lines = 1:15, include_url = TRUE)
+```
+
+The cs9example follows the standard production pattern:
+
+1. **Environment Setup**: Global definitions and package configuration
+2. **Surveillance System**: Initialize the main CS9 system object
+3. **Database Tables**: Define all schemas and validation rules
+4. **Task Configuration**: Set up all surveillance tasks
+5. **Task Implementation**: Individual files for each surveillance task
+
+### Example Production Task
+
+Here's how a real surveillance task is implemented in cs9example:
+
+```{r echo=FALSE}
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R")
+print(x, lines = 1:30, include_url = TRUE)
+```
+
+This demonstrates the complete workflow:
+
+- **Data Selector**: Extracts data from external APIs
+- **Action Function**: Processes and validates data
+- **Database Integration**: Stores results in structured tables
+- **Error Handling**: Robust error management for production use
+
+### Deployment Patterns
+
+CS9 systems typically follow this deployment pattern:
+
+1. **Development**: Use `devtools::load_all()` for interactive development
+2. **Testing**: Run individual tasks with `global$ss$run_task("task_name")`
+3. **Production**: Deploy in Docker containers with Airflow scheduling
+4. **Monitoring**: Use built-in logging and configuration tracking
+
+### Getting Started with cs9example
+
+To implement your own surveillance system:
+
+1. Clone the cs9example repository
+2. Perform global find/replace on "cs9example" with your package name
+3. Modify the table definitions in `03_tables.R` for your data
+4. Update the task definitions in `04_tasks.R` for your analyses
+5. Implement your surveillance tasks following the established patterns
+
+This approach ensures you start with a working, tested framework rather than building from scratch.
+
+## Next Steps
+
+- **Explore cs9example**: Review the complete implementation
+- **Set up infrastructure**: Configure database and environment variables
+- **Clone and customize**: Use cs9example as your template
+- **Deploy**: Follow production deployment patterns
+
+For detailed setup instructions, see the [Installation](installation.html) vignette.
+For file organization details, see the [File Layout](file-layout.html) vignette.
+For step-by-step task creation, see the [Creating a Task](creating-a-task.html) vignette.

@@ -1,7 +1,53 @@
 #' @title A Surveillance System Object
 #'
 #' @description
-#' An abstract class that holds an entire surveillance system.
+#' Core R6 class for creating and managing disease surveillance systems.
+#' This class orchestrates database tables, tasks, and analyses for real-time
+#' epidemiological monitoring and public health surveillance.
+#'
+#' @details
+#' SurveillanceSystem_v9 provides infrastructure for:
+#' \itemize{
+#'   \item Database table management with automated logging
+#'   \item Task scheduling and parallel execution
+#'   \item Data validation and schema enforcement  
+#'   \item Configuration and performance monitoring
+#' }
+#'
+#' The surveillance system follows a structured approach:
+#' 1. Define database tables with \code{add_table()}
+#' 2. Configure surveillance tasks with \code{add_task()}
+#' 3. Execute tasks with \code{run_task()} or external schedulers
+#'
+#' @examples
+#' \dontrun{
+#' # Create surveillance system
+#' ss <- SurveillanceSystem_v9$new(
+#'   name = "covid_surveillance", 
+#'   implementation_version = "1.0"
+#' )
+#' 
+#' # Add database table
+#' ss$add_table(
+#'   name_access = "anon",
+#'   name_grouping = "covid",
+#'   name_variant = "cases",
+#'   field_types = c("date" = "DATE", "cases" = "INTEGER"),
+#'   keys = c("date")
+#' )
+#' 
+#' # Add surveillance task
+#' ss$add_task(
+#'   name_grouping = "covid",
+#'   name_action = "import", 
+#'   name_variant = "daily_data",
+#'   action_fn_name = "import_covid_data",
+#'   data_selector_fn_name = "select_covid_sources"
+#' )
+#' 
+#' # Run task
+#' ss$run_task("covid_import_daily_data")
+#' }
 #'
 #' @import R6
 #' @export SurveillanceSystem_v9

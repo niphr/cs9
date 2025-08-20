@@ -1,3 +1,38 @@
+# Version 25.7.31
+
+## New Features
+- Enhanced environment variable validation with detailed diagnostic function `check_environment_setup()`
+- Improved graceful degradation for CRAN compatibility - package loads with limited functionality when database infrastructure is not available
+- Context-aware environment variable validation with clear user guidance
+- Robust error handling in package loading process
+
+## Improvements  
+- Updated system environment configuration handling
+- Comprehensive startup messages guide users through configuration issues
+- Enhanced database connection error handling
+- Improved package loading sequence with better error isolation
+
+## Documentation
+- Comprehensive installation vignette explaining infrastructure requirements
+- Enhanced function documentation with CRAN-compatible examples
+- Clear guidance on functionality available in different deployment scenarios
+- Added comprehensive package-level documentation (`?cs9`)
+- Enhanced `check_environment_setup()` documentation with detailed examples
+- Updated vignettes with CRAN vs. full setup guidance
+
+## CRAN Preparation
+- Removed fhiplot dependency (replaced with standard R functions)
+- Fixed non-portable file names in vignettes directory
+- Cleaned up build artifacts and hidden files
+- Updated LICENSE file copyright year to 2025
+- Created vignette precompiler system for maintainable documentation
+- Verified graceful degradation in minimal environments
+
+## Bug Fixes
+- Fixed package loading issues in environments without database configuration
+- Improved error messages for missing environment variables
+- Enhanced database table setup error handling
+
 # Version 2025.3.6
 
 - Automatically logging when tasks start running.

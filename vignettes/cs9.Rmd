@@ -15,21 +15,21 @@ editor_options:
 
 ## Definitions
 
-<table class='gmisc_table' style='border-collapse: collapse; width: 100%; border-collapse: separate;' >
+<table class='gmisc_table' style='border-collapse: collapse; margin-top: 1em; margin-bottom: 1em;' >
 <thead>
 <tr>
-<th style='font-size: 16px; font-weight: bold; border-top: 2px solid grey; border-bottom: 1px solid grey; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>Object</th>
-<th style='font-size: 16px; font-weight: bold; border-top: 2px solid grey; border-bottom: 1px solid grey; border-right: 1px solid black; text-align: left;'>Description</th>
+<th style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>Object</th>
+<th style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; border-right: 1px solid black; text-align: left;'>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 20%; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>argset</td>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 80%; border-right: 1px solid black; text-align: left;'>A named list containing arguments.</td>
+<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>argset</td>
+<td style='border-right: 1px solid black; text-align: left;'>A named list containing arguments.</td>
 </tr>
 <tr>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 20%; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>plnr analysis</td>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 80%; border-right: 1px solid black; text-align: left;'>These are the fundamental units that are scheduled in plnr:
+<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>plnr analysis</td>
+<td style='border-right: 1px solid black; text-align: left;'>These are the fundamental units that are scheduled in plnr:
 <ul>
   <li>1 argset</li>
   <li>1 function that takes two (or more) arguments:
@@ -42,8 +42,8 @@ editor_options:
 </ul></td>
 </tr>
 <tr>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 20%; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>data_selector_fn</td>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 80%; border-right: 1px solid black; text-align: left;'>A function that takes two arguments:
+<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>data_selector_fn</td>
+<td style='border-right: 1px solid black; text-align: left;'>A function that takes two arguments:
 <ul>
   <li>argset (named list)</li>
   <li>tables (named list)</li>
@@ -51,8 +51,8 @@ editor_options:
 This function provides a named list to be used as the `data` argument to `action_fn`</td>
 </tr>
 <tr>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 20%; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>action_fn</td>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 80%; border-right: 1px solid black; text-align: left;'>A function that takes three arguments:
+<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>action_fn</td>
+<td style='border-right: 1px solid black; text-align: left;'>A function that takes three arguments:
 <ul>
   <li>data (named list, returned from data_selector_fn)</li>
   <li>argset (named list)</li>
@@ -61,23 +61,23 @@ This function provides a named list to be used as the `data` argument to `action
 This is the thing that **'does stuff'** in Core Surveillance 9.</td>
 </tr>
 <tr>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 20%; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>sc analysis</td>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 80%; border-right: 1px solid black; text-align: left;'>A `sc analysis` is essentially a `plnr analysis` with database tables:
+<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>sc analysis</td>
+<td style='border-right: 1px solid black; text-align: left;'>A `sc analysis` is essentially a `plnr analysis` with database tables:
 <ul>
   <li>1 argset</li>
   <li>1 action_fn</li>
 </ul></td>
 </tr>
 <tr>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 20%; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>plan</td>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 1px dashed grey; width: 80%; border-right: 1px solid black; text-align: left;'><ul>
+<td style='border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>plan</td>
+<td style='border-right: 1px solid black; text-align: left;'><ul>
   <li>1 data-pull (using data_selector_fn)</li>
   <li>1 list of sc analyses</li>
 </ul></td>
 </tr>
 <tr>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 2px solid grey; width: 20%; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>task</td>
-<td style='padding-left: .4em; padding-right: .2em; padding-top: .4em; padding-bottom: .4em; font-size: 14px; border-bottom: 2px solid grey; width: 80%; border-right: 1px solid black; text-align: left;'>This is is the unit that Airflow schedules.
+<td style='border-bottom: 2px solid grey; border-left: 1px solid black; border-right: 1px solid black; text-align: left;'>task</td>
+<td style='border-bottom: 2px solid grey; border-right: 1px solid black; text-align: left;'>This is is the unit that Airflow schedules.
 <ul>
   <li>1 list of plans</li>
 </ul>
@@ -134,9 +134,9 @@ Obviously, if a plan's data-pull is larger, it will use more RAM. If you need to
 
 <a href="#figure-2">Figure 2</a> shows a typical implementation of Core Surveillance 9.
 
-`config_db.r` contains all of the [Core Surveillance 9 db tables](analytics_db_schemas_introduction.html) definitions. i.e. A long list of `sc::add_schema_v8` commands.
+`03_tables.R` contains all of the database table definitions using `global$ss$add_table()` commands.
 
-`config_tasks.r` contains all of the task definitions. i.e. A long list of `sc::add_task_from_config_v8` commands.
+`04_tasks.R` contains all of the task definitions using `global$ss$add_task()` commands.
 
 Then we have a one file for each task that contains the `action_fn`, `data_selector_fn` and other functions that are relevant to the task at hand.
 
@@ -149,7 +149,7 @@ We will now go through an example of how a person would design and implement tas
 We begin by creating a surveillance system. This is the hub that coordinates everything.
 
 
-```r
+``` r
 ss <- cs9::SurveillanceSystem_v9$new()
 ```
 
@@ -163,7 +163,7 @@ As documented in more detail [here](analytics_db_schemas_introduction.html), we 
 ```
 
 
-```r
+``` r
 ss$add_table(
   name_access = c("anon"),
   name_grouping = "example_weather",
@@ -215,7 +215,7 @@ To "register" our task, we use the RStudio addin `task_from_config`.
 ```
 
 
-```r
+``` r
 # tm_run_task("example_weather_import_data_from_api")
 ss$add_task(
   name_grouping = "example_weather",
@@ -250,7 +250,7 @@ There are a number of important things in this code that need highlighting.
 For example, the following code would give 4 plans, with 1 analysis per each plan, with each analysis containing `argset$var_1` and `argset$var_2` as appropriate.
 
 
-```r
+``` r
 for_each_plan <- list()
 for_each_plan[[1]] <- list(
   var_1 = 1,
@@ -273,7 +273,7 @@ for_each_plan[[4]] <- list(
 You **always** need at least 1 plan. The most simple plan possible is:
 
 
-```r
+``` r
 plnr::expand_list(
   x = 1
 )
@@ -289,7 +289,7 @@ plnr::expand_list(
 The code above could be simplified as follows.
 
 
-```r
+``` r
 for_each_plan <- plnr::expand_list(
   var_1 = c(1,2),
   var_2 = c("a", "b")
@@ -379,7 +379,7 @@ The `data_selector_fn` is used to extract the data for each plan.
 The lines inside `if(plnr::is_run_directly()){` are used to help developers. You can run the code manually/interactively to "load" the values of `argset` and `schema`.
 
 
-```r
+``` r
 index_plan <- 1
 
 argset <- ss$shortcut_get_argset("example_weather_import_data_from_api", index_plan = index_plan)
@@ -405,10 +405,10 @@ print(argset)
 #> [1] 1
 #> 
 #> $today
-#> [1] "2024-05-27"
+#> [1] "2025-08-20"
 #> 
 #> $yesterday
-#> [1] "2024-05-26"
+#> [1] "2025-08-19"
 #> 
 #> $index_plan
 #> [1] 1
@@ -429,11 +429,32 @@ print(argset)
 #> [1] TRUE
 print(tables)
 #> $anon_example_weather
-#> Error in cat(self$table_name_fully_specified, crayon::bgRed(crayon::white("(disconnected)\n\n"))): argument 1 (type 'S4') cannot be handled by 'cat'
+#> public.anon_example_weather (disconnected)
+#> 
+#>   1: granularity_time (TEXT) (KEY)
+#>   2: granularity_geo (TEXT) 
+#>   3: country_iso3 (TEXT) 
+#>   4: location_code (TEXT) (KEY)
+#>   5: border (INTEGER) 
+#>   6: age (TEXT) (KEY)
+#>   7: sex (TEXT) (KEY)
+#>   8: isoyear (INTEGER) 
+#>   9: isoweek (INTEGER) 
+#>  10: isoyearweek (TEXT) 
+#>  11: season (TEXT) 
+#>  12: seasonweek (DOUBLE) 
+#>  13: calyear (INTEGER) 
+#>  14: calmonth (INTEGER) 
+#>  15: calyearmonth (TEXT) 
+#>  16: date (DATE) (KEY)
+#>  17: tg (DOUBLE) 
+#>  18: tx (DOUBLE) 
+#>  19: tn (DOUBLE) 
+#>  20: auto_last_updated_datetime (DATETIME)
 ```
 
 
-```r
+``` r
 # **** data_selector **** ----
 #' example_weather_import_data_from_api (data selector)
 #' @param argset Argset
@@ -441,7 +462,7 @@ print(tables)
 #' @export
 example_weather_import_data_from_api_data_selector = function(argset, tables){
   if(plnr::is_run_directly()){
-    # sc::tm_get_plans_argsets_as_dt("example_weather_import_data_from_api")
+    # global$ss$shortcut_get_plans_argsets_as_dt("example_weather_import_data_from_api")
 
     index_plan <- 1
 
@@ -472,7 +493,7 @@ example_weather_import_data_from_api_data_selector = function(argset, tables){
 The lines inside `if(plnr::is_run_directly()){` are used to help developers. You can run the code manually/interactively to "load" the values of `argset` and `schema`.
 
 
-```r
+``` r
 index_plan <- 1
 index_analysis <- 1
 
@@ -483,9 +504,9 @@ tables <- ss$shortcut_get_tables("example_weather_import_data_from_api")
 print(data)
 #> $data
 #> {xml_document}
-#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2024-05-27T14:11:08Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-#> [1] <meta>\n  <model name="met_public_forecast" termin="2024-05-27T14 ...
-#> [2] <product class="pointData">\n  <time datatype="forecast" from="20 ...
+#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T09:56:06Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T09:00:00Z" ...
+#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20 ...
 #> 
 #> $hash
 #> $hash$current
@@ -514,10 +535,10 @@ print(argset)
 #> [1] 1
 #> 
 #> $today
-#> [1] "2024-05-27"
+#> [1] "2025-08-20"
 #> 
 #> $yesterday
-#> [1] "2024-05-26"
+#> [1] "2025-08-19"
 #> 
 #> $index_plan
 #> [1] 1
@@ -538,11 +559,32 @@ print(argset)
 #> [1] TRUE
 print(tables)
 #> $anon_example_weather
-#> Error in cat(self$table_name_fully_specified, crayon::bgRed(crayon::white("(disconnected)\n\n"))): argument 1 (type 'S4') cannot be handled by 'cat'
+#> public.anon_example_weather (disconnected)
+#> 
+#>   1: granularity_time (TEXT) (KEY)
+#>   2: granularity_geo (TEXT) 
+#>   3: country_iso3 (TEXT) 
+#>   4: location_code (TEXT) (KEY)
+#>   5: border (INTEGER) 
+#>   6: age (TEXT) (KEY)
+#>   7: sex (TEXT) (KEY)
+#>   8: isoyear (INTEGER) 
+#>   9: isoweek (INTEGER) 
+#>  10: isoyearweek (TEXT) 
+#>  11: season (TEXT) 
+#>  12: seasonweek (DOUBLE) 
+#>  13: calyear (INTEGER) 
+#>  14: calmonth (INTEGER) 
+#>  15: calyearmonth (TEXT) 
+#>  16: date (DATE) (KEY)
+#>  17: tg (DOUBLE) 
+#>  18: tx (DOUBLE) 
+#>  19: tn (DOUBLE) 
+#>  20: auto_last_updated_datetime (DATETIME)
 ```
 
 
-```r
+``` r
 # **** action **** ----
 #' example_weather_import_data_from_api (action)
 #' @param data Data
@@ -553,7 +595,7 @@ example_weather_import_data_from_api_action <- function(data, argset, tables) {
   # tm_run_task("example_weather_import_data_from_api")
 
   if(plnr::is_run_directly()){
-    # sc::tm_get_plans_argsets_as_dt("example_weather_import_data_from_api")
+    # global$ss$shortcut_get_plans_argsets_as_dt("example_weather_import_data_from_api")
 
     index_plan <- 1
     index_analysis <- 1
@@ -630,7 +672,7 @@ example_weather_import_data_from_api_action <- function(data, argset, tables) {
   # special case that runs after everything
   # copy to anon_web?
   if(argset$last_analysis == TRUE){
-    # sc::copy_into_new_table_where(
+    # cs9::copy_into_new_table_where(
     #   table_from = "anon_X",
     #   table_to = "anon_web_X"
     # )
@@ -641,52 +683,60 @@ example_weather_import_data_from_api_action <- function(data, argset, tables) {
 ### Run the task
 
 
-```r
+``` r
 ss$run_task("example_weather_import_data_from_api")
 #> task: example_weather_import_data_from_api
 #> Running task=example_weather_import_data_from_api with plans=1 and analyses=1
 #> plans=sequential, argset=sequential with cores=1
-#> Creating table config_data_hash_for_each_plan
-#> [1] "CREATE TABLE dbo.\"config_data_hash_for_each_plan\" (\n  \"task\" VARCHAR NOT NULL,\n  \"index_plan\" INTEGER NOT NULL,\n  \"element_tag\" VARCHAR NOT NULL,\n  \"date\" DATE NOT NULL,\n  \"datetime\" TIMESTAMP NOT NULL,\n  \"element_hash\" VARCHAR,\n  \"all_hash\" VARCHAR\n)\n"
-#> Error: nanodbc/nanodbc.cpp:1771: 00000
-#> ERROR: schema "dbo" does not exist;
-#> Error while executing the query 
-#>  RROR: schema "dbo" does not exist;
-#> Error while executing the query 
-#> <SQL> 'CREATE TABLE dbo."config_data_hash_for_each_plan" (
-#>   "task" VARCHAR NOT NULL,
-#>   "index_plan" INTEGER NOT NULL,
-#>   "element_tag" VARCHAR NOT NULL,
-#>   "date" DATE NOT NULL,
-#>   "datetime" TIMESTAMP NOT NULL,
-#>   "element_hash" VARCHAR,
-#>   "all_hash" VARCHAR
-#> )
-#> '
-#> Creating table config_tasks_stats
-#> [1] "CREATE TABLE dbo.\"config_tasks_stats\" (\n  \"task\" VARCHAR NOT NULL,\n  \"sc_version\" VARCHAR,\n  \"implementation_version\" VARCHAR,\n  \"cores_n\" INTEGER,\n  \"plans_n\" INTEGER,\n  \"analyses_n\" INTEGER,\n  \"start_date\" DATE,\n  \"start_datetime\" TIMESTAMP NOT NULL,\n  \"stop_date\" DATE,\n  \"stop_datetime\" TIMESTAMP,\n  \"runtime_minutes\" REAL,\n  \"ram_all_cores_mb\" REAL,\n  \"ram_per_core_mb\" REAL,\n  \"status\" VARCHAR\n)\n"
-#> Error: nanodbc/nanodbc.cpp:1771: 00000
-#> ERROR: schema "dbo" does not exist;
-#> Error while executing the query 
-#>  RROR: schema "dbo" does not exist;
-#> Error while executing the query 
-#> <SQL> 'CREATE TABLE dbo."config_tasks_stats" (
-#>   "task" VARCHAR NOT NULL,
-#>   "sc_version" VARCHAR,
-#>   "implementation_version" VARCHAR,
-#>   "cores_n" INTEGER,
-#>   "plans_n" INTEGER,
-#>   "analyses_n" INTEGER,
-#>   "start_date" DATE,
-#>   "start_datetime" TIMESTAMP NOT NULL,
-#>   "stop_date" DATE,
-#>   "stop_datetime" TIMESTAMP,
-#>   "runtime_minutes" REAL,
-#>   "ram_all_cores_mb" REAL,
-#>   "ram_per_core_mb" REAL,
-#>   "status" VARCHAR
-#> )
-#> '
+#> 
+#> [1] "Data after downloading"
+#> Key: <date>
+#>          date     tg    tx    tn
+#>        <Date> <lgcl> <num> <num>
+#> 1: 2025-08-21     NA  15.8   8.0
+#> 2: 2025-08-22     NA  15.9   8.3
+#> 3: 2025-08-23     NA  16.1   7.8
+#> 4: 2025-08-24     NA  17.2  10.3
+#> 5: 2025-08-25     NA  18.0   8.9
+#> 6: 2025-08-26     NA  18.8   9.0
+#> 7: 2025-08-27     NA  18.9   9.7
+#> 8: 2025-08-28     NA  19.8   9.8
+#> 9: 2025-08-29     NA  20.5  10.3
+#> [1] "Data after missing structural variables filled in"
+#>    granularity_time granularity_geo country_iso3 location_code border    age
+#>              <char>          <char>       <char>        <char>  <int> <char>
+#> 1:              day          county          nor      county03   2020  total
+#> 2:              day          county          nor      county03   2020  total
+#> 3:              day          county          nor      county03   2020  total
+#> 4:              day          county          nor      county03   2020  total
+#> 5:              day          county          nor      county03   2020  total
+#> 6:              day          county          nor      county03   2020  total
+#> 7:              day          county          nor      county03   2020  total
+#> 8:              day          county          nor      county03   2020  total
+#> 9:              day          county          nor      county03   2020  total
+#>       sex isoyear isoweek isoyearweek season seasonweek calyear calmonth
+#>    <char>   <int>   <int>      <char> <char>      <num>   <int>    <int>
+#> 1:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 2:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 3:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 4:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 5:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 6:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 7:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 8:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 9:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#>    calyearmonth       date     tg    tx    tn
+#>          <char>     <Date> <lgcl> <num> <num>
+#> 1:         <NA> 2025-08-21     NA  15.8   8.0
+#> 2:         <NA> 2025-08-22     NA  15.9   8.3
+#> 3:         <NA> 2025-08-23     NA  16.1   7.8
+#> 4:         <NA> 2025-08-24     NA  17.2  10.3
+#> 5:         <NA> 2025-08-25     NA  18.0   8.9
+#> 6:         <NA> 2025-08-26     NA  18.8   9.0
+#> 7:         <NA> 2025-08-27     NA  18.9   9.7
+#> 8:         <NA> 2025-08-28     NA  19.8   9.8
+#> 9:         <NA> 2025-08-29     NA  20.5  10.3
+#> Error in super$upsert_data(newdata, drop_indexes, verbose): upsert_load_data_infile not validated in anon_example_weather. granularity_time
 ```
 
 ## Different types of tasks
@@ -696,7 +746,7 @@ ss$run_task("example_weather_import_data_from_api")
 <img src="cs9-task-import-data.png" width="100%" />
 
 
-```r
+``` r
 ss$add_task(
   name_grouping = "example",
   name_action = "import_data",
@@ -728,7 +778,7 @@ ss$add_task(
 <img src="cs9-task-analysis.png" width="100%" />
 
 
-```r
+``` r
 ss$add_task(
   name_grouping = "example",
   name_action = "analysis",
@@ -759,7 +809,7 @@ ss$add_task(
 <img src="cs9-task-export-multiple-results.png" width="100%" />
 
 
-```r
+``` r
 ss$add_task(
   name_grouping = "example",
   name_action = "export_results",
@@ -791,7 +841,7 @@ ss$add_task(
 <img src="cs9-task-export-combined-results.png" width="100%" />
 
 
-```r
+``` r
 ss$tables(
   name_grouping = "example",
   name_action = "export_results",
@@ -818,3 +868,117 @@ ss$tables(
   )
 )
 ```
+
+## Real-World Implementation: cs9example
+
+The concepts shown above are demonstrated in a complete, working surveillance system at [cs9example](https://github.com/csids/cs9example). This repository provides the recommended template for implementing CS9 in practice.
+
+### Production File Organization
+
+
+```
+#> https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R#L1-L15
+#> 
+#>  1 | # ******************************************************************************
+#>  2 | # ******************************************************************************
+#>  3 | #
+#>  4 | # 02_surveillance_systems.R
+#>  5 | #
+#>  6 | # PURPOSE 1:
+#>  7 | #   Initialize surveillance systems
+#>  8 | #
+#>  9 | # ******************************************************************************
+#> 10 | # ******************************************************************************
+#> 11 | 
+#> 12 | set_surveillance_systems <- function() {
+#> 13 |   global$ss <- cs9::SurveillanceSystem_v9$new()
+#> 14 | }
+#> 15 | NA
+```
+
+The cs9example follows the standard production pattern:
+
+1. **Environment Setup**: Global definitions and package configuration
+2. **Surveillance System**: Initialize the main CS9 system object
+3. **Database Tables**: Define all schemas and validation rules
+4. **Task Configuration**: Set up all surveillance tasks
+5. **Task Implementation**: Individual files for each surveillance task
+
+### Example Production Task
+
+Here's how a real surveillance task is implemented in cs9example:
+
+
+```
+#> https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R#L1-L30
+#> 
+#>  1 | # **** action **** ----
+#>  2 | #' weather_download_and_import_rawdata (action)
+#>  3 | #' @param data Data
+#>  4 | #' @param argset Argset
+#>  5 | #' @param tables DB tables
+#>  6 | #' @export
+#>  7 | weather_download_and_import_rawdata_action <- function(data, argset, tables) {
+#>  8 |   # cs9::run_task_sequentially_as_rstudio_job_using_load_all("weather_download_and_import_rawdata")
+#>  9 |   # To be run outside of rstudio: cs9example::global$ss$run_task("weather_download_and_import_rawdata")
+#> 10 | 
+#> 11 |   if (plnr::is_run_directly()) {
+#> 12 |     # global$ss$shortcut_get_plans_argsets_as_dt("weather_download_and_import_rawdata")
+#> 13 | 
+#> 14 |     index_plan <- 1
+#> 15 |     index_analysis <- 1
+#> 16 | 
+#> 17 |     data <- global$ss$shortcut_get_data("weather_download_and_import_rawdata", index_plan = index_plan)
+#> 18 |     argset <- global$ss$shortcut_get_argset("weather_download_and_import_rawdata", index_plan = index_plan, index_analysis = index_analysis)
+#> 19 |     tables <- global$ss$shortcut_get_tables("weather_download_and_import_rawdata")
+#> 20 |   }
+#> 21 | 
+#> 22 |   # special case that runs before everything
+#> 23 |   if (argset$first_analysis == TRUE) {
+#> 24 | 
+#> 25 |   }
+#> 26 | 
+#> 27 |   a <- data$data$properties$timeseries
+#> 28 |   res <- vector("list", length=length(a) - 1)
+#> 29 |   for(i in seq_along(res)){
+#> 30 |     # i = 1
+```
+
+This demonstrates the complete workflow:
+
+- **Data Selector**: Extracts data from external APIs
+- **Action Function**: Processes and validates data
+- **Database Integration**: Stores results in structured tables
+- **Error Handling**: Robust error management for production use
+
+### Deployment Patterns
+
+CS9 systems typically follow this deployment pattern:
+
+1. **Development**: Use `devtools::load_all()` for interactive development
+2. **Testing**: Run individual tasks with `global$ss$run_task("task_name")`
+3. **Production**: Deploy in Docker containers with Airflow scheduling
+4. **Monitoring**: Use built-in logging and configuration tracking
+
+### Getting Started with cs9example
+
+To implement your own surveillance system:
+
+1. Clone the cs9example repository
+2. Perform global find/replace on "cs9example" with your package name
+3. Modify the table definitions in `03_tables.R` for your data
+4. Update the task definitions in `04_tasks.R` for your analyses
+5. Implement your surveillance tasks following the established patterns
+
+This approach ensures you start with a working, tested framework rather than building from scratch.
+
+## Next Steps
+
+- **Explore cs9example**: Review the complete implementation
+- **Set up infrastructure**: Configure database and environment variables
+- **Clone and customize**: Use cs9example as your template
+- **Deploy**: Follow production deployment patterns
+
+For detailed setup instructions, see the [Installation](installation.html) vignette.
+For file organization details, see the [File Layout](file-layout.html) vignette.
+For step-by-step task creation, see the [Creating a Task](creating-a-task.html) vignette.

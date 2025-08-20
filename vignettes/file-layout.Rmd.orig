@@ -32,7 +32,7 @@ https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R")
 print(x, include_url = TRUE)
 ```
 
@@ -42,7 +42,7 @@ https://github.com/csids/cs9example/blob/main/R/01_definitions.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/01_definitions.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/01_definitions.R")
 print(x, include_url = TRUE)
 ```
 
@@ -52,7 +52,7 @@ https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R")
 print(x, include_url = TRUE)
 ```
 
@@ -62,7 +62,7 @@ https://github.com/csids/cs9example/blob/main/R/03_tables.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/03_tables.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/03_tables.R")
 print(x, include_url = TRUE)
 ```
 
@@ -72,7 +72,7 @@ https://github.com/csids/cs9example/blob/main/R/04_tasks.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/04_tasks.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/04_tasks.R")
 print(x, include_url = TRUE)
 ```
 
@@ -82,7 +82,7 @@ https://github.com/csids/cs9example/blob/main/R/05_deliverables.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/05_deliverables.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/05_deliverables.R")
 print(x, include_url = TRUE)
 ```
 
@@ -92,7 +92,7 @@ https://github.com/csids/cs9example/blob/main/R/10_onLoad.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/10_onLoad.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/10_onLoad.R")
 print(x, include_url = TRUE)
 ```
 
@@ -102,7 +102,7 @@ https://github.com/csids/cs9example/blob/main/R/11_onAttach.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/11_onAttach.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/11_onAttach.R")
 print(x, include_url = TRUE)
 ```
 
@@ -116,7 +116,7 @@ https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawd
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R")
 print(x, include_url = TRUE)
 ```
 
@@ -125,7 +125,7 @@ print(x, include_url = TRUE)
 https://github.com/csids/cs9example/blob/main/R/weather_clean_data.R
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/weather_clean_data.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/weather_clean_data.R")
 print(x, include_url = TRUE)
 ```
 
@@ -135,6 +135,6 @@ https://github.com/csids/cs9example/blob/main/R/weather_export_plots.R
 
 ```{r, echo=FALSE}
 options(width = 150)
-x <- fhiplot::as_github_code("https://github.com/csids/cs9example/blob/main/R/weather_export_plots.R")
+x <- csstyle::as_github_code("https://github.com/csids/cs9example/blob/main/R/weather_export_plots.R")
 print(x, include_url = TRUE)
 ```
