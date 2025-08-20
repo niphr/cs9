@@ -11,9 +11,11 @@ Read the introduction vignette [here](https://www.csids.no/cs9/articles/cs9.html
 
 ## csverse
 
-<a href="https://www.csids.no/packages.html"><img src="https://www.csids.no/packages/csverse.png" width="120" /></a>
+<a href="https://www.csids.no/packages.html"><img src="https://www.csids.no/packages/csverse.png" align="right" width="120" /></a>
 
 The [csverse](https://www.csids.no/packages.html) is a set of R packages developed to help solve problems that frequently occur when performing disease surveillance.
+
+These packages can be installed directly from CRAN.
 
 ```
 install.packages("attrib")
