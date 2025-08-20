@@ -17,15 +17,15 @@ editor_options:
 
 Core Surveillance 9 (CS9) is a comprehensive R framework designed for building real-time disease surveillance systems. It provides the infrastructure needed for:
 
-- **Real-time data processing**: Automated pipelines for surveillance data
-- **Database-driven workflows**: Robust data storage and retrieval
-- **Task scheduling**: Parallel processing and workflow orchestration
-- **Epidemiological analysis**: Built-in support for surveillance concepts
-- **Production deployment**: Docker-ready infrastructure for operational systems
+- Real-time data processing: Automated pipelines for surveillance data
+- Database-driven workflows: Robust data storage and retrieval
+- Task scheduling: Parallel processing and workflow orchestration
+- Epidemiological analysis: Built-in support for surveillance concepts
+- Production deployment: Docker-ready infrastructure for operational systems
 
 CS9 is particularly suited for public health organizations, epidemiologists, and researchers who need to process surveillance data systematically and reliably.
 
-## When Should You Use CS9?
+## When should you use CS9?
 
 CS9 is ideal when you need to:
 
@@ -36,7 +36,7 @@ CS9 is ideal when you need to:
 - Handle multiple data sources and analysis outputs
 - Ensure data validation and quality control
 
-## Key Concepts and Definitions
+## Key concepts and definitions
 
 <table class='gmisc_table' style='border-collapse: collapse; margin-top: 1em; margin-bottom: 1em;' >
 <thead>
@@ -77,25 +77,25 @@ CS9 is ideal when you need to:
 </tbody>
 </table>
 
-## Surveillance System Architecture
+## Surveillance system architecture
 
 CS9 organizes surveillance work around a hierarchical structure:
 
-**Tasks** → **Plans** → **Analyses**
+Tasks → Plans → Analyses
 
-- **Tasks**: The fundamental unit of work - things like "download weather data", "calculate disease trends", or "generate reports"
-- **Plans**: Data processing units within tasks - typically organized by time periods, geographic areas, or data subsets
-- **Analyses**: Individual computations within plans - the actual analytical work performed on the data
+- Tasks: The fundamental unit of work - things like "download weather data", "calculate disease trends", or "generate reports"
+- Plans: Data processing units within tasks - typically organized by time periods, geographic areas, or data subsets
+- Analyses: Individual computations within plans - the actual analytical work performed on the data
 
-### Example Workflow
+### Example workflow
 
 A typical CS9 surveillance system might include:
 
-1. **Data Import Task**: Download data from external APIs or files
-2. **Data Cleaning Task**: Validate, standardize, and quality-check incoming data
-3. **Analysis Task**: Calculate surveillance indicators, trends, or alerts
-4. **Reporting Task**: Generate outputs like Excel files, plots, or automated reports
-5. **Delivery Task**: Send results via email, upload to websites, or trigger alerts
+1. Data Import Task: Download data from external APIs or files
+2. Data Cleaning Task: Validate, standardize, and quality-check incoming data
+3. Analysis Task: Calculate surveillance indicators, trends, or alerts
+4. Reporting Task: Generate outputs like Excel files, plots, or automated reports
+5. Delivery Task: Send results via email, upload to websites, or trigger alerts
 
 <figure>
 <img id="figure-1" src="cs9-task-general.png" width="100%" />
@@ -130,11 +130,11 @@ Obviously, if a plan's data-pull is larger, it will use more RAM. If you need to
 
 <a href="#figure-1">Figure 1</a> shows only 2 location based analyses, but in reality there are 356 municipalities in Norway in 2021. If <a href="#figure-1">figure 1</a> had 2 plans (1 for 2021 data, 1 for 2020 data) and 356 analyses for each plan (1 for each location_code) then we would be taking an analysis-heavy approach.
 
-## Getting Started: The cs9example Template
+## Getting started: the cs9example template
 
 The best way to start with CS9 is to use the [cs9example](https://github.com/csids/cs9example) repository as a template. This provides a complete, working surveillance system that you can customize.
 
-### File Organization
+### File organization
 
 <figure>
 <img id="figure-2" src="cs9-file-locations.png" width="100%" />
@@ -164,12 +164,12 @@ The cs9example demonstrates the standard file organization:
 #> 15 | #
 ```
 
-- **00_env_and_namespace.R**: Package setup and global environment
-- **01_definitions.R**: Global definitions (borders, age groups, etc.)
-- **02_surveillance_systems.R**: Initialize the surveillance system
-- **03_tables.R**: Database table definitions
-- **04_tasks.R**: Task configurations
-- **10_onLoad.R**: Package loading sequence
+- 00_env_and_namespace.R: Package setup and global environment
+- 01_definitions.R: Global definitions (borders, age groups, etc.)
+- 02_surveillance_systems.R: Initialize the surveillance system
+- 03_tables.R: Database table definitions
+- 04_tasks.R: Task configurations
+- 10_onLoad.R: Package loading sequence
 
 `03_tables.R` contains all of the database table definitions using `global$ss$add_table()` commands.
 
@@ -177,7 +177,7 @@ The cs9example demonstrates the standard file organization:
 
 Then we have a one file for each task that contains the `action_fn`, `data_selector_fn` and other functions that are relevant to the task at hand.
 
-## Infrastructure Requirements
+## Infrastructure requirements
 
 CS9 requires database infrastructure to function. After installing from CRAN, you'll need to:
 
@@ -191,11 +191,11 @@ Without database setup, CS9 loads with limited functionality. You can check what
 cs9::check_environment_setup()
 ```
 
-## Complete Example: Weather Surveillance Task
+## Complete example: weather surveillance task
 
 We will now go through a complete example of how a person would design and implement a weather surveillance task.
 
-### Surveillance System Setup
+### Surveillance system setup
 
 We begin by creating a surveillance system. This is the hub that coordinates everything.
 
@@ -204,7 +204,7 @@ We begin by creating a surveillance system. This is the hub that coordinates eve
 ss <- cs9::SurveillanceSystem_v9$new()
 ```
 
-### Database Table Definition
+### Database table definition
 
 As documented in more detail [here](analytics_db_schemas_introduction.html), we create a database table that fits our needs (recording weather data), and we then add it to the surveillance system.
 
@@ -251,7 +251,7 @@ ss$add_table(
 )
 ```
 
-### Task Configuration
+### Task configuration
 
 To "register" our task, we use `ss$add_task`:
 
@@ -539,8 +539,8 @@ print(data)
 #> $data
 #> {xml_document}
 #> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T13:25:18Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T12:00:00Z" runended="2025-08-20T12: ...
-#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20T13:00:00Z" to="2025-08-2 ...
+#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T12:00:00Z" ...
+#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20 ...
 #> 
 #> $hash
 #> $hash$current
@@ -737,32 +737,43 @@ ss$run_task("example_weather_import_data_from_api")
 #> 8: 2025-08-28     NA  19.8   9.8
 #> 9: 2025-08-29     NA  20.5  10.3
 #> [1] "Data after missing structural variables filled in"
-#>    granularity_time granularity_geo country_iso3 location_code border    age    sex isoyear isoweek
-#>              <char>          <char>       <char>        <char>  <int> <char> <char>   <int>   <int>
-#> 1:              day          county          nor      county03   2020  total  total      NA      NA
-#> 2:              day          county          nor      county03   2020  total  total      NA      NA
-#> 3:              day          county          nor      county03   2020  total  total      NA      NA
-#> 4:              day          county          nor      county03   2020  total  total      NA      NA
-#> 5:              day          county          nor      county03   2020  total  total      NA      NA
-#> 6:              day          county          nor      county03   2020  total  total      NA      NA
-#> 7:              day          county          nor      county03   2020  total  total      NA      NA
-#> 8:              day          county          nor      county03   2020  total  total      NA      NA
-#> 9:              day          county          nor      county03   2020  total  total      NA      NA
-#>    isoyearweek season seasonweek calyear calmonth calyearmonth       date     tg    tx    tn
-#>         <char> <char>      <num>   <int>    <int>       <char>     <Date> <lgcl> <num> <num>
-#> 1:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-21     NA  15.6   8.0
-#> 2:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-22     NA  15.9   7.5
-#> 3:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-23     NA  16.1   7.8
-#> 4:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-24     NA  17.2  10.3
-#> 5:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-25     NA  18.0   8.9
-#> 6:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-26     NA  18.8   9.0
-#> 7:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-27     NA  18.9   9.7
-#> 8:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-28     NA  19.8   9.8
-#> 9:        <NA>   <NA>         NA      NA       NA         <NA> 2025-08-29     NA  20.5  10.3
+#>    granularity_time granularity_geo country_iso3 location_code border    age
+#>              <char>          <char>       <char>        <char>  <int> <char>
+#> 1:              day          county          nor      county03   2020  total
+#> 2:              day          county          nor      county03   2020  total
+#> 3:              day          county          nor      county03   2020  total
+#> 4:              day          county          nor      county03   2020  total
+#> 5:              day          county          nor      county03   2020  total
+#> 6:              day          county          nor      county03   2020  total
+#> 7:              day          county          nor      county03   2020  total
+#> 8:              day          county          nor      county03   2020  total
+#> 9:              day          county          nor      county03   2020  total
+#>       sex isoyear isoweek isoyearweek season seasonweek calyear calmonth
+#>    <char>   <int>   <int>      <char> <char>      <num>   <int>    <int>
+#> 1:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 2:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 3:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 4:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 5:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 6:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 7:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 8:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 9:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#>    calyearmonth       date     tg    tx    tn
+#>          <char>     <Date> <lgcl> <num> <num>
+#> 1:         <NA> 2025-08-21     NA  15.6   8.0
+#> 2:         <NA> 2025-08-22     NA  15.9   7.5
+#> 3:         <NA> 2025-08-23     NA  16.1   7.8
+#> 4:         <NA> 2025-08-24     NA  17.2  10.3
+#> 5:         <NA> 2025-08-25     NA  18.0   8.9
+#> 6:         <NA> 2025-08-26     NA  18.8   9.0
+#> 7:         <NA> 2025-08-27     NA  18.9   9.7
+#> 8:         <NA> 2025-08-28     NA  19.8   9.8
+#> 9:         <NA> 2025-08-29     NA  20.5  10.3
 #> Error in super$upsert_data(newdata, drop_indexes, verbose): upsert_load_data_infile not validated in anon_example_weather. granularity_time
 ```
 
-## Different Types of Tasks
+## Different types of tasks
 
 ### Importing data
 
@@ -904,7 +915,7 @@ The cs9example follows the standard production pattern:
 4. **Task Configuration**: Set up all surveillance tasks
 5. **Task Implementation**: Individual files for each surveillance task
 
-### Example Production Task
+### Example production task
 
 Here's how a real surveillance task is implemented in cs9example:
 

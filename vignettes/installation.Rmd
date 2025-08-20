@@ -9,11 +9,11 @@ vignette: >
 
 This vignette explains CS9 installation options and infrastructure requirements.
 
-## Installation Options
+## Installation options
 
 CS9 can be installed in two configurations:
 
-### 1. CRAN Installation (Limited Functionality)
+### 1. CRAN installation (limited functionality)
 
 Install CS9 directly from CRAN for documentation, examples, and development tools:
 
@@ -34,7 +34,7 @@ library(cs9)
 - Cannot run surveillance tasks
 - Limited to documentation and development aids
 
-### 2. Full Installation (Database-Driven Surveillance)
+### 2. Full installation (database-driven surveillance)
 
 For complete surveillance functionality, you need database infrastructure and proper configuration.
 
@@ -68,7 +68,7 @@ The following environmental variables must be available from within R. R only lo
 | CS9_DBCONFIG_DB_ANON            | 'database_name'                 | Database name for anonymous data                                      |
 |                                 |                                 |                                                                       |
 
-## Package Behavior Without Database Configuration
+## Package behavior without database configuration
 
 If you install CS9 from CRAN without setting up the database configuration, the package will load with limited functionality. You will see messages like:
 
@@ -86,7 +86,7 @@ CS9 is designed to work within a containerized environment for production use. A
 
 For getting started, we recommend cloning the [cs9example](https://github.com/csids/cs9example) repository, which provides a complete template for implementing a surveillance system with CS9.
 
-## Transitioning from CRAN to Full Setup
+## Transitioning from CRAN to full setup
 
 If you installed CS9 from CRAN and want to enable full surveillance functionality:
 
