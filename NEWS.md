@@ -1,3 +1,10 @@
+# Version 25.8.21
+
+## Documentation
+* Organized pkgdown reference documentation with logical function groupings
+* Enhanced reference structure with clear categories for different types of functions
+* Improved pkgdown configuration for better navigation of package documentation
+
 # Version 25.7.31
 
 ## New Features

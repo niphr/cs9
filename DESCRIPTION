@@ -1,6 +1,6 @@
 Package: cs9
 Title: A Framework for Real-Time Analysis and Disease Surveillance
-Version: 25.7.31
+Version: 25.8.21
 Author: Richard Aubrey White [aut, cre] (<https://orcid.org/0000-0002-6747-1726>),
   CSIDS [cph]
 Maintainer: Richard Aubrey White <hello@rwhite.no>

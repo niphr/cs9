@@ -49,8 +49,13 @@
 #' ss$run_task("covid_import_daily_data")
 #' }
 #'
+#' @field tables List of database tables managed by the surveillance system
+#' @field partitionedtables List of partitioned database tables 
+#' @field tasks List of surveillance tasks configured for execution
+#' @field name Character string identifying the surveillance system instance
+#' @field implementation_version Character string tracking the analytics code version
 #' @import R6
-#' @export SurveillanceSystem_v9
+#' @export
 SurveillanceSystem_v9 <- R6::R6Class(
   "SurveillanceSystem_v9",
   public = list(
@@ -154,6 +159,19 @@ SurveillanceSystem_v9 <- R6::R6Class(
 
       self$tables[[table_name]] <- dbtable
     },
+    #' @description
+    #' Add a partitioned table to the surveillance system
+    #' @param name_access First part of table name, corresponding to the database where it will be stored
+    #' @param name_grouping Second part of table name, corresponding to some sort of grouping
+    #' @param name_variant Final part of table name, corresponding to a distinguishing variant
+    #' @param name_partitions Character string specifying partition naming scheme
+    #' @param column_name_partition Column name used for partitioning
+    #' @param value_generator_partition Function to generate partition values
+    #' @param field_types Named character vector of column names and types
+    #' @param keys Character vector of column names that uniquely identify rows
+    #' @param indexes Named list containing index definitions
+    #' @param validator_field_types Function to validate field types
+    #' @param validator_field_contents Function to validate field contents
     add_partitionedtable = function(
       name_access,
       name_grouping = NULL,
@@ -263,24 +281,45 @@ SurveillanceSystem_v9 <- R6::R6Class(
         task$implementation_version <- self$implementation_version
         self$tasks[[task$name]] <- task
     },
+    #' @description
+    #' Get a surveillance task by name
+    #' @param task_name Character string specifying the task name
     get_task = function(task_name){
       retval <- self$tasks[[task_name]]
       retval$update_plans()
       retval
     },
+    #' @description
+    #' Execute a surveillance task by name
+    #' @param task_name Character string specifying the task name to run
     run_task = function(task_name){
       task <- self$get_task(task_name)
       task$run()
     },
+    #' @description
+    #' Get database tables associated with a task
+    #' @param task_name Character string specifying the task name
     shortcut_get_tables = function(task_name){
       self$get_task(task_name)$tables
     },
+    #' @description
+    #' Get argument set for a specific plan and analysis
+    #' @param task_name Character string specifying the task name
+    #' @param index_plan Integer specifying which plan to access
+    #' @param index_analysis Integer specifying which analysis to access
     shortcut_get_argset = function(task_name, index_plan = 1, index_analysis = 1){
       self$get_task(task_name)$plans[[index_plan]]$get_argset(index_analysis)
     },
+    #' @description
+    #' Get data for a specific plan
+    #' @param task_name Character string specifying the task name
+    #' @param index_plan Integer specifying which plan to access
     shortcut_get_data = function(task_name, index_plan = 1){
       self$get_task(task_name)$plans[[index_plan]]$get_data()
     },
+    #' @description
+    #' Get plans and argsets as a data.table
+    #' @param task_name Character string specifying the task name
     shortcut_get_plans_argsets_as_dt = function(task_name){
       plans <- self$get_task(task_name)$plans
 
@@ -289,6 +328,9 @@ SurveillanceSystem_v9 <- R6::R6Class(
       setcolorder(retval, c("index_plan", "index_analysis"))
       retval
     },
+    #' @description
+    #' Get the total number of analyses for a task
+    #' @param task_name Character string specifying the task name
     shortcut_get_num_analyses = function(task_name){
       self$get_task(task_name)$num_analyses()
     }

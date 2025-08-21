@@ -3,3 +3,51 @@ url: https://www.csids.no/cs9/
 template:
   package: csidstemplatepkgdown
 
+reference:
+- title: "Core Classes"
+  desc: "Main R6 classes for surveillance system architecture"
+  contents:
+  - SurveillanceSystem_v9
+
+- title: "Configuration Management"
+  desc: "Functions for logging and configuration tracking"
+  contents:
+  - config
+  - update_config_log
+  - get_config_log
+  - get_config_data_hash_for_each_plan
+  - get_config_tables_last_updated
+  - get_config_tasks_stats
+
+- title: "Environment Setup"
+  desc: "Environment validation and diagnostic functions"
+  contents:
+  - check_environment_setup
+
+- title: "File and Path Management"
+  desc: "Utilities for managing directories and file paths"
+  contents:
+  - path
+  - create_folder_if_doesnt_exist
+  - create_latest_folder
+
+- title: "Data Processing Utilities"
+  desc: "Helper functions for data manipulation and filtering"
+  contents:
+  - mandatory_db_filter
+
+- title: "Task Management"
+  desc: "Functions for running and managing surveillance tasks"
+  contents:
+  - run_task_sequentially_as_rstudio_job_using_load_all
+
+- title: "Package Documentation"
+  desc: "Package overview and metadata"
+  contents:
+  - cs9-package
+
+- title: "Imported Functions"
+  desc: "Re-exported functions from other packages"
+  contents:
+  - "%>%"
+
