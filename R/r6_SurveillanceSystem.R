@@ -10,7 +10,7 @@
 #' \itemize{
 #'   \item Database table management with automated logging
 #'   \item Task scheduling and parallel execution
-#'   \item Data validation and schema enforcement  
+#'   \item Data validation and schema enforcement
 #'   \item Configuration and performance monitoring
 #' }
 #'
@@ -23,10 +23,10 @@
 #' \dontrun{
 #' # Create surveillance system
 #' ss <- SurveillanceSystem_v9$new(
-#'   name = "covid_surveillance", 
+#'   name = "covid_surveillance",
 #'   implementation_version = "1.0"
 #' )
-#' 
+#'
 #' # Add database table
 #' ss$add_table(
 #'   name_access = "anon",
@@ -35,22 +35,22 @@
 #'   field_types = c("date" = "DATE", "cases" = "INTEGER"),
 #'   keys = c("date")
 #' )
-#' 
+#'
 #' # Add surveillance task
 #' ss$add_task(
 #'   name_grouping = "covid",
-#'   name_action = "import", 
+#'   name_action = "import",
 #'   name_variant = "daily_data",
 #'   action_fn_name = "import_covid_data",
 #'   data_selector_fn_name = "select_covid_sources"
 #' )
-#' 
+#'
 #' # Run task
 #' ss$run_task("covid_import_daily_data")
 #' }
 #'
 #' @field tables List of database tables managed by the surveillance system
-#' @field partitionedtables List of partitioned database tables 
+#' @field partitionedtables List of partitioned database tables
 #' @field tasks List of surveillance tasks configured for execution
 #' @field name Character string identifying the surveillance system instance
 #' @field implementation_version Character string tracking the analytics code version
@@ -64,7 +64,6 @@ SurveillanceSystem_v9 <- R6::R6Class(
     tasks = list(),
     name = NULL,
     implementation_version = NULL,
-    #' Constructor
     #' @param name A string that the user may choose to use to track performance metrics (runtime and RAM usage)
     #' @param implementation_version A string that the user may choose to use to track performance metrics (runtime and RAM usage)
     initialize = function(

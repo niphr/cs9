@@ -28,7 +28,7 @@ The surveillance system follows a structured approach:
 \dontrun{
 # Create surveillance system
 ss <- SurveillanceSystem_v9$new(
-  name = "covid_surveillance", 
+  name = "covid_surveillance",
   implementation_version = "1.0"
 )
 
@@ -44,7 +44,7 @@ ss$add_table(
 # Add surveillance task
 ss$add_task(
   name_grouping = "covid",
-  name_action = "import", 
+  name_action = "import",
   name_variant = "daily_data",
   action_fn_name = "import_covid_data",
   data_selector_fn_name = "select_covid_sources"
