@@ -3,6 +3,14 @@ url: https://www.csids.no/cs9/
 template:
   package: csidstemplatepkgdown
 
+articles:
+- title: Main verbs
+  navbar: ~
+  contents:
+  - installation
+  - file-layout
+  - creating-a-task
+
 reference:
 - title: "Core Classes"
   desc: "Main R6 classes for surveillance system architecture"

@@ -23,6 +23,7 @@ library(cs9)
 ```
 
 **What works with CRAN installation:**
+
 - Package documentation and help files
 - Function examples and vignettes
 - Environment diagnostic tools (`cs9::check_environment_setup()`)
@@ -30,6 +31,7 @@ library(cs9)
 - Basic configuration management
 
 **Limitations:**
+
 - No database connectivity
 - Cannot run surveillance tasks
 - Limited to documentation and development aids
@@ -42,7 +44,7 @@ We strongly recommend using CS9 within a Docker environment for production deplo
 
 ## Database Setup
 
-CS9 requires a database backend for full functionality. PostgreSQL is the recommended and most tested option.
+CS9 requires a PostgreSQL database backend for full functionality.
 
 ### PostgreSQL Installation
 
