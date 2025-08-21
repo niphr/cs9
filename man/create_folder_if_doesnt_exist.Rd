@@ -2,13 +2,24 @@
 % Please edit documentation in R/util_folders.R
 \name{create_folder_if_doesnt_exist}
 \alias{create_folder_if_doesnt_exist}
-\title{Creates folder if it doesn't exist}
+\title{Create Folder If It Doesn't Exist}
 \usage{
 create_folder_if_doesnt_exist(path)
 }
 \arguments{
-\item{path}{The path}
+\item{path}{Character string specifying the directory path to create}
+}
+\value{
+Character string containing the created directory path
 }
 \description{
-Creates folder if it doesn't exist
+Creates a directory and all necessary parent directories if they don't
+already exist.
+}
+\examples{
+\dontrun{
+# Create a new directory
+create_folder_if_doesnt_exist("/tmp/my_analysis/results")
+}
+
 }

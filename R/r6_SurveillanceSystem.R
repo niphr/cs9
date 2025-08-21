@@ -346,11 +346,40 @@ analyses_to_dt <- function(analyses) {
   return(retval)
 }
 
-#' Run a task sequentially as an RStudio job
+#' Run a Task Sequentially as an RStudio Job
 #'
-#' Description
-#' @param task_name Task name
-#' @param ss_prefix The prefix that locates the surveillance system
+#' Executes a surveillance task as an RStudio job using devtools::load_all() 
+#' for package development. This function creates a temporary R script that 
+#' loads the package and runs the specified task sequentially (cores = 1).
+#'
+#' @param task_name Character string specifying the name of the task to run
+#' @param ss_prefix Character string specifying the prefix used to access the 
+#'   surveillance system object. Defaults to "global$ss"
+#'
+#' @return No return value. This function is called for its side effect of 
+#'   launching an RStudio job that executes the surveillance task.
+#'
+#' @details
+#' This function is primarily used during package development to test tasks
+#' interactively. It creates a temporary R script that:
+#' \itemize{
+#'   \item Loads the package using \code{devtools::load_all()}
+#'   \item Sets the task to run with single core (cores = 1)
+#'   \item Executes the task via the surveillance system
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' # Run a task as RStudio job during development
+#' run_task_sequentially_as_rstudio_job_using_load_all("covid_analysis")
+#' 
+#' # Use custom surveillance system prefix
+#' run_task_sequentially_as_rstudio_job_using_load_all(
+#'   "covid_analysis", 
+#'   ss_prefix = "my_ss"
+#' )
+#' }
+#'
 #' @export
 run_task_sequentially_as_rstudio_job_using_load_all <- function(
     task_name,

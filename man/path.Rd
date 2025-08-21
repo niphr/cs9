@@ -2,7 +2,7 @@
 % Please edit documentation in R/util_folders.R
 \name{path}
 \alias{path}
-\title{This function gets the right folder for results}
+\title{Get Results Folder Path}
 \usage{
 path(
   ...,
@@ -12,14 +12,35 @@ path(
 )
 }
 \arguments{
-\item{...}{Second level and beyond}
+\item{...}{Character strings specifying the second level directory and beyond}
 
-\item{create_dir}{create directory if it does not exist}
+\item{create_dir}{Logical value indicating whether to create the directory
+if it doesn't exist. Defaults to FALSE.}
 
-\item{trailing_slash}{do you want a trailing /?}
+\item{trailing_slash}{Logical value indicating whether to add a trailing
+slash to the returned path. Defaults to FALSE.}
 
-\item{auto}{Is this running in auto (then the base directory is used) or interactive ("/interactive")?}
+\item{auto}{Logical value indicating whether this is running in automatic
+mode (uses base directory) or interactive mode (adds "_interactive" subdirectory).
+Defaults to the current cs9::config$is_auto setting.}
+}
+\value{
+Character string containing the constructed file path
 }
 \description{
-This function gets the right folder for results
+Constructs the appropriate folder path for surveillance system results,
+with automatic switching between production and interactive modes.
+}
+\examples{
+\dontrun{
+# Get basic output path
+path("reports", "daily")
+
+# Create directory if it doesn't exist
+path("reports", "daily", create_dir = TRUE)
+
+# Get path with trailing slash
+path("reports", "daily", trailing_slash = TRUE)
+}
+
 }

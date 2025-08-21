@@ -42,10 +42,31 @@ update_config_tasks_stats <- function(
   config$tables$config_tasks_stats$upsert_data(to_upload)
 }
 
-#' get_config_last_updated
-#' Gets the config_last_updated db table
-#' @param task Task name
-#' @param last_run Just get the last run?
+#' Get Configuration Tasks Statistics
+#'
+#' Retrieves runtime statistics and performance metrics for surveillance tasks
+#' from the configuration database.
+#'
+#' @param task Character string specifying the task name to filter by. If NULL,
+#'   returns statistics for all tasks.
+#' @param last_run Logical value indicating whether to return only the most
+#'   recent run statistics. If FALSE, returns all historical data.
+#'
+#' @return A data.table containing task statistics with columns including:
+#'   task, datetime, runtime_seconds, memory_usage, status, and other metrics
+#'
+#' @examples
+#' \dontrun{
+#' # Get all task statistics
+#' get_config_tasks_stats()
+#' 
+#' # Get statistics for a specific task
+#' get_config_tasks_stats(task = "covid_analysis")
+#' 
+#' # Get only the last run for a task
+#' get_config_tasks_stats(task = "covid_analysis", last_run = TRUE)
+#' }
+#'
 #' @export
 get_config_tasks_stats <- function(task = NULL, last_run = FALSE) {
   if (!is.null(task)) {

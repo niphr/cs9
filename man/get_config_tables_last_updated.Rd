@@ -2,15 +2,29 @@
 % Please edit documentation in R/config_tables_last_updated.R
 \name{get_config_tables_last_updated}
 \alias{get_config_tables_last_updated}
-\title{get_config_last_updated
-Gets the config_last_updated db table}
+\title{Get Configuration Tables Last Updated}
 \usage{
 get_config_tables_last_updated(table_name = NULL)
 }
 \arguments{
-\item{table_name}{Table name}
+\item{table_name}{Character string specifying the table name to filter by.
+If NULL, returns data for all tables.}
+}
+\value{
+A data.table containing last updated information with columns:
+table_name, last_updated_datetime, and other tracking metadata
 }
 \description{
-get_config_last_updated
-Gets the config_last_updated db table
+Retrieves the last updated timestamps for database tables from the
+configuration tracking system.
+}
+\examples{
+\dontrun{
+# Get last updated info for all tables
+get_config_tables_last_updated()
+
+# Get info for a specific table
+get_config_tables_last_updated(table_name = "anon_covid_cases")
+}
+
 }

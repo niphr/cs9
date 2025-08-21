@@ -1,8 +1,31 @@
-#' This function gets the right folder for results
-#' @param ... Second level and beyond
-#' @param create_dir create directory if it does not exist
-#' @param trailing_slash do you want a trailing /?
-#' @param auto Is this running in auto (then the base directory is used) or interactive ("/interactive")?
+#' Get Results Folder Path
+#'
+#' Constructs the appropriate folder path for surveillance system results,
+#' with automatic switching between production and interactive modes.
+#'
+#' @param ... Character strings specifying the second level directory and beyond
+#' @param create_dir Logical value indicating whether to create the directory
+#'   if it doesn't exist. Defaults to FALSE.
+#' @param trailing_slash Logical value indicating whether to add a trailing 
+#'   slash to the returned path. Defaults to FALSE.
+#' @param auto Logical value indicating whether this is running in automatic
+#'   mode (uses base directory) or interactive mode (adds "_interactive" subdirectory).
+#'   Defaults to the current cs9::config$is_auto setting.
+#'
+#' @return Character string containing the constructed file path
+#'
+#' @examples
+#' \dontrun{
+#' # Get basic output path
+#' path("reports", "daily")
+#' 
+#' # Create directory if it doesn't exist
+#' path("reports", "daily", create_dir = TRUE)
+#' 
+#' # Get path with trailing slash
+#' path("reports", "daily", trailing_slash = TRUE)
+#' }
+#'
 #' @export
 path <- function(..., create_dir = FALSE, trailing_slash = FALSE, auto = cs9::config$is_auto) {
   end_location <- glue::glue(fs::path(...), .envir = parent.frame(n = 1))
@@ -24,8 +47,21 @@ path <- function(..., create_dir = FALSE, trailing_slash = FALSE, auto = cs9::co
   return(retval)
 }
 
-#' Creates folder if it doesn't exist
-#' @param path The path
+#' Create Folder If It Doesn't Exist
+#'
+#' Creates a directory and all necessary parent directories if they don't
+#' already exist.
+#'
+#' @param path Character string specifying the directory path to create
+#'
+#' @return Character string containing the created directory path
+#'
+#' @examples
+#' \dontrun{
+#' # Create a new directory
+#' create_folder_if_doesnt_exist("/tmp/my_analysis/results")
+#' }
+#'
 #' @export
 create_folder_if_doesnt_exist <- function(path) {
   retval <- glue::glue(path, .envir = parent.frame(n = 1))
@@ -33,11 +69,29 @@ create_folder_if_doesnt_exist <- function(path) {
   return(retval)
 }
 
-#' Create latest folder
+#' Create Latest Folder
 #'
-#' This function copies results_folder/date til results_folder/latest
-#' @param results_folder_name name of the results folder
-#' @param date the date of extraction
+#' Copies results from a dated folder to a "latest" folder, providing
+#' easy access to the most recent analysis results.
+#'
+#' @param results_folder_name Character string specifying the name of the 
+#'   results folder (subdirectory under "output")
+#' @param date Character string specifying the date of extraction (used to
+#'   identify the source folder)
+#'
+#' @return No return value. This function is called for its side effect of
+#'   copying files from the dated folder to the latest folder.
+#'
+#' @details
+#' This function copies all contents from \code{output/results_folder_name/date}
+#' to \code{output/results_folder_name/latest}, overwriting existing files.
+#'
+#' @examples
+#' \dontrun{
+#' # Copy today's results to latest folder
+#' create_latest_folder("covid_reports", "2024-01-15")
+#' }
+#'
 #' @export
 create_latest_folder <- function(results_folder_name, date) {
   from_folder <- path("output", results_folder_name, date)

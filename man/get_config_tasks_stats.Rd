@@ -2,17 +2,35 @@
 % Please edit documentation in R/config_tasks_runtime.R
 \name{get_config_tasks_stats}
 \alias{get_config_tasks_stats}
-\title{get_config_last_updated
-Gets the config_last_updated db table}
+\title{Get Configuration Tasks Statistics}
 \usage{
 get_config_tasks_stats(task = NULL, last_run = FALSE)
 }
 \arguments{
-\item{task}{Task name}
+\item{task}{Character string specifying the task name to filter by. If NULL,
+returns statistics for all tasks.}
 
-\item{last_run}{Just get the last run?}
+\item{last_run}{Logical value indicating whether to return only the most
+recent run statistics. If FALSE, returns all historical data.}
+}
+\value{
+A data.table containing task statistics with columns including:
+task, datetime, runtime_seconds, memory_usage, status, and other metrics
 }
 \description{
-get_config_last_updated
-Gets the config_last_updated db table
+Retrieves runtime statistics and performance metrics for surveillance tasks
+from the configuration database.
+}
+\examples{
+\dontrun{
+# Get all task statistics
+get_config_tasks_stats()
+
+# Get statistics for a specific task
+get_config_tasks_stats(task = "covid_analysis")
+
+# Get only the last run for a task
+get_config_tasks_stats(task = "covid_analysis", last_run = TRUE)
+}
+
 }

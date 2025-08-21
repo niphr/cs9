@@ -2,8 +2,7 @@
 % Please edit documentation in R/config_data_hash_for_each_plan.R
 \name{get_config_data_hash_for_each_plan}
 \alias{get_config_data_hash_for_each_plan}
-\title{get_config_data_hash_for_each_plan
-Gets the config_data_hash_for_each_plan db table}
+\title{Get Configuration Data Hash for Each Plan}
 \usage{
 get_config_data_hash_for_each_plan(
   task = NULL,
@@ -12,13 +11,30 @@ get_config_data_hash_for_each_plan(
 )
 }
 \arguments{
-\item{task}{a}
+\item{task}{Character string specifying the task name to filter by. If NULL,
+returns data for all tasks.}
 
-\item{index_plan}{a}
+\item{index_plan}{Integer specifying the plan index to filter by. If NULL,
+returns data for all plans.}
 
-\item{element_tag}{a}
+\item{element_tag}{Character string specifying the element tag to filter by.
+If NULL, returns data for all elements.}
+}
+\value{
+A data.table containing the filtered hash configuration entries with
+columns: task, index_plan, element_tag, date, datetime, element_hash, all_hash
 }
 \description{
-get_config_data_hash_for_each_plan
-Gets the config_data_hash_for_each_plan db table
+Retrieves data hash configuration entries from the database table for
+tracking data changes across surveillance task plans and elements.
+}
+\examples{
+\dontrun{
+# Get all hash data for a specific task
+get_config_data_hash_for_each_plan(task = "covid_analysis")
+
+# Get hash data for specific task and plan
+get_config_data_hash_for_each_plan(task = "covid_analysis", index_plan = 1)
+}
+
 }

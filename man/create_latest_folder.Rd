@@ -2,15 +2,33 @@
 % Please edit documentation in R/util_folders.R
 \name{create_latest_folder}
 \alias{create_latest_folder}
-\title{Create latest folder}
+\title{Create Latest Folder}
 \usage{
 create_latest_folder(results_folder_name, date)
 }
 \arguments{
-\item{results_folder_name}{name of the results folder}
+\item{results_folder_name}{Character string specifying the name of the
+results folder (subdirectory under "output")}
 
-\item{date}{the date of extraction}
+\item{date}{Character string specifying the date of extraction (used to
+identify the source folder)}
+}
+\value{
+No return value. This function is called for its side effect of
+copying files from the dated folder to the latest folder.
 }
 \description{
-This function copies results_folder/date til results_folder/latest
+Copies results from a dated folder to a "latest" folder, providing
+easy access to the most recent analysis results.
+}
+\details{
+This function copies all contents from \code{output/results_folder_name/date}
+to \code{output/results_folder_name/latest}, overwriting existing files.
+}
+\examples{
+\dontrun{
+# Copy today's results to latest folder
+create_latest_folder("covid_reports", "2024-01-15")
+}
+
 }
