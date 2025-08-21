@@ -193,6 +193,9 @@ Add a table
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Returns}{
+No return value. This method is called for its side effect of adding a table to the surveillance system.
+}
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{\dontrun{
@@ -290,12 +293,15 @@ Add a partitioned table to the surveillance system
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Returns}{
+No return value. This method is called for its side effect of adding a partitioned table to the surveillance system.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_task}{}}}
 \subsection{Method \code{add_task()}}{
-add_task_from_config
+Add a surveillance task to the system
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$add_task(
   name_grouping = NULL,
@@ -348,6 +354,9 @@ add_task_from_config
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Returns}{
+No return value. This method is called for its side effect of adding a task to the surveillance system.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-get_task"></a>}}
@@ -364,6 +373,9 @@ Get a surveillance task by name
 \item{\code{task_name}}{Character string specifying the task name}
 }
 \if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A Task R6 object representing the surveillance task
 }
 }
 \if{html}{\out{<hr>}}
@@ -382,6 +394,9 @@ Execute a surveillance task by name
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Returns}{
+No return value. This method is called for its side effect of executing the task.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_tables"></a>}}
@@ -398,6 +413,9 @@ Get database tables associated with a task
 \item{\code{task_name}}{Character string specifying the task name}
 }
 \if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A named list of database table objects used by the task
 }
 }
 \if{html}{\out{<hr>}}
@@ -424,6 +442,9 @@ Get argument set for a specific plan and analysis
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Returns}{
+A named list containing the argument set for the specified plan and analysis
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_data"></a>}}
@@ -443,6 +464,9 @@ Get data for a specific plan
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Returns}{
+A named list containing the data extracted for the specified plan
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt"></a>}}
@@ -460,6 +484,9 @@ Get plans and argsets as a data.table
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Returns}{
+A data.table containing plan and analysis information with columns including index_plan and index_analysis
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_num_analyses"></a>}}
@@ -476,6 +503,9 @@ Get the total number of analyses for a task
 \item{\code{task_name}}{Character string specifying the task name}
 }
 \if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Integer value representing the total number of analyses across all plans for the task
 }
 }
 \if{html}{\out{<hr>}}

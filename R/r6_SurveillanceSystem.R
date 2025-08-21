@@ -125,6 +125,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #'   validator_field_contents = csdb::validator_field_contents_csfmt_rts_data_v1
     #' )
     #' }
+    #' @return No return value. This method is called for its side effect of adding a table to the surveillance system.
     add_table = function(
       name_access,
       name_grouping = NULL,
@@ -171,6 +172,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param indexes Named list containing index definitions
     #' @param validator_field_types Function to validate field types
     #' @param validator_field_contents Function to validate field contents
+    #' @return No return value. This method is called for its side effect of adding a partitioned table to the surveillance system.
     add_partitionedtable = function(
       name_access,
       name_grouping = NULL,
@@ -214,7 +216,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
       self$partitionedtables[[table_name_base]] <- dbtable
     },
     #' @description
-    #' add_task_from_config
+    #' Add a surveillance task to the system
     #' @param name_grouping Name of the task (grouping)
     #' @param name_action Name of the task (action)
     #' @param name_variant Name of the task (variant)
@@ -229,6 +231,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param action_fn_name The name of the function that will be called for each analysis with arguments \code{data}, \code{argset}, \code{schema}
     #' @param data_selector_fn_name The name of a function that will be called to obtain the data for each analysis. The function must have the arguments \code{argset}, \code{schema} and must return a named list.
     #' @param tables A named list that maps \code{cs9::config$schemas} for use in \code{action_fn_name} and \code{data_selector_fn_name}
+    #' @return No return value. This method is called for its side effect of adding a task to the surveillance system.
     #' @export
     add_task = function(
       name_grouping = NULL,
@@ -283,6 +286,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @description
     #' Get a surveillance task by name
     #' @param task_name Character string specifying the task name
+    #' @return A Task R6 object representing the surveillance task
     get_task = function(task_name){
       retval <- self$tasks[[task_name]]
       retval$update_plans()
@@ -291,6 +295,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @description
     #' Execute a surveillance task by name
     #' @param task_name Character string specifying the task name to run
+    #' @return No return value. This method is called for its side effect of executing the task.
     run_task = function(task_name){
       task <- self$get_task(task_name)
       task$run()
@@ -298,6 +303,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @description
     #' Get database tables associated with a task
     #' @param task_name Character string specifying the task name
+    #' @return A named list of database table objects used by the task
     shortcut_get_tables = function(task_name){
       self$get_task(task_name)$tables
     },
@@ -306,6 +312,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param task_name Character string specifying the task name
     #' @param index_plan Integer specifying which plan to access
     #' @param index_analysis Integer specifying which analysis to access
+    #' @return A named list containing the argument set for the specified plan and analysis
     shortcut_get_argset = function(task_name, index_plan = 1, index_analysis = 1){
       self$get_task(task_name)$plans[[index_plan]]$get_argset(index_analysis)
     },
@@ -313,12 +320,14 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' Get data for a specific plan
     #' @param task_name Character string specifying the task name
     #' @param index_plan Integer specifying which plan to access
+    #' @return A named list containing the data extracted for the specified plan
     shortcut_get_data = function(task_name, index_plan = 1){
       self$get_task(task_name)$plans[[index_plan]]$get_data()
     },
     #' @description
     #' Get plans and argsets as a data.table
     #' @param task_name Character string specifying the task name
+    #' @return A data.table containing plan and analysis information with columns including index_plan and index_analysis
     shortcut_get_plans_argsets_as_dt = function(task_name){
       plans <- self$get_task(task_name)$plans
 
@@ -330,6 +339,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @description
     #' Get the total number of analyses for a task
     #' @param task_name Character string specifying the task name
+    #' @return Integer value representing the total number of analyses across all plans for the task
     shortcut_get_num_analyses = function(task_name){
       self$get_task(task_name)$num_analyses()
     }
