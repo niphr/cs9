@@ -435,10 +435,10 @@ print(argset)
 #> [1] 1
 #> 
 #> $today
-#> [1] "2025-08-20"
+#> [1] "2025-08-21"
 #> 
 #> $yesterday
-#> [1] "2025-08-19"
+#> [1] "2025-08-20"
 #> 
 #> $index_plan
 #> [1] 1
@@ -534,9 +534,9 @@ tables <- ss$shortcut_get_tables("example_weather_import_data_from_api")
 print(data)
 #> $data
 #> {xml_document}
-#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-20T13:58:17Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-20T13:00:00Z" runended="2025-08-20T13:27:14Z" nextrun="2025-08-20T14:27:14Z" from=" ...
-#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-20T13:00:00Z" to="2025-08-20T13:00:00Z">\n    <location altitude="252" l ...
+#> <weatherdata noNamespaceSchemaLocation="https://schema.api.met.no/schemas/weatherapi-0.4.xsd" created="2025-08-21T13:28:23Z" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+#> [1] <meta>\n  <model name="met_public_forecast" termin="2025-08-21T13:00:00Z" ...
+#> [2] <product class="pointData">\n  <time datatype="forecast" from="2025-08-21 ...
 #> 
 #> $hash
 #> $hash$current
@@ -565,10 +565,10 @@ print(argset)
 #> [1] 1
 #> 
 #> $today
-#> [1] "2025-08-20"
+#> [1] "2025-08-21"
 #> 
 #> $yesterday
-#> [1] "2025-08-19"
+#> [1] "2025-08-20"
 #> 
 #> $index_plan
 #> [1] 1
@@ -723,38 +723,49 @@ ss$run_task("example_weather_import_data_from_api")
 #> Key: <date>
 #>          date     tg    tx    tn
 #>        <Date> <lgcl> <num> <num>
-#> 1: 2025-08-21     NA  15.8   8.1
-#> 2: 2025-08-22     NA  16.0   7.9
-#> 3: 2025-08-23     NA  16.1   7.8
-#> 4: 2025-08-24     NA  17.2  10.3
-#> 5: 2025-08-25     NA  18.0   8.9
-#> 6: 2025-08-26     NA  18.8   9.0
-#> 7: 2025-08-27     NA  18.9   9.7
-#> 8: 2025-08-28     NA  19.8   9.8
-#> 9: 2025-08-29     NA  20.5  10.3
+#> 1: 2025-08-22     NA  16.0   8.8
+#> 2: 2025-08-23     NA  17.6   8.0
+#> 3: 2025-08-24     NA  18.4   9.8
+#> 4: 2025-08-25     NA  18.1   8.8
+#> 5: 2025-08-26     NA  18.8   8.9
+#> 6: 2025-08-27     NA  19.7   9.2
+#> 7: 2025-08-28     NA  20.4  10.2
+#> 8: 2025-08-29     NA  19.0  10.1
+#> 9: 2025-08-30     NA  16.9  12.1
 #> [1] "Data after missing structural variables filled in"
-#>    granularity_time granularity_geo country_iso3 location_code border    age    sex isoyear isoweek isoyearweek season seasonweek calyear calmonth
-#>              <char>          <char>       <char>        <char>  <int> <char> <char>   <int>   <int>      <char> <char>      <num>   <int>    <int>
-#> 1:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 2:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 3:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 4:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 5:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 6:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 7:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 8:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
-#> 9:              day          county          nor      county03   2020  total  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#>    granularity_time granularity_geo country_iso3 location_code border    age
+#>              <char>          <char>       <char>        <char>  <int> <char>
+#> 1:              day          county          nor      county03   2020  total
+#> 2:              day          county          nor      county03   2020  total
+#> 3:              day          county          nor      county03   2020  total
+#> 4:              day          county          nor      county03   2020  total
+#> 5:              day          county          nor      county03   2020  total
+#> 6:              day          county          nor      county03   2020  total
+#> 7:              day          county          nor      county03   2020  total
+#> 8:              day          county          nor      county03   2020  total
+#> 9:              day          county          nor      county03   2020  total
+#>       sex isoyear isoweek isoyearweek season seasonweek calyear calmonth
+#>    <char>   <int>   <int>      <char> <char>      <num>   <int>    <int>
+#> 1:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 2:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 3:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 4:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 5:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 6:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 7:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 8:  total      NA      NA        <NA>   <NA>         NA      NA       NA
+#> 9:  total      NA      NA        <NA>   <NA>         NA      NA       NA
 #>    calyearmonth       date     tg    tx    tn
 #>          <char>     <Date> <lgcl> <num> <num>
-#> 1:         <NA> 2025-08-21     NA  15.8   8.1
-#> 2:         <NA> 2025-08-22     NA  16.0   7.9
-#> 3:         <NA> 2025-08-23     NA  16.1   7.8
-#> 4:         <NA> 2025-08-24     NA  17.2  10.3
-#> 5:         <NA> 2025-08-25     NA  18.0   8.9
-#> 6:         <NA> 2025-08-26     NA  18.8   9.0
-#> 7:         <NA> 2025-08-27     NA  18.9   9.7
-#> 8:         <NA> 2025-08-28     NA  19.8   9.8
-#> 9:         <NA> 2025-08-29     NA  20.5  10.3
+#> 1:         <NA> 2025-08-22     NA  16.0   8.8
+#> 2:         <NA> 2025-08-23     NA  17.6   8.0
+#> 3:         <NA> 2025-08-24     NA  18.4   9.8
+#> 4:         <NA> 2025-08-25     NA  18.1   8.8
+#> 5:         <NA> 2025-08-26     NA  18.8   8.9
+#> 6:         <NA> 2025-08-27     NA  19.7   9.2
+#> 7:         <NA> 2025-08-28     NA  20.4  10.2
+#> 8:         <NA> 2025-08-29     NA  19.0  10.1
+#> 9:         <NA> 2025-08-30     NA  16.9  12.1
 #> Error in super$upsert_data(newdata, drop_indexes, verbose): upsert_load_data_infile not validated in anon_example_weather. granularity_time
 ```
 
