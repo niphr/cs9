@@ -20,11 +20,23 @@ library(data.table)
 library(magrittr)
 ```
 
-Implementing cs9 requires a number of functions to be called in the correct order. To make this as simple as possible, we have provided a skeleton implementation at https://github.com/csids/cs9example/
+This vignette shows the standard file organization for CS9 surveillance systems. It provides concrete code templates for each required file in the correct initialization order.
 
-We suggest that you clone this GitHub repo to your server, and then do a global find/replace on `cs9example` with the name you want for your R package.
+**Prerequisites:** Before using these templates, ensure CS9 is installed and configured properly. See `vignette("installation")` for setup instructions.
 
-Descriptions of the required files/functions are detailed below.
+**Getting Started:** For hands-on tutorial creating tasks, see `vignette("creating-a-task")`. For architecture concepts, see `vignette("cs9")`.
+
+## Package Template
+
+The fastest way to start is cloning the complete example:
+
+```bash
+git clone https://github.com/csids/cs9example.git
+cd cs9example
+# Global find/replace "cs9example" with your package name
+```
+
+The sections below show the required files and their contents in initialization order.
 
 ## 00_env_and_namespace.R
 
@@ -414,3 +426,21 @@ weather_export_plots_action <- function(data, argset, tables) {
   return(invisible())
 }
 ```
+
+## Implementation Notes
+
+- **Initialization Order**: Files are numbered to indicate the required loading sequence in `.onLoad()`
+- **Global Environment**: The `global` object provides shared access to surveillance system and configuration
+- **Task Organization**: Each surveillance task gets its own file with data selector and action functions
+- **Schema Management**: Database table definitions are centralized in `03_tables.R`
+
+## Next Steps
+
+After organizing your files using this structure:
+
+1. **Configure Environment**: Follow `vignette("installation")` to set up database and environment variables
+2. **Understand Concepts**: Read `vignette("cs9")` for architecture and terminology
+3. **Implement Tasks**: Use `vignette("creating-a-task")` to build your surveillance workflows  
+4. **Deploy**: Set up production infrastructure using Docker and Airflow
+
+This file organization provides a solid foundation for scalable surveillance systems with proper separation of concerns and clear initialization patterns.

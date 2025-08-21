@@ -23,13 +23,17 @@ Creating a surveillance task in CS9 involves three main steps:
 
 ## Prerequisites
 
-Before creating tasks, ensure CS9 is properly configured with database access. You can check your setup with:
+Before starting this tutorial, you need CS9 properly installed and configured. See `vignette("installation")` for complete setup instructions including database configuration and environment variables.
+
+You can verify your setup is working with:
 
 
 ``` r
 # Check if CS9 environment is properly configured
 cs9::check_environment_setup()
 ```
+
+For an overview of CS9 concepts and architecture, see `vignette("cs9")`.
 
 ## Step 1: Initialize a Surveillance System
 
@@ -543,8 +547,12 @@ This vignette covered the complete workflow for creating surveillance tasks in C
 
 The CS9 framework provides a robust foundation for building scalable surveillance systems with automated pipeline execution, comprehensive logging, and flexible task orchestration.
 
-For more information, see:
+## Related Documentation
 
-- `vignette("cs9")` - Package overview and architecture
+For more information about CS9:
+
+- `vignette("cs9")` - Package overview and architecture concepts
+- `vignette("installation")` - Complete installation and setup guide  
+- `vignette("file-layout")` - Package structure and file organization patterns
 - `?SurveillanceSystem_v9` - Main surveillance system class documentation
-- `?check_environment_setup` - Environment configuration guide
+- `?check_environment_setup` - Environment configuration diagnostics

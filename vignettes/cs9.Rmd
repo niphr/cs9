@@ -130,62 +130,13 @@ Obviously, if a plan's data-pull is larger, it will use more RAM. If you need to
 
 <a href="#figure-1">Figure 1</a> shows only 2 location based analyses, but in reality there are 356 municipalities in Norway in 2021. If <a href="#figure-1">figure 1</a> had 2 plans (1 for 2021 data, 1 for 2020 data) and 356 analyses for each plan (1 for each location_code) then we would be taking an analysis-heavy approach.
 
-### File organization
+## Getting Started with CS9
 
-<figure>
-<img id="figure-2" src="cs9-file-locations.png" width="100%" />
-<figcaption>Figure 2. A typical file setup for an implementation of Core Surveillance 9. $plan_argset_fn$ is rarely used, and is therefore shown as blacked out in the most of the tasks.</figcaption>
-</figure>
+Now that you understand CS9's architecture and concepts, you're ready to start using it:
 
-The cs9example demonstrates the standard file organization:
-
-
-```
-#> https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R#L1-L15
-#> 
-#>  1 | # ******************************************************************************
-#>  2 | # ******************************************************************************
-#>  3 | #
-#>  4 | # 00_env_and_namespace.R
-#>  5 | #
-#>  6 | # PURPOSE 1:
-#>  7 | #   Use roxygen2 to import ggplot2, data.table, %>%, and %<>% into the namespace,
-#>  8 | #   because these are the most commonly used packages/functions.
-#>  9 | #
-#> 10 | # PURPOSE 2:
-#> 11 | #   Declaration of environments that can be used globally.
-#> 12 | #
-#> 13 | # PURPOSE 3:
-#> 14 | #   Fix issues/integration with other packages.
-#> 15 | #
-```
-
-- 00_env_and_namespace.R: Package setup and global environment
-- 01_definitions.R: Global definitions (borders, age groups, etc.)
-- 02_surveillance_systems.R: Initialize the surveillance system
-- 03_tables.R: Database table definitions
-- 04_tasks.R: Task configurations
-- 10_onLoad.R: Package loading sequence
-
-`03_tables.R` contains all of the database table definitions using `global$ss$add_table()` commands.
-
-`04_tasks.R` contains all of the task definitions using `global$ss$add_task()` commands.
-
-Then we have a one file for each task that contains the `action_fn`, `data_selector_fn` and other functions that are relevant to the task at hand.
-
-## Infrastructure requirements
-
-CS9 requires database infrastructure to function. After installing from CRAN, you'll need to:
-
-1. Set up a PostgreSQL database
-2. Configure environment variables for database connection
-3. Use Docker for deployment (recommended for production)
-
-Without database setup, CS9 loads with limited functionality. You can check what's needed with:
-
-```r
-cs9::check_environment_setup()
-```
+- **Installation and Setup**: See `vignette("installation")` for complete installation instructions, database configuration, and environment setup
+- **Package Structure**: See `vignette("file-layout")` for detailed guidance on organizing your CS9 implementation files  
+- **Creating Tasks**: See `vignette("creating-a-task")` for a step-by-step tutorial on implementing your first surveillance task
 
 ## Example
 
