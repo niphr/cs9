@@ -101,6 +101,21 @@ global$ss$add_table(
 )
 }
 }
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{tables}}{List of database tables managed by the surveillance system}
+
+\item{\code{partitionedtables}}{List of partitioned database tables}
+
+\item{\code{tasks}}{List of surveillance tasks configured for execution}
+
+\item{\code{name}}{Character string identifying the surveillance system instance}
+
+\item{\code{implementation_version}}{Character string tracking the analytics code version}
+}
+\if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
@@ -231,6 +246,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_partitionedtable"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_partitionedtable}{}}}
 \subsection{Method \code{add_partitionedtable()}}{
+Add a partitioned table to the surveillance system
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$add_partitionedtable(
   name_access,
@@ -247,6 +263,33 @@ global$ss$add_table(
 )}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name_access}}{First part of table name, corresponding to the database where it will be stored}
+
+\item{\code{name_grouping}}{Second part of table name, corresponding to some sort of grouping}
+
+\item{\code{name_variant}}{Final part of table name, corresponding to a distinguishing variant}
+
+\item{\code{name_partitions}}{Character string specifying partition naming scheme}
+
+\item{\code{column_name_partition}}{Column name used for partitioning}
+
+\item{\code{value_generator_partition}}{Function to generate partition values}
+
+\item{\code{field_types}}{Named character vector of column names and types}
+
+\item{\code{keys}}{Character vector of column names that uniquely identify rows}
+
+\item{\code{indexes}}{Named list containing index definitions}
+
+\item{\code{validator_field_types}}{Function to validate field types}
+
+\item{\code{validator_field_contents}}{Function to validate field contents}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_task"></a>}}
@@ -310,33 +353,58 @@ add_task_from_config
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-get_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-get_task}{}}}
 \subsection{Method \code{get_task()}}{
+Get a surveillance task by name
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$get_task(task_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{task_name}}{Character string specifying the task name}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-run_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-run_task}{}}}
 \subsection{Method \code{run_task()}}{
+Execute a surveillance task by name
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$run_task(task_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{task_name}}{Character string specifying the task name to run}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_tables"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_tables}{}}}
 \subsection{Method \code{shortcut_get_tables()}}{
+Get database tables associated with a task
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_tables(task_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{task_name}}{Character string specifying the task name}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_argset"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_argset}{}}}
 \subsection{Method \code{shortcut_get_argset()}}{
+Get argument set for a specific plan and analysis
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_argset(
   task_name,
@@ -345,33 +413,70 @@ add_task_from_config
 )}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{task_name}}{Character string specifying the task name}
+
+\item{\code{index_plan}}{Integer specifying which plan to access}
+
+\item{\code{index_analysis}}{Integer specifying which analysis to access}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_data"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_data}{}}}
 \subsection{Method \code{shortcut_get_data()}}{
+Get data for a specific plan
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_data(task_name, index_plan = 1)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{task_name}}{Character string specifying the task name}
+
+\item{\code{index_plan}}{Integer specifying which plan to access}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt}{}}}
 \subsection{Method \code{shortcut_get_plans_argsets_as_dt()}}{
+Get plans and argsets as a data.table
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt(task_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{task_name}}{Character string specifying the task name}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_num_analyses"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_num_analyses}{}}}
 \subsection{Method \code{shortcut_get_num_analyses()}}{
+Get the total number of analyses for a task
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_num_analyses(task_name)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{task_name}}{Character string specifying the task name}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-clone"></a>}}
