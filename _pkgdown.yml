@@ -41,11 +41,6 @@ reference:
   contents:
   - run_task_sequentially_as_rstudio_job_using_load_all
 
-- title: "Package Documentation"
-  desc: "Package overview and metadata"
-  contents:
-  - cs9-package
-
 - title: "Imported Functions"
   desc: "Re-exported functions from other packages"
   contents:
