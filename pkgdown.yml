@@ -1,12 +1,12 @@
-pandoc: 2.9.2.1
-pkgdown: 2.1.3
+pandoc: 3.1.3
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   creating-a-task: creating-a-task.html
   cs9: cs9.html
   file-layout: file-layout.html
   installation: installation.html
-last_built: 2025-08-21T14:03Z
+last_built: 2025-12-23T12:52Z
 urls:
-  reference: https://www.csids.no/cs9/reference
-  article: https://www.csids.no/cs9/articles
+  reference: https://niphr.github.io/cs9/reference
+  article: https://niphr.github.io/cs9/articles
