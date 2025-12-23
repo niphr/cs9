@@ -25,6 +25,7 @@ Imports:
   magrittr,
   plnr (>= 2021.5.4),
   processx,
+  progress,
   progressr,
   R6,
   rstudioapi,
