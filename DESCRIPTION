@@ -7,12 +7,11 @@ Maintainer: Richard Aubrey White <hello@rwhite.no>
 Authors@R: c(
   person(c("Richard","Aubrey"), "White", email = "hello@rwhite.no", role = c("aut", "cre"),
     comment = c(ORCID = "0000-0002-6747-1726")
-  ),
-  person("CSIDS", email = "hello@csids.no", role = c("cph"))
+  )
   )
 Description: A comprehensive framework for building real-time disease surveillance systems. Provides R6-based infrastructure for database-driven surveillance tasks, with support for parallel processing, data validation, and automated pipeline execution. Designed for epidemiological analysis and public health monitoring applications.
-URL: https://www.csids.no/cs9/, https://github.com/csids/cs9
-BugReports: https://github.com/csids/cs9/issues
+URL: https://niphr.github.io/cs9/, https://github.com/niphr/cs9
+BugReports: https://github.com/niphr/cs9/issues
 Depends:
   R (>= 4.1.0)
 Imports:

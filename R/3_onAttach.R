@@ -12,9 +12,9 @@
     "cs9 ",
     version,
     "\n",
-    "https://www.csids.no/cs9/"
+    "https://niphr.github.io/cs9/"
   ))
-  
+
   # Show environment diagnostics when package is attached (only in interactive sessions)
   if(interactive()) {
     check_environment_setup(verbose = TRUE, use_startup_message = TRUE)
