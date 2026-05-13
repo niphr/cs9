@@ -1,6 +1,6 @@
 Package: cs9
 Title: A Framework for Real-Time Analysis and Disease Surveillance
-Version: 25.12.23
+Version: 26.5.13
 Author: Richard Aubrey White [aut, cre] (<https://orcid.org/0000-0002-6747-1726>),
   CSIDS [cph]
 Maintainer: Richard Aubrey White <hello@rwhite.no>
@@ -15,12 +15,14 @@ BugReports: https://github.com/niphr/cs9/issues
 Depends:
   R (>= 4.1.0)
 Imports:
+  callr,
   csdb,
   cstime (>= 2023.5.3),
   data.table,
   dplyr,
   fs,
   glue,
+  later,
   lubridate,
   magrittr,
   plnr (>= 2021.5.4),
