@@ -1,3 +1,8 @@
+# Version 26.5.13
+
+## New Features
+* `TaskJob` R6 class and `run_task_sequentially_as_callr_bg_using_load_all()` wrapper. A drop-in alternative to `run_task_sequentially_as_rstudio_job_using_load_all()` that works in editors without RStudio's job API (notably Positron, which does not implement `runScriptJob`). Spawns the task in a fresh `callr::r_bg()` process so the current environment is not polluted, captures output via a pipe, and streams it back to the calling R console (prefixed with the task name) via `later::later()` polling. Includes `$start()`, `$wait()`, `$is_alive()`, `$status()`, `$tail()`, `$kill()`.
+
 # Version 25.8.21
 
 ## Documentation
