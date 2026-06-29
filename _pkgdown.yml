@@ -1,5 +1,8 @@
 url: https://niphr.github.io/cs9/
 
+template:
+  package: cstemplate
+
 articles:
 - title: Main verbs
   navbar: ~
