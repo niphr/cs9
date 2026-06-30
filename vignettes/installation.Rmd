@@ -161,9 +161,9 @@ You can use `cs9::check_environment_setup()` to diagnose what needs to be config
 
 ## Docker
 
-CS9 is designed to work within a containerized environment for production use. An example docker-compose file is available [here](https://github.com/csids/docker-examples-csids/blob/main/csids-cs9-single-user-docker-compose/docker-compose.yml).
+CS9 is designed to work within a containerized environment for production use. An example docker-compose file is available [here](https://github.com/niphr/docker-examples/blob/main/cs9-single-user-docker-compose/docker-compose.yml).
 
-For getting started, we recommend cloning the [cs9example](https://github.com/csids/cs9example) repository, which provides a complete template for implementing a surveillance system with CS9.
+For getting started, we recommend cloning the [cs9example](https://github.com/niphr/cs9example) repository, which provides a complete template for implementing a surveillance system with CS9.
 
 ## Transitioning from CRAN to full setup
 
@@ -237,4 +237,4 @@ Once CS9 is successfully installed and configured:
 1. **Learn the Framework**: Read `vignette("cs9")` for architecture and concepts
 2. **Create Your First Task**: Follow `vignette("creating-a-task")` for hands-on tutorial  
 3. **Organize Your Project**: See `vignette("file-layout")` for package structure guidance
-4. **Explore Examples**: Clone [cs9example](https://github.com/csids/cs9example) for a complete implementation template
+4. **Explore Examples**: Clone [cs9example](https://github.com/niphr/cs9example) for a complete implementation template

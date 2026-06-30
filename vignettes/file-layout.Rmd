@@ -22,7 +22,7 @@ This vignette shows the standard file organization for CS9 surveillance systems.
 The fastest way to start is cloning the complete example:
 
 ```bash
-git clone https://github.com/csids/cs9example.git
+git clone https://github.com/niphr/cs9example.git
 cd cs9example
 # Global find/replace "cs9example" with your package name
 ```
@@ -31,7 +31,7 @@ The sections below show the required files and their contents in initialization 
 
 ## 00_env_and_namespace.R
 
-https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R
+https://github.com/niphr/cs9example/blob/main/R/00_env_and_namespace.R
 
 ```r
 # Environment and namespace configuration
@@ -56,7 +56,7 @@ set_config <- function() {
 
 ## 01_definitions.R
 
-https://github.com/csids/cs9example/blob/main/R/01_definitions.R
+https://github.com/niphr/cs9example/blob/main/R/01_definitions.R
 
 ```r
 # Project-specific definitions
@@ -83,7 +83,7 @@ set_definitions <- function() {
 
 ## 02_surveillance_systems.R
 
-https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R
+https://github.com/niphr/cs9example/blob/main/R/02_surveillance_systems.R
 
 ```r
 # Initialize surveillance systems
@@ -104,7 +104,7 @@ set_surveillance_systems <- function() {
 
 ## 03_tables.R
 
-https://github.com/csids/cs9example/blob/main/R/03_tables.R
+https://github.com/niphr/cs9example/blob/main/R/03_tables.R
 
 ```r
 # Database table definitions
@@ -139,7 +139,7 @@ set_db_tables <- function() {
 
 ## 04_tasks.R
 
-https://github.com/csids/cs9example/blob/main/R/04_tasks.R
+https://github.com/niphr/cs9example/blob/main/R/04_tasks.R
 
 ```r
 # Task definitions
@@ -177,7 +177,7 @@ set_tasks <- function() {
 
 ## 05_deliverables.R
 
-https://github.com/csids/cs9example/blob/main/R/05_deliverables.R
+https://github.com/niphr/cs9example/blob/main/R/05_deliverables.R
 
 ```r
 # Deliverable definitions (optional)
@@ -196,7 +196,7 @@ set_deliverables <- function() {
 
 ## 10_onLoad.R
 
-https://github.com/csids/cs9example/blob/main/R/10_onLoad.R
+https://github.com/niphr/cs9example/blob/main/R/10_onLoad.R
 
 ```r
 # Package loading sequence
@@ -223,7 +223,7 @@ https://github.com/csids/cs9example/blob/main/R/10_onLoad.R
 
 ## 11_onAttach.R
 
-https://github.com/csids/cs9example/blob/main/R/11_onAttach.R
+https://github.com/niphr/cs9example/blob/main/R/11_onAttach.R
 
 ```r
 # Package attachment messages
@@ -244,7 +244,7 @@ Task files are placed in .R files under their own names.
 
 ### weather_download_and_import_rawdata.R
 
-https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R
+https://github.com/niphr/cs9example/blob/main/R/weather_download_and_import_rawdata.R
 
 ```r
 # Weather data download and import task
@@ -291,7 +291,7 @@ weather_download_and_import_rawdata_action <- function(data, argset, tables) {
 
 ### weather_clean_data.R
 
-https://github.com/csids/cs9example/blob/main/R/weather_clean_data.R
+https://github.com/niphr/cs9example/blob/main/R/weather_clean_data.R
 ```r
 # Weather data cleaning task
 # This file implements data cleaning and validation
@@ -347,7 +347,7 @@ weather_clean_data_action <- function(data, argset, tables) {
 
 ### weather_export_weather_plots.R
 
-https://github.com/csids/cs9example/blob/main/R/weather_export_plots.R
+https://github.com/niphr/cs9example/blob/main/R/weather_export_plots.R
 
 ```r
 # Weather plotting and export task  

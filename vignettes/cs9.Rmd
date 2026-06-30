@@ -153,7 +153,7 @@ ss <- cs9::SurveillanceSystem_v9$new()
 
 ### Database table definition
 
-As documented in more detail [here](https://www.csids.no/csdb/reference/DBTable_v9.html), we create a database table that fits our needs (recording weather data), and we then add it to the surveillance system.
+As documented in more detail [here](https://niphr.github.io/csdb/reference/DBTable_v9.html), we create a database table that fits our needs (recording weather data), and we then add it to the surveillance system.
 
 
 ``` r

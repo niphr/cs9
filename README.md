@@ -1,4 +1,4 @@
-# cs9 <a href="https://www.csids.no/cs9/"><img src="man/figures/logo.png" align="right" width="120" /></a>
+# cs9 <a href="https://niphr.github.io/cs9/"><img src="man/figures/logo.png" align="right" width="120" /></a>
 
 [![CRAN status](https://www.r-pkg.org/badges/version/cs9)](https://cran.r-project.org/package=cs9)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/cs9)](https://cran.r-project.org/package=cs9)
