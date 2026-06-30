@@ -15,26 +15,26 @@ editor_options:
 
 ## What is CS9?
 
-Core Surveillance 9 (CS9) is a comprehensive R framework designed for building real-time disease surveillance systems. It provides the infrastructure needed for:
+Core Surveillance 9 (CS9) is an R framework for building real-time disease surveillance systems. It provides infrastructure for:
 
-- Real-time data processing: Automated pipelines for surveillance data
-- Database-driven workflows: Robust data storage and retrieval
-- Task scheduling: Parallel processing and workflow orchestration
-- Epidemiological analysis: Built-in support for surveillance concepts
-- Production deployment: Docker-ready infrastructure for operational systems
+- Automated data pipelines for surveillance data
+- Database-driven storage and retrieval
+- Parallel processing and workflow orchestration
+- Built-in support for common surveillance concepts
+- Docker-ready deployment for operational systems
 
-CS9 is particularly suited for public health organizations, epidemiologists, and researchers who need to process surveillance data systematically and reliably.
+CS9 is aimed at public health organizations, epidemiologists, and researchers who need to process surveillance data on a regular, automated schedule.
 
-## When should you use CS9?
+## When to use CS9
 
-CS9 is ideal when you need to:
+CS9 fits well when you need to:
 
 - Process surveillance data on a regular schedule (daily, weekly)
-- Maintain historical data with proper database management
-- Run complex analysis pipelines with dependencies between tasks
-- Deploy surveillance systems in production environments
+- Maintain historical data with a proper database backend
+- Run analysis pipelines where tasks depend on each other
+- Deploy surveillance systems in a production environment
 - Handle multiple data sources and analysis outputs
-- Ensure data validation and quality control
+- Apply data validation and quality control systematically
 
 ## Key concepts and definitions
 
@@ -79,72 +79,68 @@ CS9 is ideal when you need to:
 
 ## Surveillance system architecture
 
-CS9 organizes surveillance work around a hierarchical structure:
+CS9 organizes surveillance work into a three-level hierarchy:
 
 Tasks → Plans → Analyses
 
-- Tasks: The fundamental unit of work - things like "download weather data", "calculate disease trends", or "generate reports"
-- Plans: Data processing units within tasks - typically organized by time periods, geographic areas, or data subsets
-- Analyses: Individual computations within plans - the actual analytical work performed on the data
+- **Tasks** are the unit of scheduled work — things like "download weather data", "calculate disease trends", or "generate reports".
+- **Plans** are data processing units within a task, typically organized by time period, geographic area, or data subset.
+- **Analyses** are the individual computations within a plan — the actual work performed on the extracted data.
 
 ### Example workflow
 
 A typical CS9 surveillance system might include:
 
-1. Data Import Task: Download data from external APIs or files
-2. Data Cleaning Task: Validate, standardize, and quality-check incoming data
-3. Analysis Task: Calculate surveillance indicators, trends, or alerts
-4. Reporting Task: Generate outputs like Excel files, plots, or automated reports
-5. Delivery Task: Send results via email, upload to websites, or trigger alerts
+1. **Data import**: Download data from external APIs or files
+2. **Data cleaning**: Validate, standardize, and quality-check incoming data
+3. **Analysis**: Calculate surveillance indicators, trends, or alerts
+4. **Reporting**: Generate outputs such as Excel files, plots, or automated reports
+5. **Delivery**: Send results by email, upload to a website, or trigger alerts
 
 <figure>
 <img id="figure-1" src="cs9-task-general.png" width="100%" />
 <figcaption>Figure 1. A general task showing the many options of a task.</figcaption>
 </figure>
 
-<a href="#figure-1">Figure 1</a> shows us the full potential of a task.
+<a href="#figure-1">Figure 1</a> shows the available options within a task.
 
-Data can be read from any sources, then within a plan the data will be extracted **once** by `data_selector_fn` (i.e. "one data-pull"). The data will then be provided to each analysis, which will run `action_fn` on:
+Data can be read from any source. Within a plan, `data_selector_fn` extracts the data **once** (a single data-pull). That data is then passed to each analysis, which calls `action_fn` with:
 
-- The provided data
-- The provided argset
-- The provided tables
+- the extracted data
+- the argset
+- the tables
 
 The `action_fn` can then:
 
-- Write data/results to db tables
+- Write data or results to database tables
 - Send emails
-- Export graphs, excel files, reports, or other physical files
+- Export graphs, Excel files, reports, or other files
 
-Typically only a subset of this would be done in a single task.
+A single task would typically do only a subset of these things.
 
 ### Plan-heavy or analysis-heavy tasks?
 
-A plan-heavy task is one that has many plans and a few analyses per plan.
+A plan-heavy task has many plans with few analyses each. An analysis-heavy task has few plans with many analyses each.
 
-An analysis-heavy task is one that has few plans and many analyses per plan.
+Data-pulls are relatively slow, so fewer plans means less total time waiting for data. If each data-pull extracts a larger dataset, the analyses can subset it as needed (via argsets). Analysis-heavy tasks are therefore generally faster, at the cost of higher RAM usage.
 
-In general, a data-pull is slow and wastes time. This means that it is preferable to reduce the number of data-pulls performed by having each data-pull extract larger quantities of data. The analysis can then subset the data as required (identifed via argsets). i.e. If possible, an analysis-heavy task is preferable because it will be faster (at the cost of needing more RAM).
+If RAM is limited, use more plans with smaller data-pulls instead.
 
-Obviously, if a plan's data-pull is larger, it will use more RAM. If you need to conserve RAM, then you should use a plan-heavy approach.
+<a href="#figure-1">Figure 1</a> shows only 2 location-based analyses. In practice, Norway had 356 municipalities in 2021. If <a href="#figure-1">figure 1</a> had 2 plans (one for 2021 data, one for 2020 data) with 356 analyses each (one per `location_code`), that would be an analysis-heavy approach.
 
-<a href="#figure-1">Figure 1</a> shows only 2 location based analyses, but in reality there are 356 municipalities in Norway in 2021. If <a href="#figure-1">figure 1</a> had 2 plans (1 for 2021 data, 1 for 2020 data) and 356 analyses for each plan (1 for each location_code) then we would be taking an analysis-heavy approach.
+## Other vignettes
 
-## Getting Started with CS9
-
-Now that you understand CS9's architecture and concepts, you're ready to start using it:
-
-- **Installation and Setup**: See `vignette("installation")` for complete installation instructions, database configuration, and environment setup
-- **Package Structure**: See `vignette("file-layout")` for detailed guidance on organizing your CS9 implementation files  
-- **Creating Tasks**: See `vignette("creating-a-task")` for a step-by-step tutorial on implementing your first surveillance task
+- **Installation and setup**: `vignette("installation")` covers database configuration and environment variables
+- **Package structure**: `vignette("file-layout")` explains how to organize your implementation files
+- **Creating tasks**: `vignette("creating-a-task")` walks through building your first surveillance task step by step
 
 ## Example
 
-We will now go through an example of how a person would design and implement a weather surveillance task.
+The following example walks through designing and implementing a weather surveillance task.
 
 ### Surveillance system setup
 
-We begin by creating a surveillance system. This is the hub that coordinates everything.
+Start by creating a surveillance system. This object coordinates tables and tasks.
 
 
 ``` r
@@ -153,7 +149,7 @@ ss <- cs9::SurveillanceSystem_v9$new()
 
 ### Database table definition
 
-As documented in more detail [here](https://niphr.github.io/csdb/reference/DBTable_v9.html), we create a database table that fits our needs (recording weather data), and we then add it to the surveillance system.
+As documented in more detail [here](https://niphr.github.io/csdb/reference/DBTable_v9.html), we create a database table for weather data and add it to the surveillance system.
 
 
 ``` r
@@ -200,7 +196,7 @@ ss$add_table(
 
 ### Task configuration
 
-To "register" our task, we use `ss$add_task`:
+Tasks are registered with `ss$add_task`:
 
 
 ``` r
@@ -229,13 +225,13 @@ ss$add_task(
 )
 ```
 
-There are a number of important things in this code that need highlighting.
+Several parameters are worth explaining in more detail.
 
 #### for_each_plan
 
-`for_each_plan` expects a list. Each component of the list will correspond to a plan, with the values added to the argset of all the analyses inside the plan.
+`for_each_plan` expects a list. Each element corresponds to one plan; its values are added to the argset for every analysis inside that plan.
 
-For example, the following code would give 4 plans, with 1 analysis per each plan, with each analysis containing `argset$var_1` and `argset$var_2` as appropriate.
+The following code produces 4 plans with 1 analysis each, where each analysis receives `argset$var_1` and `argset$var_2`:
 
 
 ``` r
@@ -258,7 +254,7 @@ for_each_plan[[4]] <- list(
 )
 ```
 
-You **always** need at least 1 plan. The most simple plan possible is:
+Every task needs at least 1 plan. The simplest plan possible is:
 
 
 ``` r
@@ -272,9 +268,9 @@ plnr::expand_list(
 
 #### plnr::expand_list
 
-`plnr::expand_list` is esentially the same as `expand.grid`, except that its return values are lists instead of data.frame.
+`plnr::expand_list` works like `expand.grid`, but returns a list instead of a data frame.
 
-The code above could be simplified as follows.
+The four-element example above can be written more concisely:
 
 
 ``` r
@@ -317,37 +313,33 @@ for_each_plan
 
 #### for_each_analysis
 
-`for_each_plan` expects a list, which will generate `length(for_each_plan)` plans.
-
-`for_each_analysis` is the same, except it will generate **analyses** within each of the plans.
+`for_each_plan` generates `length(for_each_plan)` plans. `for_each_analysis` works the same way, but generates **analyses** within each plan.
 
 #### universal_argset
 
-A named list that will add the values to the argset of all the analyses.
+A named list whose values are added to the argset of every analysis in the task.
 
 #### upsert_at_end_of_each_plan
 
-If `TRUE` and `tables` contains a table called `output`, then the returned values of `action_fn` will be stored and upserted to `tables$output` at the end of each **plan**.
+When `TRUE` and `tables` contains a table named `output`, the return value of `action_fn` is upserted to `tables$output` at the end of each **plan**.
 
-If `TRUE` and the returned values of `action_fn` are named lists, then the values within the named lists will be stored and upserted to `tables$NAME_FROM_LIST` at the end of each **plan**.
+When `TRUE` and `action_fn` returns a named list, each element is upserted to the corresponding `tables$NAME_FROM_LIST` at the end of each **plan**.
 
-If you choose to upsert/insert manually from within `action_fn`, you can only do so at the end of each **analysis**.
+If you upsert or insert manually from within `action_fn`, you can only do so at the end of each **analysis**.
 
 #### insert_at_end_of_each_plan
 
-If `TRUE` and `tables` contains a table called `output`, then the returned values of `action_fn` will be stored and inserted to `tables$output` at the end of each **plan**.
+Same as `upsert_at_end_of_each_plan`, but inserts instead of upserts.
 
-If `TRUE` and the returned values of `action_fn` are named lists, then the values within the named lists will be stored and inserted to `tables$NAME_FROM_LIST` at the end of each **plan**.
-
-If you choose to upsert/insert manually from within `action_fn`, you can only do so at the end of each **analysis**.
+If you insert manually from within `action_fn`, you can only do so at the end of each **analysis**.
 
 #### action_fn_name
 
-A character string of the action_fn, preferably including the package name.
+A character string naming the action function, preferably including the package name.
 
 #### data_selector_fn_name
 
-A character string of the data_selector_fn, preferably including the package name.
+A character string naming the data selector function, preferably including the package name.
 
 #### schema
 
@@ -355,9 +347,9 @@ A named list containing the schemas used in this task.
 
 ### data_selector_fn
 
-The `data_selector_fn` is used to extract the data for each plan.
+The `data_selector_fn` extracts data for each plan.
 
-The lines inside `if(plnr::is_run_directly()){` are used to help developers. You can run the code manually/interactively to "load" the values of `argset` and `schema`.
+The block inside `if(plnr::is_run_directly()){` is for interactive development. Running the function manually executes that block, which loads `argset` and `tables` into your environment so you can step through the rest of the code.
 
 
 ``` r
@@ -471,7 +463,7 @@ example_weather_import_data_from_api_data_selector = function(argset, tables){
 
 ### action_fn
 
-The lines inside `if(plnr::is_run_directly()){` are used to help developers. You can run the code manually/interactively to "load" the values of `argset` and `schema`.
+The `if(plnr::is_run_directly()){` block works the same way here: running the function manually loads `data`, `argset`, and `tables` so you can work through the analysis interactively.
 
 
 ``` r
@@ -720,7 +712,7 @@ ss$run_task("example_weather_import_data_from_api")
 #> Error in super$upsert_data(newdata, drop_indexes, verbose): upsert_load_data_infile not validated in anon_example_weather. granularity_time
 ```
 
-## Different types of tasks
+## Common task patterns
 
 ### Importing data
 
@@ -850,38 +842,28 @@ ss$tables(
 )
 ```
 
-## Deployment patterns
+## Deployment
 
-CS9 systems typically follow this deployment pattern:
+A typical development-to-production cycle looks like this:
 
 1. **Development**: Use `devtools::load_all()` for interactive development
 2. **Testing**: Run individual tasks with `global$ss$run_task("task_name")`
 3. **Production**: Deploy in Docker containers with Airflow scheduling
-4. **Monitoring**: Use built-in logging and configuration tracking
+4. **Monitoring**: Track execution through the built-in logging tables
 
 ## Getting started
 
-To implement your own surveillance system:
+The recommended starting point is the [cs9example](https://github.com/niphr/cs9example) repository, which provides a working surveillance system you can adapt:
 
 1. Clone the cs9example repository
-2. Perform global find/replace on "cs9example" with your package name
-3. Modify the table definitions in `03_tables.R` for your data
+2. Do a global find/replace of `"cs9example"` with your package name
+3. Update the table definitions in `03_tables.R` for your data
 4. Update the task definitions in `04_tasks.R` for your analyses
-5. Implement your surveillance tasks following the established patterns
-
-This approach ensures you start with a working, tested framework rather than building from scratch.
+5. Implement your task functions following the same patterns
 
 ## Next steps
 
-1. **Evaluate CS9**: Install from CRAN and explore the documentation
-2. **Review cs9example**: Study the complete example implementation
-3. **Set up infrastructure**: Configure database and environment
-4. **Clone cs9example**: Use it as a template for your surveillance system
-5. **Customize**: Modify the example for your specific surveillance needs
-
-For detailed infrastructure setup, see the [Installation](installation.html) vignette.
-
-For learning how to create tasks, see the [Creating a Task](creating-a-task.html) vignette.
-
-For understanding the file organization, see the [File Layout](file-layout.html) vignette.
+- [Installation](installation.html) — database and environment setup
+- [Creating a task](creating-a-task.html) — step-by-step task implementation
+- [File layout](file-layout.html) — how to organize your package files
 

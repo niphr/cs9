@@ -9,23 +9,21 @@ vignette: >
 
 
 
-# Creating a Surveillance Task with CS9
-
-This vignette demonstrates how to create and configure surveillance tasks using the CS9 framework. CS9 provides a structured approach to building real-time surveillance systems with database integration and automated pipeline execution.
+This vignette shows how to create and configure surveillance tasks in CS9.
 
 ## Overview
 
-Creating a surveillance task in CS9 involves three main steps:
+Creating a task involves three main steps:
 
 1. **Define database tables** with schemas that describe your data structure
-2. **Configure surveillance tasks** that specify data processing workflows  
-3. **Implement task functions** that perform the actual data analysis
+2. **Configure the task** — specify data processing workflows and execution parameters
+3. **Implement task functions** — the data selector and action functions that do the work
 
 ## Prerequisites
 
-Before starting this tutorial, you need CS9 properly installed and configured. See `vignette("installation")` for complete setup instructions including database configuration and environment variables.
+You need CS9 installed and configured before following this tutorial. See `vignette("installation")` for database configuration and environment variable setup.
 
-You can verify your setup is working with:
+Verify your setup with:
 
 
 ``` r
@@ -33,11 +31,11 @@ You can verify your setup is working with:
 cs9::check_environment_setup()
 ```
 
-For an overview of CS9 concepts and architecture, see `vignette("cs9")`.
+For an overview of CS9 concepts and architecture, see `vignette("cs9")`; for file organization, see `vignette("file-layout")`.
 
-## Step 1: Initialize a Surveillance System
+## Step 1: Initialize a surveillance system
 
-First, create a surveillance system instance that will manage your tables and tasks:
+Create a surveillance system instance, which manages your tables and tasks:
 
 
 ``` r
@@ -55,13 +53,13 @@ print(ss$name)
 print(ss$implementation_version)
 ```
 
-## Step 2: Define Database Tables
+## Step 2: Define database tables
 
-Before creating tasks, you need to define the database tables that will store your data. Tables in CS9 require:
+Tables must be defined before tasks can use them. Each table definition requires:
 
-- **Field types**: Column names and data types
-- **Keys**: Columns that uniquely identify records
-- **Access level**: Database access permissions
+- **Field types**: Column names and their data types
+- **Keys**: Columns that uniquely identify a record
+- **Access level**: Database access permissions (e.g., `"anon"`)
 
 
 ``` r
@@ -116,16 +114,16 @@ print("Available tables:")
 print(names(ss$tables))
 ```
 
-## Step 3: Implement Task Functions
+## Step 3: Implement task functions
 
-CS9 tasks require two main functions:
+Every task needs two functions:
 
-1. **Data selector function**: Extracts and prepares data for analysis
-2. **Action function**: Performs the core analysis and stores results
+1. **Data selector function**: Extracts and prepares data once per plan
+2. **Action function**: Performs the analysis and stores results
 
-### Data Selector Function
+### Data selector function
 
-The data selector function retrieves data needed for analysis:
+The data selector retrieves the data needed for each plan:
 
 
 ``` r
@@ -163,9 +161,9 @@ weather_data_selector <- function(argset, tables) {
 }
 ```
 
-### Action Function
+### Action function
 
-The action function performs the main analysis:
+The action function performs the analysis for each plan/analysis combination:
 
 
 ``` r
@@ -201,9 +199,9 @@ weather_action <- function(data, argset, tables) {
 }
 ```
 
-## Step 4: Configure the Surveillance Task
+## Step 4: Configure the task
 
-Now configure the task with its execution parameters:
+Register the task with the surveillance system:
 
 
 ``` r
@@ -251,9 +249,9 @@ print("Available tasks:")
 print(names(ss$tasks))
 ```
 
-## Step 5: Execute the Task
+## Step 5: Execute the task
 
-Once configured, you can run the surveillance task:
+Run the task and inspect its plans:
 
 
 ``` r
@@ -279,9 +277,9 @@ if(task_name %in% names(ss$tasks)) {
 }
 ```
 
-## Step 6: Monitor and Debug Tasks
+## Step 6: Monitor and debug tasks
 
-CS9 provides several utilities for monitoring task execution:
+CS9 provides utilities for inspecting task execution:
 
 
 ``` r
@@ -322,11 +320,11 @@ if(task_name %in% names(ss$tasks)) {
 }
 ```
 
-## Advanced Task Features
+## Advanced task features
 
-### Parallel Processing
+### Parallel processing
 
-For computationally intensive tasks, you can enable parallel processing:
+Set `cores > 1` for computationally intensive tasks:
 
 
 ``` r
@@ -358,9 +356,9 @@ ss$add_task(
 )
 ```
 
-### Custom Plan Generation
+### Dynamic plan generation
 
-For complex scenarios, you can use a function to generate plans dynamically:
+When the plan list depends on database state, use `plan_analysis_fn_name` to generate plans at runtime:
 
 
 ``` r
@@ -416,11 +414,11 @@ ss$add_task(
 )
 ```
 
-## Best Practices
+## Best practices
 
-### 1. Error Handling
+### Error handling
 
-Always include robust error handling in your task functions:
+Include error handling in task functions so failures are logged and diagnosable:
 
 
 ``` r
@@ -469,9 +467,9 @@ robust_weather_action <- function(data, argset, tables) {
 }
 ```
 
-### 2. Data Validation
+### Data validation
 
-Implement comprehensive data validation:
+Check completeness, ranges, and temporal consistency before writing to the database:
 
 
 ``` r
@@ -496,9 +494,9 @@ validate_weather_data <- function(data) {
 }
 ```
 
-### 3. Modular Design
+### Modular design
 
-Structure your task functions for reusability:
+Shared transformations can be extracted into utility functions and reused across tasks:
 
 
 ``` r
@@ -536,23 +534,18 @@ create_weather_data_selector <- function(date_column = "date",
 
 ## Summary
 
-This vignette covered the complete workflow for creating surveillance tasks in CS9:
+The workflow for creating a task in CS9:
 
-1. **System Setup**: Initialize surveillance system and check environment
-2. **Table Definition**: Define database schemas for storing data
-3. **Function Implementation**: Create data selector and action functions  
-4. **Task Configuration**: Set up task parameters and execution structure
-5. **Task Execution**: Run tasks and monitor performance
-6. **Advanced Features**: Parallel processing and custom plan generation
+1. Initialize a surveillance system
+2. Define database table schemas
+3. Implement the data selector and action functions
+4. Register the task with `ss$add_task()`
+5. Run with `ss$run_task()` and inspect execution logs
 
-The CS9 framework provides a robust foundation for building scalable surveillance systems with automated pipeline execution, comprehensive logging, and flexible task orchestration.
+## See also
 
-## Related Documentation
-
-For more information about CS9:
-
-- `vignette("cs9")` - Package overview and architecture concepts
-- `vignette("installation")` - Complete installation and setup guide  
-- `vignette("file-layout")` - Package structure and file organization patterns
-- `?SurveillanceSystem_v9` - Main surveillance system class documentation
-- `?check_environment_setup` - Environment configuration diagnostics
+- `vignette("cs9")` — package overview and architecture
+- `vignette("installation")` — installation and environment setup
+- `vignette("file-layout")` — package structure and file organization
+- `?SurveillanceSystem_v9` — surveillance system class reference
+- `?check_environment_setup` — environment diagnostics

@@ -20,15 +20,13 @@ library(data.table)
 library(magrittr)
 ```
 
-This vignette shows the standard file organization for CS9 surveillance systems. It provides concrete code templates for each required file in the correct initialization order.
+This vignette describes the standard file organization for CS9 surveillance systems and provides code templates for each required file in initialization order.
 
-**Prerequisites:** Before using these templates, ensure CS9 is installed and configured properly. See `vignette("installation")` for setup instructions.
+See `vignette("installation")` for database and environment setup before using these templates. For architecture concepts see `vignette("cs9")`; for a tutorial on writing tasks see `vignette("creating-a-task")`.
 
-**Getting Started:** For hands-on tutorial creating tasks, see `vignette("creating-a-task")`. For architecture concepts, see `vignette("cs9")`.
+## Starting from the example package
 
-## Package Template
-
-The fastest way to start is cloning the complete example:
+The quickest starting point is the complete example:
 
 ```bash
 git clone https://github.com/niphr/cs9example.git
@@ -36,7 +34,7 @@ cd cs9example
 # Global find/replace "cs9example" with your package name
 ```
 
-The sections below show the required files and their contents in initialization order.
+The sections below cover each required file in initialization order.
 
 ## 00_env_and_namespace.R
 
@@ -249,7 +247,7 @@ https://github.com/niphr/cs9example/blob/main/R/11_onAttach.R
 
 ## Task files
 
-Task files are placed in .R files under their own names.
+Each task has its own `.R` file named after the task.
 
 ### weather_download_and_import_rawdata.R
 
@@ -427,20 +425,15 @@ weather_export_plots_action <- function(data, argset, tables) {
 }
 ```
 
-## Implementation Notes
+## Notes
 
-- **Initialization Order**: Files are numbered to indicate the required loading sequence in `.onLoad()`
-- **Global Environment**: The `global` object provides shared access to surveillance system and configuration
-- **Task Organization**: Each surveillance task gets its own file with data selector and action functions
-- **Schema Management**: Database table definitions are centralized in `03_tables.R`
+- **Initialization order**: Files are numbered to match the loading sequence in `.onLoad()`
+- **Global object**: `global` provides shared access to the surveillance system and configuration across files
+- **Task files**: Each task gets its own file containing the data selector and action functions
+- **Table definitions**: All database table definitions are centralized in `03_tables.R`
 
-## Next Steps
+## Next steps
 
-After organizing your files using this structure:
-
-1. **Configure Environment**: Follow `vignette("installation")` to set up database and environment variables
-2. **Understand Concepts**: Read `vignette("cs9")` for architecture and terminology
-3. **Implement Tasks**: Use `vignette("creating-a-task")` to build your surveillance workflows  
-4. **Deploy**: Set up production infrastructure using Docker and Airflow
-
-This file organization provides a solid foundation for scalable surveillance systems with proper separation of concerns and clear initialization patterns.
+- `vignette("installation")` — set up the database and environment variables
+- `vignette("cs9")` — architecture and terminology
+- `vignette("creating-a-task")` — build your first surveillance task

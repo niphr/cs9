@@ -7,48 +7,45 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette explains CS9 installation options and infrastructure requirements.
+This vignette covers CS9 installation options and infrastructure requirements.
 
 ## Installation options
 
-CS9 can be installed in two configurations:
+CS9 can be used in two configurations.
 
-### 1. CRAN installation (limited functionality)
+### CRAN installation (limited functionality)
 
-Install CS9 directly from CRAN for documentation, examples, and development tools:
+Install CS9 from CRAN for documentation, examples, and development tools:
 
 ```r
 install.packages("cs9")
 library(cs9)
 ```
 
-**What works with CRAN installation:**
+**What works:**
 
 - Package documentation and help files
 - Function examples and vignettes
-- Environment diagnostic tools (`cs9::check_environment_setup()`)
+- Environment diagnostics (`cs9::check_environment_setup()`)
 - Code templates and development utilities
 - Basic configuration management
 
-**Limitations:**
+**What does not work:**
 
-- No database connectivity
-- Cannot run surveillance tasks
-- Limited to documentation and development aids
+- Database connectivity
+- Running surveillance tasks
 
-### 2. Full installation (database-driven surveillance)
+### Full installation (database-driven surveillance)
 
-For complete surveillance functionality, you need database infrastructure and proper configuration.
+For complete surveillance functionality, you need a database backend and proper environment configuration. For production deployments, Docker is the recommended approach.
 
-We strongly recommend using CS9 within a Docker environment for production deployments.
-
-## Database Setup
+## Database setup
 
 CS9 requires a PostgreSQL database backend for full functionality.
 
-### PostgreSQL Installation
+### PostgreSQL installation
 
-#### Option 1: Docker PostgreSQL (Recommended)
+#### Option 1: Docker (recommended)
 ```bash
 # Run PostgreSQL in Docker
 docker run --name cs9-postgres -e POSTGRES_PASSWORD=yourStrongPassword100 \
@@ -58,7 +55,7 @@ docker run --name cs9-postgres -e POSTGRES_PASSWORD=yourStrongPassword100 \
 docker exec -it cs9-postgres psql -U postgres -d cs9_surveillance
 ```
 
-#### Option 2: System Installation
+#### Option 2: System installation
 ```bash
 # Ubuntu/Debian
 sudo apt-get install postgresql postgresql-contrib
@@ -71,9 +68,9 @@ sudo systemctl start postgresql  # Linux
 brew services start postgresql   # macOS
 ```
 
-### Database Schema Setup
+### Database schema setup
 
-After PostgreSQL is running, create your surveillance database:
+Once PostgreSQL is running, create your surveillance database:
 
 ```sql
 -- Connect as postgres user
@@ -89,9 +86,9 @@ GRANT ALL ON SCHEMA config TO cs9_user;
 GRANT ALL ON SCHEMA anon TO cs9_user;
 ```
 
-## Environment Variable Configuration
+## Environment variable configuration
 
-CS9 requires specific environment variables to connect to your database. These variables must be available in R, typically through your `.Renviron` file.
+CS9 reads its database connection settings from environment variables, which are typically set in your `.Renviron` file.
 
 ### Setting up .Renviron
 
@@ -99,7 +96,7 @@ CS9 requires specific environment variables to connect to your database. These v
    ```r
    # Check current .Renviron location
    Sys.getenv("R_ENVIRON_USER")
-   
+
    # Open .Renviron file for editing
    file.edit("~/.Renviron")
    ```
@@ -127,9 +124,9 @@ CS9_DBCONFIG_SCHEMA_ANON=anon
 CS9_DBCONFIG_DB_ANON=cs9_surveillance
 ```
 
-3. **Restart your R session** after making changes to `.Renviron`
+3. **Restart your R session** after editing `.Renviron`.
 
-### Variable Descriptions
+### Variable descriptions
 
 | Variable | Example Value | Description |
 |----------|---------------|-------------|
@@ -149,7 +146,7 @@ CS9_DBCONFIG_DB_ANON=cs9_surveillance
 
 ## Package behavior without database configuration
 
-If you install CS9 from CRAN without setting up the database configuration, the package will load with limited functionality. You will see messages like:
+When the database is not configured, CS9 loads with limited functionality and prints messages like:
 
 ```
 Environment setup failed: Missing required environment variables: CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER
@@ -157,44 +154,35 @@ CS9 database configuration not available. Package loaded with limited functional
 Use cs9::check_environment_setup() to diagnose configuration issues.
 ```
 
-You can use `cs9::check_environment_setup()` to diagnose what needs to be configured for full functionality.
+Run `cs9::check_environment_setup()` to see which configuration items are missing.
 
 ## Docker
 
-CS9 is designed to work within a containerized environment for production use. An example docker-compose file is available [here](https://github.com/niphr/docker-examples/blob/main/cs9-single-user-docker-compose/docker-compose.yml).
+An example docker-compose file is available [here](https://github.com/niphr/docker-examples/blob/main/cs9-single-user-docker-compose/docker-compose.yml).
 
-For getting started, we recommend cloning the [cs9example](https://github.com/niphr/cs9example) repository, which provides a complete template for implementing a surveillance system with CS9.
+To get started quickly, clone the [cs9example](https://github.com/niphr/cs9example) repository, which provides a complete template for a CS9 surveillance system.
 
-## Transitioning from CRAN to full setup
+## Moving from CRAN to full setup
 
 If you installed CS9 from CRAN and want to enable full surveillance functionality:
 
-1. **Check Current Status**
+1. Check your current status:
    ```r
    cs9::check_environment_setup()
    ```
 
-2. **Set Up Database**
-   - Install PostgreSQL or MariaDB
-   - Create databases for your surveillance system
-   - Note connection parameters (host, port, username, password)
+2. Install PostgreSQL, create the surveillance database, and note the connection parameters (host, port, username, password).
 
-3. **Configure Environment Variables**
-   - Add the variables listed below to your `.Renviron` file
-   - Restart R session
-   - Run `cs9::check_environment_setup()` to verify configuration
+3. Add the `CS9_DBCONFIG_*` variables to your `.Renviron` file, restart R, and verify with `cs9::check_environment_setup()`.
 
-4. **Test Full Functionality**
+4. Test that the package now loads fully:
    ```r
-   # This should now work without errors
    ss <- cs9::SurveillanceSystem_v9$new(name = "test_system")
    ```
 
-## Verification and Troubleshooting
+## Verification and troubleshooting
 
-### Verify Your Setup
-
-After completing the installation steps, verify that CS9 is working correctly:
+### Verify your setup
 
 ```r
 # Load CS9
@@ -208,33 +196,27 @@ ss <- cs9::SurveillanceSystem_v9$new(name = "test_surveillance")
 print(ss$name)  # Should print "test_surveillance"
 ```
 
-### Common Issues and Solutions
+### Common issues
 
-#### Issue: "Missing required environment variables"
-**Solution:** Ensure all CS9_DBCONFIG_* variables are set in your .Renviron file and restart R.
+**"Missing required environment variables"**: Check that all `CS9_DBCONFIG_*` variables are in your `.Renviron` file and restart R.
 
-#### Issue: "Could not connect to database"
-**Solutions:**
+**"Could not connect to database"**:
 - Verify PostgreSQL is running: `sudo systemctl status postgresql` (Linux) or `brew services list | grep postgres` (macOS)
-- Check database credentials match your .Renviron configuration
-- Test connection manually: `docker exec -it cs9-postgres psql -U cs9_user -d cs9_surveillance`
+- Confirm that the credentials in `.Renviron` match the database user you created
+- Test manually: `docker exec -it cs9-postgres psql -U cs9_user -d cs9_surveillance`
 
-#### Issue: "Package loaded with limited functionality"
-**Solution:** This is normal for CRAN installation without database setup. Follow the database configuration steps above.
+**"Package loaded with limited functionality"**: Expected when no database is configured. Follow the database setup steps above.
 
-#### Issue: Permission denied errors
-**Solution:** Verify database user has proper permissions:
+**Permission denied errors**: Grant the required privileges:
 ```sql
 GRANT ALL PRIVILEGES ON DATABASE cs9_surveillance TO cs9_user;
 GRANT ALL ON SCHEMA config TO cs9_user;
 GRANT ALL ON SCHEMA anon TO cs9_user;
 ```
 
-## Next Steps
+## Next steps
 
-Once CS9 is successfully installed and configured:
-
-1. **Learn the Framework**: Read `vignette("cs9")` for architecture and concepts
-2. **Create Your First Task**: Follow `vignette("creating-a-task")` for hands-on tutorial  
-3. **Organize Your Project**: See `vignette("file-layout")` for package structure guidance
-4. **Explore Examples**: Clone [cs9example](https://github.com/niphr/cs9example) for a complete implementation template
+- `vignette("cs9")` — architecture and core concepts
+- `vignette("creating-a-task")` — step-by-step task tutorial
+- `vignette("file-layout")` — package structure guidance
+- [cs9example](https://github.com/niphr/cs9example) — a complete implementation template
