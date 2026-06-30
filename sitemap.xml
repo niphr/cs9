@@ -11,6 +11,7 @@
 <url><loc>https://niphr.github.io/cs9/index.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/news/index.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/reference/SurveillanceSystem_v9.html</loc></url>
+<url><loc>https://niphr.github.io/cs9/reference/TaskJob.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/reference/check_environment_setup.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/reference/config.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/reference/create_folder_if_doesnt_exist.html</loc></url>
@@ -23,6 +24,7 @@
 <url><loc>https://niphr.github.io/cs9/reference/mandatory_db_filter.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/reference/path.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/reference/reexports.html</loc></url>
+<url><loc>https://niphr.github.io/cs9/reference/run_task_sequentially_as_callr_bg_using_load_all.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/reference/run_task_sequentially_as_rstudio_job_using_load_all.html</loc></url>
 <url><loc>https://niphr.github.io/cs9/reference/update_config_log.html</loc></url>
 </urlset>

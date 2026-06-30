@@ -4,121 +4,109 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>File Layout • cs9</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
-<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="File Layout">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_3-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/Spectral-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="File Layout">
 </head>
-<body data-spy="scroll" data-target="#toc">
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <div class="container template-article">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">cs9</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">25.12.23</span>
-      </span>
-    </div>
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="../articles/cs9.html">Get started</a>
-</li>
-<li>
-  <a href="../reference/index.html">Reference</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Articles
+    <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-<li>
-      <a href="../articles/installation.html">Installation</a>
-    </li>
-    <li>
-      <a href="../articles/file-layout.html">File Layout</a>
-    </li>
-    <li>
-      <a href="../articles/creating-a-task.html">Creating a task</a>
-    </li>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.5.13</small>
+
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-3">
+      <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="../articles/cs9.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="active nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="../articles/installation.html">Installation</a></li>
+    <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
+    <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/niphr/cs9/" class="external-link">
-    <span class="fab fa-github fa-lg"></span>
-
-  </a>
+<ul class="navbar-nav">
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-cs-family" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">cs* family</button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-cs-family">
+<li><a class="dropdown-item" href="https://niphr.github.io/cs9/">cs9 — project framework</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/csalert/">csalert — surveillance alerts</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/csdata/">csdata — structural data</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/csdb/">csdb — database access</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/csmaps/">csmaps — maps of Norway</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/csstyle/">csstyle — output styling</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/cstidy/">cstidy — tidy surveillance data</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/cstime/">cstime — weeks &amp; dates</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/csutil/">csutil — shared utilities</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/">Package registry</a></li>
+  </ul>
 </li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/niphr/cs9/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
-<!--/.nav-collapse -->
+
+
   </div>
-<!--/.container -->
-</div>
-<!--/.navbar -->
+</nav><div class="container template-article">
 
 
 
-      </header><div class="row">
-  <div class="col-md-9 contents">
-    <div class="page-header toc-ignore">
-      <h1 data-toc-skip>File Layout</h1>
+
+<div class="row">
+  <main id="main" class="col-md-9"><div class="page-header">
+      <img src="../logo.png" class="logo" alt=""><h1>File Layout</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/niphr/cs9/blob/main/vignettes/file-layout.Rmd" class="external-link"><code>vignettes/file-layout.Rmd</code></a></small>
-      <div class="hidden name"><code>file-layout.Rmd</code></div>
-
+      <div class="d-none name"><code>file-layout.Rmd</code></div>
     </div>
 
     
     
-<p>This vignette shows the standard file organization for CS9
-surveillance systems. It provides concrete code templates for each
-required file in the correct initialization order.</p>
-<p><strong>Prerequisites:</strong> Before using these templates, ensure
-CS9 is installed and configured properly. See
-<code><a href="../articles/installation.html">vignette("installation")</a></code> for setup instructions.</p>
-<p><strong>Getting Started:</strong> For hands-on tutorial creating
-tasks, see <code><a href="../articles/creating-a-task.html">vignette("creating-a-task")</a></code>. For architecture
-concepts, see <code><a href="../articles/cs9.html">vignette("cs9")</a></code>.</p>
+<p>This vignette describes the standard file organization for CS9
+surveillance systems and provides code templates for each required file
+in initialization order.</p>
+<p>See <code><a href="../articles/installation.html">vignette("installation")</a></code> for database and
+environment setup before using these templates. For architecture
+concepts see <code><a href="../articles/cs9.html">vignette("cs9")</a></code>; for a tutorial on writing
+tasks see <code><a href="../articles/creating-a-task.html">vignette("creating-a-task")</a></code>.</p>
 <div class="section level2">
-<h2 id="package-template">Package Template<a class="anchor" aria-label="anchor" href="#package-template"></a>
+<h2 id="starting-from-the-example-package">Starting from the example package<a class="anchor" aria-label="anchor" href="#starting-from-the-example-package"></a>
 </h2>
-<p>The fastest way to start is cloning the complete example:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/csids/cs9example.git</span>
+<p>The quickest starting point is the complete example:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/niphr/cs9example.git</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="bu">cd</span> cs9example</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co"># Global find/replace "cs9example" with your package name</span></span></code></pre></div>
-<p>The sections below show the required files and their contents in
-initialization order.</p>
+<p>The sections below cover each required file in initialization
+order.</p>
 </div>
 <div class="section level2">
 <h2 id="env_and_namespace-r">00_env_and_namespace.R<a class="anchor" aria-label="anchor" href="#env_and_namespace-r"></a>
 </h2>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/00_env_and_namespace.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/00_env_and_namespace.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/00_env_and_namespace.R</a></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Environment and namespace configuration</span></span>
 <span><span class="co"># This file sets up the package environment and namespace exports</span></span>
@@ -142,7 +130,7 @@ initialization order.</p>
 <div class="section level2">
 <h2 id="definitions-r">01_definitions.R<a class="anchor" aria-label="anchor" href="#definitions-r"></a>
 </h2>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/01_definitions.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/01_definitions.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/01_definitions.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/01_definitions.R</a></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Project-specific definitions</span></span>
 <span><span class="co"># This file contains global definitions used throughout the surveillance system</span></span>
@@ -168,7 +156,7 @@ initialization order.</p>
 <div class="section level2">
 <h2 id="surveillance_systems-r">02_surveillance_systems.R<a class="anchor" aria-label="anchor" href="#surveillance_systems-r"></a>
 </h2>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/02_surveillance_systems.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/02_surveillance_systems.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/02_surveillance_systems.R</a></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Initialize surveillance systems</span></span>
 <span><span class="co"># This file creates the main surveillance system objects</span></span>
@@ -188,7 +176,7 @@ initialization order.</p>
 <div class="section level2">
 <h2 id="tables-r">03_tables.R<a class="anchor" aria-label="anchor" href="#tables-r"></a>
 </h2>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/03_tables.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/03_tables.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/03_tables.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/03_tables.R</a></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Database table definitions</span></span>
 <span><span class="co"># This file defines all database tables used by the surveillance system</span></span>
@@ -222,7 +210,7 @@ initialization order.</p>
 <div class="section level2">
 <h2 id="tasks-r">04_tasks.R<a class="anchor" aria-label="anchor" href="#tasks-r"></a>
 </h2>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/04_tasks.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/04_tasks.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/04_tasks.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/04_tasks.R</a></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Task definitions</span></span>
 <span><span class="co"># This file defines all surveillance tasks</span></span>
@@ -259,7 +247,7 @@ initialization order.</p>
 <div class="section level2">
 <h2 id="deliverables-r">05_deliverables.R<a class="anchor" aria-label="anchor" href="#deliverables-r"></a>
 </h2>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/05_deliverables.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/05_deliverables.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/05_deliverables.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/05_deliverables.R</a></p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Deliverable definitions (optional)</span></span>
 <span><span class="co"># This file defines outputs and reports generated by the surveillance system</span></span>
@@ -277,7 +265,7 @@ initialization order.</p>
 <div class="section level2">
 <h2 id="onload-r">10_onLoad.R<a class="anchor" aria-label="anchor" href="#onload-r"></a>
 </h2>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/10_onLoad.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/10_onLoad.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/10_onLoad.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/10_onLoad.R</a></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Package loading sequence</span></span>
 <span><span class="co"># This file defines what happens when the package is loaded</span></span>
@@ -303,7 +291,7 @@ initialization order.</p>
 <div class="section level2">
 <h2 id="onattach-r">11_onAttach.R<a class="anchor" aria-label="anchor" href="#onattach-r"></a>
 </h2>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/11_onAttach.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/11_onAttach.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/11_onAttach.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/11_onAttach.R</a></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Package attachment messages</span></span>
 <span><span class="co"># This file defines startup messages when package is attached</span></span>
@@ -319,11 +307,11 @@ initialization order.</p>
 <div class="section level2">
 <h2 id="task-files">Task files<a class="anchor" aria-label="anchor" href="#task-files"></a>
 </h2>
-<p>Task files are placed in .R files under their own names.</p>
+<p>Each task has its own <code>.R</code> file named after the task.</p>
 <div class="section level3">
 <h3 id="weather_download_and_import_rawdata-r">weather_download_and_import_rawdata.R<a class="anchor" aria-label="anchor" href="#weather_download_and_import_rawdata-r"></a>
 </h3>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/weather_download_and_import_rawdata.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/weather_download_and_import_rawdata.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/weather_download_and_import_rawdata.R</a></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Weather data download and import task</span></span>
 <span><span class="co"># This file implements the weather data collection task</span></span>
@@ -347,7 +335,7 @@ initialization order.</p>
 <span><span class="co">#' @export</span></span>
 <span><span class="va">weather_download_and_import_rawdata_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># Download weather data for specified location and date</span></span>
-<span>  <span class="va">weather_data</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdatatable.gitlab.io/data.table/reference/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
+<span>  <span class="va">weather_data</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
 <span>    granularity_time <span class="op">=</span> <span class="st">"day"</span>,</span>
 <span>    granularity_geo <span class="op">=</span> <span class="st">"nation"</span>, </span>
 <span>    country_iso3 <span class="op">=</span> <span class="st">"NOR"</span>,</span>
@@ -369,7 +357,7 @@ initialization order.</p>
 <div class="section level3">
 <h3 id="weather_clean_data-r">weather_clean_data.R<a class="anchor" aria-label="anchor" href="#weather_clean_data-r"></a>
 </h3>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/weather_clean_data.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/weather_clean_data.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/weather_clean_data.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/weather_clean_data.R</a></p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Weather data cleaning task</span></span>
 <span><span class="co"># This file implements data cleaning and validation</span></span>
@@ -387,7 +375,7 @@ initialization order.</p>
 <span>      <span class="va">date</span> <span class="op">&lt;=</span> <span class="va">argset</span><span class="op">$</span><span class="va">date_to</span></span>
 <span>    <span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdatatable.gitlab.io/data.table/reference/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    raw_data <span class="op">=</span> <span class="va">raw_data</span></span>
@@ -425,7 +413,7 @@ initialization order.</p>
 <div class="section level3">
 <h3 id="weather_export_weather_plots-r">weather_export_weather_plots.R<a class="anchor" aria-label="anchor" href="#weather_export_weather_plots-r"></a>
 </h3>
-<p><a href="https://github.com/csids/cs9example/blob/main/R/weather_export_plots.R" class="external-link uri">https://github.com/csids/cs9example/blob/main/R/weather_export_plots.R</a></p>
+<p><a href="https://github.com/niphr/cs9example/blob/main/R/weather_export_plots.R" class="external-link uri">https://github.com/niphr/cs9example/blob/main/R/weather_export_plots.R</a></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Weather plotting and export task  </span></span>
 <span><span class="co"># This file implements visualization and reporting</span></span>
@@ -444,7 +432,7 @@ initialization order.</p>
 <span>      <span class="va">date</span> <span class="op">&lt;=</span> <span class="va">argset</span><span class="op">$</span><span class="va">date_to</span></span>
 <span>    <span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdatatable.gitlab.io/data.table/reference/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    weather_data <span class="op">=</span> <span class="va">plot_data</span></span>
@@ -496,73 +484,57 @@ initialization order.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="implementation-notes">Implementation Notes<a class="anchor" aria-label="anchor" href="#implementation-notes"></a>
+<h2 id="notes">Notes<a class="anchor" aria-label="anchor" href="#notes"></a>
 </h2>
 <ul>
 <li>
-<strong>Initialization Order</strong>: Files are numbered to
-indicate the required loading sequence in <code>.onLoad()</code>
+<strong>Initialization order</strong>: Files are numbered to match
+the loading sequence in <code>.onLoad()</code>
 </li>
 <li>
-<strong>Global Environment</strong>: The <code>global</code> object
-provides shared access to surveillance system and configuration</li>
+<strong>Global object</strong>: <code>global</code> provides shared
+access to the surveillance system and configuration across files</li>
 <li>
-<strong>Task Organization</strong>: Each surveillance task gets its
-own file with data selector and action functions</li>
+<strong>Task files</strong>: Each task gets its own file containing
+the data selector and action functions</li>
 <li>
-<strong>Schema Management</strong>: Database table definitions are
-centralized in <code>03_tables.R</code>
+<strong>Table definitions</strong>: All database table definitions
+are centralized in <code>03_tables.R</code>
 </li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="next-steps">Next Steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
+<h2 id="next-steps">Next steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
 </h2>
-<p>After organizing your files using this structure:</p>
-<ol style="list-style-type: decimal">
+<ul>
 <li>
-<strong>Configure Environment</strong>: Follow
-<code><a href="../articles/installation.html">vignette("installation")</a></code> to set up database and environment
-variables</li>
+<code><a href="../articles/installation.html">vignette("installation")</a></code> — set up the database and
+environment variables</li>
 <li>
-<strong>Understand Concepts</strong>: Read
-<code><a href="../articles/cs9.html">vignette("cs9")</a></code> for architecture and terminology</li>
+<code><a href="../articles/cs9.html">vignette("cs9")</a></code> — architecture and terminology</li>
 <li>
-<strong>Implement Tasks</strong>: Use
-<code><a href="../articles/creating-a-task.html">vignette("creating-a-task")</a></code> to build your surveillance
-workflows<br>
-</li>
-<li>
-<strong>Deploy</strong>: Set up production infrastructure using
-Docker and Airflow</li>
-</ol>
-<p>This file organization provides a solid foundation for scalable
-surveillance systems with proper separation of concerns and clear
-initialization patterns.</p>
+<code><a href="../articles/creating-a-task.html">vignette("creating-a-task")</a></code> — build your first
+surveillance task</li>
+</ul>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-
-      </div>
-
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
 
-      <footer><div class="copyright">
-  <p></p>
-<p>Crafted by <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a>.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p>Crafted by <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a>.
+<nav class="cs-family" aria-label="cs* family"><span class="cs-family-label">cs* family</span> <a href="https://niphr.github.io/cs9/">cs9</a> <a href="https://niphr.github.io/csalert/" class="external-link">csalert</a> <a href="https://niphr.github.io/csdata/" class="external-link">csdata</a> <a href="https://niphr.github.io/csdb/" class="external-link">csdb</a> <a href="https://niphr.github.io/csmaps/" class="external-link">csmaps</a> <a href="https://niphr.github.io/csstyle/" class="external-link">csstyle</a> <a href="https://niphr.github.io/cstidy/" class="external-link">cstidy</a> <a href="https://niphr.github.io/cstime/" class="external-link">cstime</a> <a href="https://niphr.github.io/csutil/" class="external-link">csutil</a>
+</nav></p>
 </div>
 
-<div class="pkgdown">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+<div class="pkgdown-footer-right">
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
-      </footer>
+    </footer>
 </div>
-
 
 
 

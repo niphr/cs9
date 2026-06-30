@@ -1,0 +1,88 @@
+## Overview
+
+[Core Surveillance 9](https://niphr.github.io/cs9/) (“cs9”) is a free
+and open-source framework for real-time analysis and disease
+surveillance.
+
+Read the introduction vignette
+[here](https://niphr.github.io/cs9/articles/cs9.html) or run
+[`help(package="cs9")`](https://niphr.github.io/cs9/reference).
+
+# Package index
+
+## Core Classes
+
+Main R6 classes for surveillance system architecture
+
+- [`SurveillanceSystem_v9`](https://niphr.github.io/cs9/reference/SurveillanceSystem_v9.md)
+  : A Surveillance System Object
+- [`TaskJob`](https://niphr.github.io/cs9/reference/TaskJob.md) :
+  TaskJob R6 Class
+
+## Configuration Management
+
+Functions for logging and configuration tracking
+
+- [`config`](https://niphr.github.io/cs9/reference/config.md) :
+  Flags/values to be used in the 'dashboards' scene
+- [`update_config_log()`](https://niphr.github.io/cs9/reference/update_config_log.md)
+  : Update Configuration Log
+- [`get_config_log()`](https://niphr.github.io/cs9/reference/get_config_log.md)
+  : Get Configuration Log
+- [`get_config_data_hash_for_each_plan()`](https://niphr.github.io/cs9/reference/get_config_data_hash_for_each_plan.md)
+  : Get Configuration Data Hash for Each Plan
+- [`get_config_tables_last_updated()`](https://niphr.github.io/cs9/reference/get_config_tables_last_updated.md)
+  : Get Configuration Tables Last Updated
+- [`get_config_tasks_stats()`](https://niphr.github.io/cs9/reference/get_config_tasks_stats.md)
+  : Get Configuration Tasks Statistics
+
+## Environment Setup
+
+Environment validation and diagnostic functions
+
+- [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+  : Check Environment Setup
+
+## File and Path Management
+
+Utilities for managing directories and file paths
+
+- [`path()`](https://niphr.github.io/cs9/reference/path.md) : Get
+  Results Folder Path
+- [`create_folder_if_doesnt_exist()`](https://niphr.github.io/cs9/reference/create_folder_if_doesnt_exist.md)
+  : Create Folder If It Doesn't Exist
+- [`create_latest_folder()`](https://niphr.github.io/cs9/reference/create_latest_folder.md)
+  : Create Latest Folder
+
+## Data Processing Utilities
+
+Helper functions for data manipulation and filtering
+
+- [`mandatory_db_filter()`](https://niphr.github.io/cs9/reference/mandatory_db_filter.md)
+  : mandatory_db_filter
+
+## Task Management
+
+Functions for running and managing surveillance tasks
+
+- [`run_task_sequentially_as_rstudio_job_using_load_all()`](https://niphr.github.io/cs9/reference/run_task_sequentially_as_rstudio_job_using_load_all.md)
+  : Run a Task Sequentially as an RStudio Job
+- [`run_task_sequentially_as_callr_bg_using_load_all()`](https://niphr.github.io/cs9/reference/run_task_sequentially_as_callr_bg_using_load_all.md)
+  : Run a cs9 task in a background process, streaming its output live
+
+## Imported Functions
+
+Re-exported functions from other packages
+
+- [`reexports`](https://niphr.github.io/cs9/reference/reexports.md)
+  [`%>%`](https://niphr.github.io/cs9/reference/reexports.md) : Objects
+  exported from other packages
+
+# Articles
+
+### Main verbs
+
+- [Installation](https://niphr.github.io/cs9/articles/installation.md):
+- [File Layout](https://niphr.github.io/cs9/articles/file-layout.md):
+- [Creating a
+  task](https://niphr.github.io/cs9/articles/creating-a-task.md):

@@ -1,0 +1,232 @@
+# Installation
+
+This vignette covers CS9 installation options and infrastructure
+requirements.
+
+## Installation options
+
+CS9 can be used in two configurations.
+
+### CRAN installation (limited functionality)
+
+Install CS9 from CRAN for documentation, examples, and development
+tools:
+
+``` r
+install.packages("cs9")
+library(cs9)
+```
+
+**What works:**
+
+- Package documentation and help files
+- Function examples and vignettes
+- Environment diagnostics
+  ([`cs9::check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md))
+- Code templates and development utilities
+- Basic configuration management
+
+**What does not work:**
+
+- Database connectivity
+- Running surveillance tasks
+
+### Full installation (database-driven surveillance)
+
+For complete surveillance functionality, you need a database backend and
+proper environment configuration. For production deployments, Docker is
+the recommended approach.
+
+## Database setup
+
+CS9 requires a PostgreSQL database backend for full functionality.
+
+### PostgreSQL installation
+
+#### Option 1: Docker (recommended)
+
+``` bash
+# Run PostgreSQL in Docker
+docker run --name cs9-postgres -e POSTGRES_PASSWORD=yourStrongPassword100 \
+  -e POSTGRES_DB=cs9_surveillance -p 5432:5432 -d postgres:13
+
+# Connect to create additional databases/schemas as needed
+docker exec -it cs9-postgres psql -U postgres -d cs9_surveillance
+```
+
+#### Option 2: System installation
+
+``` bash
+# Ubuntu/Debian
+sudo apt-get install postgresql postgresql-contrib
+
+# macOS with Homebrew
+brew install postgresql
+
+# Start PostgreSQL service
+sudo systemctl start postgresql  # Linux
+brew services start postgresql   # macOS
+```
+
+### Database schema setup
+
+Once PostgreSQL is running, create your surveillance database:
+
+``` sql
+-- Connect as postgres user
+CREATE DATABASE cs9_surveillance;
+CREATE USER cs9_user WITH PASSWORD 'yourStrongPassword100';
+GRANT ALL PRIVILEGES ON DATABASE cs9_surveillance TO cs9_user;
+
+-- Create schemas for different access levels
+\c cs9_surveillance
+CREATE SCHEMA config;
+CREATE SCHEMA anon;
+GRANT ALL ON SCHEMA config TO cs9_user;
+GRANT ALL ON SCHEMA anon TO cs9_user;
+```
+
+## Environment variable configuration
+
+CS9 reads its database connection settings from environment variables,
+which are typically set in your `.Renviron` file.
+
+### Setting up .Renviron
+
+1.  **Find or create your .Renviron file:**
+
+    ``` r
+    # Check current .Renviron location
+    Sys.getenv("R_ENVIRON_USER")
+
+    # Open .Renviron file for editing
+    file.edit("~/.Renviron")
+    ```
+
+2.  **Add CS9 configuration variables:**
+
+``` bash
+# CS9 Core Configuration
+CS9_AUTO=0
+CS9_PATH=
+
+# Database Connection Settings
+CS9_DBCONFIG_ACCESS=config/anon
+CS9_DBCONFIG_DRIVER=PostgreSQL Unicode
+CS9_DBCONFIG_PORT=5432
+CS9_DBCONFIG_SERVER=localhost
+CS9_DBCONFIG_USER=cs9_user
+CS9_DBCONFIG_PASSWORD=yourStrongPassword100
+CS9_DBCONFIG_SSLMODE=prefer
+
+# Database Schema Configuration
+CS9_DBCONFIG_SCHEMA_CONFIG=config
+CS9_DBCONFIG_DB_CONFIG=cs9_surveillance
+CS9_DBCONFIG_SCHEMA_ANON=anon
+CS9_DBCONFIG_DB_ANON=cs9_surveillance
+```
+
+3.  **Restart your R session** after editing `.Renviron`.
+
+### Variable descriptions
+
+| Variable   | Example Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Description                                         |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| `CS9_AUTO` | `0`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Set to 0 for interactive mode, 1 for automated mode |
+| `CS9_PATH` | \``| Base path for cs9::path function (usually empty) | |`CS9_DBCONFIG_ACCESS`|`config/anon`| Database access levels (slash-separated) | |`CS9_DBCONFIG_DRIVER`|`PostgreSQL Unicode`| Database driver name | |`CS9_DBCONFIG_SERVER`|`localhost`| Database server hostname or IP | |`CS9_DBCONFIG_PORT`|`5432`| Database server port | |`CS9_DBCONFIG_USER`|`cs9_user`| Database username | |`CS9_DBCONFIG_PASSWORD`|`yourStrongPassword100`| Database password | |`CS9_DBCONFIG_SSLMODE`|`prefer`| SSL connection preference | |`CS9_DBCONFIG_SCHEMA_CONFIG`|`config`| Schema for CS9 configuration tables | |`CS9_DBCONFIG_DB_CONFIG`|`cs9_surveillance`| Database for configuration | |`CS9_DBCONFIG_SCHEMA_ANON`|`anon`| Schema for anonymous data tables | |`CS9_DBCONFIG_DB_ANON`|`cs9_surveillance\` | Database for surveillance data                      |
+
+## Package behavior without database configuration
+
+When the database is not configured, CS9 loads with limited
+functionality and prints messages like:
+
+    Environment setup failed: Missing required environment variables: CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER
+    CS9 database configuration not available. Package loaded with limited functionality.
+    Use cs9::check_environment_setup() to diagnose configuration issues.
+
+Run
+[`cs9::check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+to see which configuration items are missing.
+
+## Docker
+
+An example docker-compose file is available
+[here](https://github.com/niphr/docker-examples/blob/main/cs9-single-user-docker-compose/docker-compose.yml).
+
+To get started quickly, clone the
+[cs9example](https://github.com/niphr/cs9example) repository, which
+provides a complete template for a CS9 surveillance system.
+
+## Moving from CRAN to full setup
+
+If you installed CS9 from CRAN and want to enable full surveillance
+functionality:
+
+1.  Check your current status:
+
+    ``` r
+    cs9::check_environment_setup()
+    ```
+
+2.  Install PostgreSQL, create the surveillance database, and note the
+    connection parameters (host, port, username, password).
+
+3.  Add the `CS9_DBCONFIG_*` variables to your `.Renviron` file, restart
+    R, and verify with
+    [`cs9::check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md).
+
+4.  Test that the package now loads fully:
+
+    ``` r
+    ss <- cs9::SurveillanceSystem_v9$new(name = "test_system")
+    ```
+
+## Verification and troubleshooting
+
+### Verify your setup
+
+``` r
+# Load CS9
+library(cs9)
+
+# Check environment configuration
+cs9::check_environment_setup()
+
+# Test surveillance system creation
+ss <- cs9::SurveillanceSystem_v9$new(name = "test_surveillance")
+print(ss$name)  # Should print "test_surveillance"
+```
+
+### Common issues
+
+**“Missing required environment variables”**: Check that all
+`CS9_DBCONFIG_*` variables are in your `.Renviron` file and restart R.
+
+**“Could not connect to database”**: - Verify PostgreSQL is running:
+`sudo systemctl status postgresql` (Linux) or
+`brew services list | grep postgres` (macOS) - Confirm that the
+credentials in `.Renviron` match the database user you created - Test
+manually:
+`docker exec -it cs9-postgres psql -U cs9_user -d cs9_surveillance`
+
+**“Package loaded with limited functionality”**: Expected when no
+database is configured. Follow the database setup steps above.
+
+**Permission denied errors**: Grant the required privileges:
+
+``` sql
+GRANT ALL PRIVILEGES ON DATABASE cs9_surveillance TO cs9_user;
+GRANT ALL ON SCHEMA config TO cs9_user;
+GRANT ALL ON SCHEMA anon TO cs9_user;
+```
+
+## Next steps
+
+- [`vignette("cs9")`](https://niphr.github.io/cs9/articles/cs9.md) —
+  architecture and core concepts
+- [`vignette("creating-a-task")`](https://niphr.github.io/cs9/articles/creating-a-task.md)
+  — step-by-step task tutorial
+- [`vignette("file-layout")`](https://niphr.github.io/cs9/articles/file-layout.md)
+  — package structure guidance
+- [cs9example](https://github.com/niphr/cs9example) — a complete
+  implementation template
