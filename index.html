@@ -90,12 +90,51 @@
 </div>
 
 <div class="cs-home">
-  <main id="main" class="cs-home-main"><div class="section level2">
+  <main id="main" class="cs-home-main"><p class="cs-section">
+How it works
+</p>
+<div class="cs-cards">
+<div class="cs-card">
+<div class="cs-card-num">
+01
+</div>
+<h3>
+Surveillance system
+</h3>
+<p>
+A single <code>SurveillanceSystem_v9</code> R6 object registers all database tables and tasks, giving the whole pipeline one place to configure and run.
+</p>
+</div>
+<div class="cs-card">
+<div class="cs-card-num">
+02
+</div>
+<h3>
+Tasks, plans, analyses
+</h3>
+<p>
+Work is arranged in a three-level hierarchy — tasks contain plans, plans contain analyses — so data is pulled once per plan and reused across all analyses inside it, with optional parallel execution across plans.
+</p>
+</div>
+<div class="cs-card">
+<div class="cs-card-num">
+03
+</div>
+<h3>
+Execution logging
+</h3>
+<p>
+Every task run is recorded via <code><a href="reference/update_config_log.html">update_config_log()</a></code>, and <code><a href="reference/get_config_tasks_stats.html">get_config_tasks_stats()</a></code> returns timing and status so you can diagnose failures and track pipeline performance over time.
+</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
 <p><a href="https://niphr.github.io/cs9/">Core Surveillance 9</a> (“cs9”) is a free and open-source framework for real-time analysis and disease surveillance.</p>
 <p>Read the introduction vignette <a href="https://niphr.github.io/cs9/articles/cs9.html">here</a> or run <code><a href="https://niphr.github.io/cs9/reference">help(package="cs9")</a></code>.</p>
 </div>
+
   </main><aside class="cs-home-aside"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
@@ -137,7 +176,7 @@
 
     <footer><div class="pkgdown-footer-left">
   <p>Crafted by <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a>.
-<nav class="cs-family" aria-label="cs* family"><span class="cs-family-label">cs* family</span> <a href="https://niphr.github.io/cs9/">cs9</a> <a href="https://niphr.github.io/csalert/" class="external-link">csalert</a> <a href="https://niphr.github.io/csdata/" class="external-link">csdata</a> <a href="https://niphr.github.io/csdb/" class="external-link">csdb</a> <a href="https://niphr.github.io/csmaps/" class="external-link">csmaps</a> <a href="https://niphr.github.io/csstyle/" class="external-link">csstyle</a> <a href="https://niphr.github.io/cstidy/" class="external-link">cstidy</a> <a href="https://niphr.github.io/cstime/" class="external-link">cstime</a> <a href="https://niphr.github.io/csutil/" class="external-link">csutil</a>
+<nav class="cs-family" aria-label="cs* family"><a class="external-link cs-family-label" href="https://niphr.github.io/">cs* family ↗</a> <a href="https://niphr.github.io/cs9/">cs9</a> <a href="https://niphr.github.io/csalert/" class="external-link">csalert</a> <a href="https://niphr.github.io/csdata/" class="external-link">csdata</a> <a href="https://niphr.github.io/csdb/" class="external-link">csdb</a> <a href="https://niphr.github.io/csmaps/" class="external-link">csmaps</a> <a href="https://niphr.github.io/csstyle/" class="external-link">csstyle</a> <a href="https://niphr.github.io/cstidy/" class="external-link">cstidy</a> <a href="https://niphr.github.io/cstime/" class="external-link">cstime</a> <a href="https://niphr.github.io/csutil/" class="external-link">csutil</a>
 </nav></p>
 </div>
 
