@@ -1,6 +1,9 @@
-# mandatory_db_filter
+# Filter surveillance data by standard epidemiological dimensions
 
-mandatory_db_filter
+Applies a set of standard include/exclude filters to a database table or
+data frame using the conventional surveillance field names. Each `NULL`
+argument is a no-op, so callers only need to supply the dimensions they
+actually want to restrict.
 
 ## Usage
 
@@ -24,44 +27,75 @@ mandatory_db_filter(
 
 - .data:
 
-  Data
+  A data frame, `data.table`, or remote database table (e.g. the result
+  of [`dplyr::tbl()`](https://dplyr.tidyverse.org/reference/tbl.html))
+  that contains the standard surveillance columns.
 
 - granularity_time:
 
-  Granularity time to filter on (include)
+  Character vector. Values of `granularity_time` to keep. `NULL`
+  (default) applies no filter.
 
 - granularity_time_not:
 
-  Granularity time to filter on (exclude)
+  Character vector. Values of `granularity_time` to drop. `NULL`
+  (default) applies no filter.
 
 - granularity_geo:
 
-  Granularity geo to filter on (include)
+  Character vector. Values of `granularity_geo` to keep. `NULL`
+  (default) applies no filter.
 
 - granularity_geo_not:
 
-  Granularity geo to filter on (exclude)
+  Character vector. Values of `granularity_geo` to drop. `NULL`
+  (default) applies no filter.
 
 - country_iso3:
 
-  country_iso3 to filter on (include)
+  Character vector. Values of `country_iso3` to keep. `NULL` (default)
+  applies no filter.
 
 - location_code:
 
-  location_code to filter on (include)
+  Character vector. Values of `location_code` to keep. `NULL` (default)
+  applies no filter.
 
 - age:
 
-  Age to filter on (include)
+  Character vector. Values of `age` to keep. `NULL` (default) applies no
+  filter.
 
 - age_not:
 
-  Age to filter on (exclude)
+  Character vector. Values of `age` to drop. `NULL` (default) applies no
+  filter.
 
 - sex:
 
-  Sex to filter on (include)
+  Character vector. Values of `sex` to keep. `NULL` (default) applies no
+  filter.
 
 - sex_not:
 
-  Sex to filter on (exclude)
+  Character vector. Values of `sex` to drop. `NULL` (default) applies no
+  filter.
+
+## Value
+
+The filtered object in the same class as `.data`.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Inside a data_selector function, filter a remote table before collecting:
+d <- schema$anon_covid_cases$tbl() |>
+  mandatory_db_filter(
+    granularity_time = "isoweek",
+    granularity_geo  = "county",
+    age_not          = "total"
+  ) |>
+  dplyr::collect()
+} # }
+```

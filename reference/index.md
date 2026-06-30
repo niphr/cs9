@@ -49,7 +49,7 @@ Utilities for managing directories and file paths
 Helper functions for data manipulation and filtering
 
 - [`mandatory_db_filter()`](https://niphr.github.io/cs9/reference/mandatory_db_filter.md)
-  : mandatory_db_filter
+  : Filter surveillance data by standard epidemiological dimensions
 
 ## Task Management
 

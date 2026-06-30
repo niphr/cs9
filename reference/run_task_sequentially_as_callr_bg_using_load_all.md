@@ -16,13 +16,24 @@ run_task_sequentially_as_callr_bg_using_load_all(
 
 - task_name:
 
-  Task name.
+  Character string. Name of the task to run.
 
 - ss_prefix:
 
-  Surveillance-system prefix. Defaults to `"global$ss"`.
+  Character string. R expression that resolves to the surveillance
+  system object in the child process. Defaults to `"global$ss"`.
 
 ## Value
 
 Invisibly returns the
-[TaskJob](https://niphr.github.io/cs9/reference/TaskJob.md) R6 object.
+[TaskJob](https://niphr.github.io/cs9/reference/TaskJob.md) R6 object
+(already started).
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+job <- run_task_sequentially_as_callr_bg_using_load_all("my_task")
+job$wait()
+} # }
+```
