@@ -2,6 +2,21 @@ url: https://niphr.github.io/cs9/
 
 template:
   package: cstemplate
+  params:
+    hero:
+      overline: "R package · Surveillance framework"
+      title: "Real-time disease surveillance."
+      lede: >
+        An R6-based framework for building real-time, database-driven surveillance
+        systems — parallel processing, data validation, and automated pipelines for
+        public-health monitoring.
+      cta:
+        primary:
+          text: "Get started"
+          href: "articles/cs9.html"
+        secondary:
+          text: "Browse the reference →"
+          href: "reference/index.html"
 
 articles:
 - title: Main verbs
