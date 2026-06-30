@@ -13,6 +13,25 @@
 #'   $tail(n)      last n lines of the log file (snapshot, not live)
 #'   $kill()       terminate the background process
 #'
+#' @field task_name Character string. Name of the task being run.
+#' @field ss_prefix Character string. R expression used to access the
+#'   surveillance system in the child process.
+#' @field script_path Character string. Path to the temporary R script that is
+#'   sourced in the background process.
+#' @field log_path Character string. Path to the log file where background
+#'   process output is written.
+#' @field started_at POSIXct. Time at which \code{$start()} was called.
+#' @field finished_at POSIXct. Time at which the background process exited.
+#'
+#' @examples
+#' \dontrun{
+#' job <- TaskJob$new("my_task")
+#' job$start()
+#' job$status()
+#' job$wait(timeout_s = 120)
+#' job$tail(n = 30)
+#' }
+#'
 #' @export
 TaskJob <- R6::R6Class(
   "TaskJob",
@@ -24,6 +43,17 @@ TaskJob <- R6::R6Class(
     started_at  = NULL,
     finished_at = NULL,
 
+    #' @description
+    #' Create a new TaskJob.
+    #' @param task_name Character string. Name of the task to run, as registered
+    #'   in the surveillance system (e.g. \code{ss$tasks[["my_task"]]}).
+    #' @param ss_prefix Character string. R expression that evaluates to the
+    #'   surveillance system object in the child process. Defaults to
+    #'   \code{"global$ss"}.
+    #' @param log_dir Character string. Directory where the temporary script and
+    #'   log file are written. Defaults to \code{tempdir()}.
+    #' @return A new \code{TaskJob} object. Call \code{$start()} to launch the
+    #'   background process.
     initialize = function(task_name, ss_prefix = "global$ss", log_dir = tempdir(check = TRUE)) {
       self$task_name <- task_name
       self$ss_prefix <- ss_prefix
@@ -41,6 +71,9 @@ cat('\n**run_task**\n\n'); flush.console()
       ), file = self$script_path)
     },
 
+    #' @description
+    #' Spawn the background process and begin polling its output.
+    #' @return Invisibly returns the \code{TaskJob} object.
     start = function() {
       if (!is.null(private$.process) && private$.process$is_alive()) {
         stop("Task is already running. Use $kill() first.")
@@ -67,10 +100,16 @@ cat('\n**run_task**\n\n'); flush.console()
       invisible(self)
     },
 
+    #' @description
+    #' Check whether the background process is still running.
+    #' @return Logical. \code{TRUE} while the background process is alive.
     is_alive = function() {
       if (is.null(private$.process)) FALSE else private$.process$is_alive()
     },
 
+    #' @description
+    #' Print a brief status summary (task name, start time, alive status, log path).
+    #' @return Invisibly returns the \code{TaskJob} object.
     status = function() {
       cat(sprintf("Task:    %s\n", self$task_name))
       cat(sprintf("Started: %s\n",
@@ -80,6 +119,12 @@ cat('\n**run_task**\n\n'); flush.console()
       invisible(self)
     },
 
+    #' @description
+    #' Block the current session until the background task finishes or the
+    #' timeout expires, draining the \pkg{later} event loop while waiting.
+    #' @param timeout_s Numeric. Maximum number of seconds to wait. Defaults to
+    #'   \code{600} (10 minutes).
+    #' @return Invisibly returns the \code{TaskJob} object.
     wait = function(timeout_s = 600) {
       if (is.null(private$.process)) return(invisible(self))
       deadline <- Sys.time() + timeout_s
@@ -90,11 +135,18 @@ cat('\n**run_task**\n\n'); flush.console()
       invisible(self)
     },
 
+    #' @description
+    #' Terminate the background process.
+    #' @return Invisibly returns the \code{TaskJob} object.
     kill = function() {
       if (!is.null(private$.process)) try(private$.process$kill(), silent = TRUE)
       invisible(self)
     },
 
+    #' @description
+    #' Print the last \code{n} lines of the task log file (snapshot, not live).
+    #' @param n Integer. Number of trailing lines to show. Defaults to \code{20}.
+    #' @return Invisibly returns the \code{TaskJob} object.
     tail = function(n = 20) {
       if (!file.exists(self$log_path)) {
         cat("(no log file yet)\n"); return(invisible(self))
@@ -156,10 +208,18 @@ cat('\n**run_task**\n\n'); flush.console()
 #' Positron-friendly counterpart to
 #' [cs9::run_task_sequentially_as_rstudio_job_using_load_all()].
 #'
-#' @param task_name Task name.
-#' @param ss_prefix Surveillance-system prefix. Defaults to `"global$ss"`.
+#' @param task_name Character string. Name of the task to run.
+#' @param ss_prefix Character string. R expression that resolves to the
+#'   surveillance system object in the child process. Defaults to
+#'   \code{"global$ss"}.
 #'
-#' @return Invisibly returns the [TaskJob] R6 object.
+#' @return Invisibly returns the [TaskJob] R6 object (already started).
+#'
+#' @examples
+#' \dontrun{
+#' job <- run_task_sequentially_as_callr_bg_using_load_all("my_task")
+#' job$wait()
+#' }
 #'
 #' @export
 run_task_sequentially_as_callr_bg_using_load_all <- function(task_name, ss_prefix = "global$ss") {

@@ -10,14 +10,23 @@ run_task_sequentially_as_callr_bg_using_load_all(
 )
 }
 \arguments{
-\item{task_name}{Task name.}
+\item{task_name}{Character string. Name of the task to run.}
 
-\item{ss_prefix}{Surveillance-system prefix. Defaults to \code{"global$ss"}.}
+\item{ss_prefix}{Character string. R expression that resolves to the
+surveillance system object in the child process. Defaults to
+\code{"global$ss"}.}
 }
 \value{
-Invisibly returns the \link{TaskJob} R6 object.
+Invisibly returns the \link{TaskJob} R6 object (already started).
 }
 \description{
 Positron-friendly counterpart to
 \code{\link[=run_task_sequentially_as_rstudio_job_using_load_all]{run_task_sequentially_as_rstudio_job_using_load_all()}}.
+}
+\examples{
+\dontrun{
+job <- run_task_sequentially_as_callr_bg_using_load_all("my_task")
+job$wait()
+}
+
 }

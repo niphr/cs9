@@ -2,7 +2,7 @@
 % Please edit documentation in R/util_mandatory_db_filter.R
 \name{mandatory_db_filter}
 \alias{mandatory_db_filter}
-\title{mandatory_db_filter}
+\title{Filter surveillance data by standard epidemiological dimensions}
 \usage{
 mandatory_db_filter(
   .data,
@@ -19,28 +19,59 @@ mandatory_db_filter(
 )
 }
 \arguments{
-\item{.data}{Data}
+\item{.data}{A data frame, \code{data.table}, or remote database table (e.g.
+the result of \code{dplyr::tbl()}) that contains the standard surveillance
+columns.}
 
-\item{granularity_time}{Granularity time to filter on (include)}
+\item{granularity_time}{Character vector. Values of \code{granularity_time}
+to keep. \code{NULL} (default) applies no filter.}
 
-\item{granularity_time_not}{Granularity time to filter on (exclude)}
+\item{granularity_time_not}{Character vector. Values of
+\code{granularity_time} to drop. \code{NULL} (default) applies no filter.}
 
-\item{granularity_geo}{Granularity geo to filter on (include)}
+\item{granularity_geo}{Character vector. Values of \code{granularity_geo} to
+keep. \code{NULL} (default) applies no filter.}
 
-\item{granularity_geo_not}{Granularity geo to filter on (exclude)}
+\item{granularity_geo_not}{Character vector. Values of
+\code{granularity_geo} to drop. \code{NULL} (default) applies no filter.}
 
-\item{country_iso3}{country_iso3 to filter on (include)}
+\item{country_iso3}{Character vector. Values of \code{country_iso3} to keep.
+\code{NULL} (default) applies no filter.}
 
-\item{location_code}{location_code to filter on (include)}
+\item{location_code}{Character vector. Values of \code{location_code} to
+keep. \code{NULL} (default) applies no filter.}
 
-\item{age}{Age to filter on (include)}
+\item{age}{Character vector. Values of \code{age} to keep. \code{NULL}
+(default) applies no filter.}
 
-\item{age_not}{Age to filter on (exclude)}
+\item{age_not}{Character vector. Values of \code{age} to drop. \code{NULL}
+(default) applies no filter.}
 
-\item{sex}{Sex to filter on (include)}
+\item{sex}{Character vector. Values of \code{sex} to keep. \code{NULL}
+(default) applies no filter.}
 
-\item{sex_not}{Sex to filter on (exclude)}
+\item{sex_not}{Character vector. Values of \code{sex} to drop. \code{NULL}
+(default) applies no filter.}
+}
+\value{
+The filtered object in the same class as \code{.data}.
 }
 \description{
-mandatory_db_filter
+Applies a set of standard include/exclude filters to a database table or
+data frame using the conventional surveillance field names. Each \code{NULL}
+argument is a no-op, so callers only need to supply the dimensions they
+actually want to restrict.
+}
+\examples{
+\dontrun{
+# Inside a data_selector function, filter a remote table before collecting:
+d <- schema$anon_covid_cases$tbl() |>
+  mandatory_db_filter(
+    granularity_time = "isoweek",
+    granularity_geo  = "county",
+    age_not          = "total"
+  ) |>
+  dplyr::collect()
+}
+
 }

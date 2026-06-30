@@ -8,8 +8,7 @@ Run a cs9 task in a background R process with live output streaming back to
 the current R console via \code{\link[later:later]{later::later()}} polling. Equivalent in spirit to
 \code{\link[=run_task_sequentially_as_rstudio_job_using_load_all]{run_task_sequentially_as_rstudio_job_using_load_all()}} but does not
 depend on RStudio's job API (which Positron does not implement).
-}
-\details{
+
 Methods:
 $start()      spawn background process and begin polling
 $wait(t)      block this session, draining the event loop, until done
@@ -17,6 +16,36 @@ $is_alive()   TRUE while the background process is running
 $status()     summary
 $tail(n)      last n lines of the log file (snapshot, not live)
 $kill()       terminate the background process
+}
+\examples{
+\dontrun{
+job <- TaskJob$new("my_task")
+job$start()
+job$status()
+job$wait(timeout_s = 120)
+job$tail(n = 30)
+}
+
+}
+\section{Public fields}{
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{task_name}}{Character string. Name of the task being run.}
+
+    \item{\code{ss_prefix}}{Character string. R expression used to access the
+surveillance system in the child process.}
+
+    \item{\code{script_path}}{Character string. Path to the temporary R script that is
+sourced in the background process.}
+
+    \item{\code{log_path}}{Character string. Path to the log file where background
+process output is written.}
+
+    \item{\code{started_at}}{POSIXct. Time at which \code{$start()} was called.}
+
+    \item{\code{finished_at}}{POSIXct. Time at which the background process exited.}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -35,6 +64,7 @@ $kill()       terminate the background process
 \if{html}{\out{<a id="method-TaskJob-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-TaskJob-initialize}{}}}
 \subsection{\code{TaskJob$new()}}{
+  Create a new TaskJob.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$new(
@@ -44,16 +74,37 @@ $kill()       terminate the background process
 )}
     \if{html}{\out{</div>}}
   }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_name}}{Character string. Name of the task to run, as registered
+in the surveillance system (e.g. \code{ss$tasks[["my_task"]]}).}
+      \item{\code{ss_prefix}}{Character string. R expression that evaluates to the
+surveillance system object in the child process. Defaults to
+\code{"global$ss"}.}
+      \item{\code{log_dir}}{Character string. Directory where the temporary script and
+log file are written. Defaults to \code{tempdir()}.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new \code{TaskJob} object. Call \code{$start()} to launch the
+background process.
+  }
 }
 
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TaskJob-start"></a>}}
 \if{latex}{\out{\hypertarget{method-TaskJob-start}{}}}
 \subsection{\code{TaskJob$start()}}{
+  Spawn the background process and begin polling its output.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$start()}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns the \code{TaskJob} object.
   }
 }
 
@@ -61,10 +112,14 @@ $kill()       terminate the background process
 \if{html}{\out{<a id="method-TaskJob-is_alive"></a>}}
 \if{latex}{\out{\hypertarget{method-TaskJob-is_alive}{}}}
 \subsection{\code{TaskJob$is_alive()}}{
+  Check whether the background process is still running.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$is_alive()}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Logical. \code{TRUE} while the background process is alive.
   }
 }
 
@@ -72,10 +127,14 @@ $kill()       terminate the background process
 \if{html}{\out{<a id="method-TaskJob-status"></a>}}
 \if{latex}{\out{\hypertarget{method-TaskJob-status}{}}}
 \subsection{\code{TaskJob$status()}}{
+  Print a brief status summary (task name, start time, alive status, log path).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$status()}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns the \code{TaskJob} object.
   }
 }
 
@@ -83,10 +142,23 @@ $kill()       terminate the background process
 \if{html}{\out{<a id="method-TaskJob-wait"></a>}}
 \if{latex}{\out{\hypertarget{method-TaskJob-wait}{}}}
 \subsection{\code{TaskJob$wait()}}{
+  Block the current session until the background task finishes or the
+timeout expires, draining the \pkg{later} event loop while waiting.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$wait(timeout_s = 600)}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{timeout_s}}{Numeric. Maximum number of seconds to wait. Defaults to
+\code{600} (10 minutes).}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns the \code{TaskJob} object.
   }
 }
 
@@ -94,10 +166,14 @@ $kill()       terminate the background process
 \if{html}{\out{<a id="method-TaskJob-kill"></a>}}
 \if{latex}{\out{\hypertarget{method-TaskJob-kill}{}}}
 \subsection{\code{TaskJob$kill()}}{
+  Terminate the background process.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$kill()}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns the \code{TaskJob} object.
   }
 }
 
@@ -105,10 +181,21 @@ $kill()       terminate the background process
 \if{html}{\out{<a id="method-TaskJob-tail"></a>}}
 \if{latex}{\out{\hypertarget{method-TaskJob-tail}{}}}
 \subsection{\code{TaskJob$tail()}}{
+  Print the last \code{n} lines of the task log file (snapshot, not live).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$tail(n = 20)}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{n}}{Integer. Number of trailing lines to show. Defaults to \code{20}.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns the \code{TaskJob} object.
   }
 }
 

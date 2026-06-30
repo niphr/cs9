@@ -1,15 +1,48 @@
-#' mandatory_db_filter
-#' @param .data Data
-#' @param granularity_time Granularity time to filter on (include)
-#' @param granularity_time_not Granularity time to filter on (exclude)
-#' @param granularity_geo Granularity geo to filter on (include)
-#' @param granularity_geo_not Granularity geo to filter on (exclude)
-#' @param country_iso3 country_iso3 to filter on (include)
-#' @param location_code location_code to filter on (include)
-#' @param age Age to filter on (include)
-#' @param age_not Age to filter on (exclude)
-#' @param sex Sex to filter on (include)
-#' @param sex_not Sex to filter on (exclude)
+#' Filter surveillance data by standard epidemiological dimensions
+#'
+#' Applies a set of standard include/exclude filters to a database table or
+#' data frame using the conventional surveillance field names. Each \code{NULL}
+#' argument is a no-op, so callers only need to supply the dimensions they
+#' actually want to restrict.
+#'
+#' @param .data A data frame, \code{data.table}, or remote database table (e.g.
+#'   the result of \code{dplyr::tbl()}) that contains the standard surveillance
+#'   columns.
+#' @param granularity_time Character vector. Values of \code{granularity_time}
+#'   to keep. \code{NULL} (default) applies no filter.
+#' @param granularity_time_not Character vector. Values of
+#'   \code{granularity_time} to drop. \code{NULL} (default) applies no filter.
+#' @param granularity_geo Character vector. Values of \code{granularity_geo} to
+#'   keep. \code{NULL} (default) applies no filter.
+#' @param granularity_geo_not Character vector. Values of
+#'   \code{granularity_geo} to drop. \code{NULL} (default) applies no filter.
+#' @param country_iso3 Character vector. Values of \code{country_iso3} to keep.
+#'   \code{NULL} (default) applies no filter.
+#' @param location_code Character vector. Values of \code{location_code} to
+#'   keep. \code{NULL} (default) applies no filter.
+#' @param age Character vector. Values of \code{age} to keep. \code{NULL}
+#'   (default) applies no filter.
+#' @param age_not Character vector. Values of \code{age} to drop. \code{NULL}
+#'   (default) applies no filter.
+#' @param sex Character vector. Values of \code{sex} to keep. \code{NULL}
+#'   (default) applies no filter.
+#' @param sex_not Character vector. Values of \code{sex} to drop. \code{NULL}
+#'   (default) applies no filter.
+#'
+#' @return The filtered object in the same class as \code{.data}.
+#'
+#' @examples
+#' \dontrun{
+#' # Inside a data_selector function, filter a remote table before collecting:
+#' d <- schema$anon_covid_cases$tbl() |>
+#'   mandatory_db_filter(
+#'     granularity_time = "isoweek",
+#'     granularity_geo  = "county",
+#'     age_not          = "total"
+#'   ) |>
+#'   dplyr::collect()
+#' }
+#'
 #' @export
 mandatory_db_filter <- function(.data,
                                 granularity_time = NULL,
