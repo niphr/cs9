@@ -31,6 +31,7 @@ reference:
   desc: "Main R6 classes for surveillance system architecture"
   contents:
   - SurveillanceSystem_v9
+  - TaskJob
 
 - title: "Configuration Management"
   desc: "Functions for logging and configuration tracking"
@@ -63,6 +64,7 @@ reference:
   desc: "Functions for running and managing surveillance tasks"
   contents:
   - run_task_sequentially_as_rstudio_job_using_load_all
+  - run_task_sequentially_as_callr_bg_using_load_all
 
 - title: "Imported Functions"
   desc: "Re-exported functions from other packages"
