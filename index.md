@@ -25,13 +25,3 @@ and
 [`get_config_tasks_stats()`](https://niphr.github.io/cs9/reference/get_config_tasks_stats.md)
 returns timing and status so you can diagnose failures and track
 pipeline performance over time.
-
-## Overview
-
-[Core Surveillance 9](https://niphr.github.io/cs9/) (“cs9”) is a free
-and open-source framework for real-time analysis and disease
-surveillance.
-
-Read the introduction vignette
-[here](https://niphr.github.io/cs9/articles/cs9.html) or run
-[`help(package="cs9")`](https://niphr.github.io/cs9/reference).
