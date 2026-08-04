@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.5.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,6 +52,19 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.4" id="version-2684">Version 26.8.4<a class="anchor" aria-label="anchor" href="#version-2684"></a></h2>
+<div class="section level3">
+<h3 id="documentation-26-8-4">Documentation<a class="anchor" aria-label="anchor" href="#documentation-26-8-4"></a></h3>
+<ul><li>Updated introduction vignette with single-instance design principle, NorSySS case study, and comparative analysis table</li>
+<li>Updated task creation vignette with single-instance framing</li>
+<li>Added Apache Airflow integration guidance to installation vignette</li>
+<li>Updated CLAUDE.md with surveillance-domain examples from academic paper (White &amp; Valcarcel Salamanca, NIPH)</li>
+<li>Introduction vignette now states when CS9 is <strong>not</strong> the right choice: the hard requirements (PostgreSQL, containers, systems administration capability), the workflow reorganisation adoption costs, and <code>plnr</code> as the simpler option for a pilot or a resource-constrained setting</li>
+<li>Introduction vignette now states that CS9 analyses each stratum independently <strong>by default</strong>, and that borrowing strength across strata and adjusting exceedance probabilities for multiple comparisons are decisions about the statistical method rather than properties of the framework. With 106 diseases across 378 locations the number of simultaneous tests is large, and nothing in CS9 controls the family-wise error rate or the false discovery rate for you</li>
+<li>Introduction vignette now lists what the framework handles: per-analysis structured logging, schema validation and time-period partitioning, framework-level parallelism, and validation workflows</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.5.13" id="version-26513">Version 26.5.13<a class="anchor" aria-label="anchor" href="#version-26513"></a></h2>
 <div class="section level3">

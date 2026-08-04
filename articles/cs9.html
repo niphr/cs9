@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.5.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,6 +87,147 @@
     
     
 <div class="section level2">
+<h2 id="the-problem-scaling-epidemiological-analysis">The problem: scaling epidemiological analysis<a class="anchor" aria-label="anchor" href="#the-problem-scaling-epidemiological-analysis"></a>
+</h2>
+<p>Epidemiologists naturally think about surveillance problems in terms
+of specific scenarios: “How do I detect influenza outbreaks among
+elderly patients in Oslo?” They develop understanding through particular
+cases before generalizing.</p>
+<p>But comprehensive surveillance requires scaling these analyses across
+hundreds of diseases, locations, and demographic groups. Traditional
+programming forces epidemiologists to manage this complexity explicitly,
+burying analytical logic within nested loop structures:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Traditional approach: epidemiological logic buried in scaling code</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">location</span> <span class="kw">in</span> <span class="va">all_locations</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">week</span> <span class="kw">in</span> <span class="va">all_weeks</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">age_group</span> <span class="kw">in</span> <span class="va">all_age_groups</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">get_data</span><span class="op">(</span><span class="va">location</span>, <span class="va">week</span>, <span class="va">age_group</span><span class="op">)</span></span>
+<span>      <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">analyze_disease_trends</span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span>      <span class="fu">save_results</span><span class="op">(</span><span class="va">results</span>, <span class="va">location</span>, <span class="va">week</span>, <span class="va">age_group</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>CS9 resolves this by <strong>separating analytical logic from
+scaling</strong>. Epidemiologists write code for a single instance — one
+disease, one location, one age group — while the framework handles
+expansion across all combinations automatically:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># CS9 approach: write analysis for one instance, framework scales it</span></span>
+<span><span class="va">short_term_trends_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">csalert</span><span class="fu">::</span><span class="fu">short_term_trend</span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">data</span>, <span class="va">...</span><span class="op">)</span></span>
+<span>  <span class="va">tables</span><span class="op">$</span><span class="va">output</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>This code operates identically whether run interactively for one
+location or scaled by CS9 across 106 diseases, 378 locations, and
+multiple demographic groups. When a specific analysis fails, the
+epidemiologist loads that exact combination interactively and steps
+through the code. This is the <strong>single-instance design
+principle</strong> — CS9’s core innovation.</p>
+</div>
+<div class="section level2">
+<h2 id="norsyss-a-decade-of-operation">NorSySS: a decade of operation<a class="anchor" aria-label="anchor" href="#norsyss-a-decade-of-operation"></a>
+</h2>
+<p>The Norwegian Syndromic Surveillance System (NorSySS) provides
+evidence that this approach works in practice. Operating continuously
+since 2014, NorSySS has:</p>
+<ul>
+<li>Processed approximately <strong>18 million</strong> healthcare
+consultations annually</li>
+<li>Monitored <strong>106 diseases</strong> across <strong>378
+geographic locations</strong> (municipal to national)</li>
+<li>Maintained <strong>99.5% system availability</strong> over ten
+years</li>
+<li>Supported <strong>9 age groups</strong> and <strong>3 sex
+categories</strong> for demographic stratification</li>
+</ul>
+<p>During the COVID-19 pandemic (March 2020), the NorSySS team added new
+diagnostic codes and began producing daily municipal-level outputs
+within weeks — all while maintaining uninterrupted surveillance of the
+existing 106 monitored conditions. CS9’s single-instance design was
+central to this: new COVID-19 analyses were developed and tested
+interactively for a single municipality, then immediately deployed
+across all locations without additional scaling effort.</p>
+<p>Reference: White RA, Valcarcel Salamanca B. “CS9: An analysis
+framework for real-time disease surveillance.” Norwegian Institute of
+Public Health.</p>
+</div>
+<div class="section level2">
+<h2 id="cs9-vs-alternatives">CS9 vs alternatives<a class="anchor" aria-label="anchor" href="#cs9-vs-alternatives"></a>
+</h2>
+<table style="width:100%;" class="table">
+<colgroup>
+<col width="11%">
+<col width="7%">
+<col width="8%">
+<col width="30%">
+<col width="20%">
+<col width="22%">
+</colgroup>
+<thead><tr class="header">
+<th>Aspect</th>
+<th>CS9</th>
+<th>plnr</th>
+<th>Commercial Platforms</th>
+<th>R Frameworks</th>
+<th>Custom Scripts</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Customization</td>
+<td>High — domain abstractions</td>
+<td>High — domain abstractions</td>
+<td>Low — vendor-limited</td>
+<td>Medium — computational flexibility</td>
+<td>High — unlimited freedom</td>
+</tr>
+<tr class="even">
+<td>Maintenance</td>
+<td>Low — systematic abstractions</td>
+<td>Low — systematic abstractions</td>
+<td>Medium — vendor dependencies</td>
+<td>Medium — framework constraints</td>
+<td>High — technical debt</td>
+</tr>
+<tr class="odd">
+<td>User model</td>
+<td>Epidemiological concepts</td>
+<td>Epidemiological concepts</td>
+<td>Standardized interfaces</td>
+<td>Computational tasks</td>
+<td>Complete freedom</td>
+</tr>
+<tr class="even">
+<td>Implementation speed</td>
+<td>Medium — initial setup, then rapid</td>
+<td>High</td>
+<td>High — immediate capability</td>
+<td>Medium — learning curve</td>
+<td>Variable</td>
+</tr>
+<tr class="odd">
+<td>Long-term sustainability</td>
+<td>High — structured evolution</td>
+<td>Medium — limited by complexity/data size</td>
+<td>Medium — vendor dependency</td>
+<td>Medium — framework limitations</td>
+<td>Low — personnel dependency</td>
+</tr>
+</tbody>
+</table>
+<p>CS9 is built upon the <a href="https://CRAN.R-project.org/package=plnr" class="external-link">plnr</a> framework,
+extending it with database integration and multi-plan orchestration.
+<strong>For simpler needs</strong> (no database, single computer), plnr
+provides the same single-instance design principle without CS9’s
+infrastructure layer — it is the recommended starting point for smaller
+systems, pilots, or resource-constrained settings.</p>
+<p>Commercial platforms like ESSENCE provide immediate capability but
+limit rapid adaptation. General-purpose R workflow frameworks (targets,
+drake, workflowr) provide computational reproducibility but require
+translating surveillance concepts into computational abstractions.
+Custom scripts offer freedom but accumulate technical debt.</p>
+</div>
+<div class="section level2">
 <h2 id="what-is-cs9">What is CS9?<a class="anchor" aria-label="anchor" href="#what-is-cs9"></a>
 </h2>
 <p>Core Surveillance 9 (CS9) is an R framework for building real-time
@@ -114,6 +255,41 @@ automated schedule.</p>
 <li>Handle multiple data sources and analysis outputs</li>
 <li>Apply data validation and quality control systematically</li>
 </ul>
+<p>CS9 is not always the right choice. The framework repays its setup
+cost when the analysis itself is complex: temporal calculations,
+integration across several data sources, or novel analytical methods.
+Where the analytical requirements are standard, that cost is not
+repaid.</p>
+<p>Three requirements are hard:</p>
+<ul>
+<li>PostgreSQL, and containerised deployment.</li>
+<li>Software architecture and systems administration capability,
+in-house or through a partner.</li>
+<li>Workflow reorganisation. Adoption changes how epidemiologists work,
+and the productivity gain arrives over a medium-to-long horizon, not
+immediately.</li>
+</ul>
+<p>Assess your analytical requirements, your technical capability and
+your time horizon before committing. For a smaller system, a pilot, or a
+resource-constrained setting, <a href="https://www.rwhite.no/plnr/" class="external-link">plnr</a> applies the same
+single-instance design on one computer with no database. CS9 is built on
+plnr, and adds database integration and multi-plan orchestration.</p>
+<div class="section level3">
+<h3 id="what-cs9-does-not-decide-for-you">What CS9 does not decide for you<a class="anchor" aria-label="anchor" href="#what-cs9-does-not-decide-for-you"></a>
+</h3>
+<p><strong>CS9 analyses each stratum independently by default.</strong>
+That default reflects NorSySS’s operational need for location-specific
+and demographic-specific municipal reporting. It is a default, not a
+methodological commitment.</p>
+<p>Borrowing strength across strata, and adjusting exceedance
+probabilities for multiple comparisons, are decisions about the
+statistical method. They are independent of the infrastructure, and you
+can implement either inside an action function. With 106 diseases across
+378 locations and several demographic strata, the number of simultaneous
+tests is large. Whether to control the family-wise error rate or the
+false discovery rate, and how, is your decision. The framework does not
+make it for you, and does not warn you that it has not.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="key-concepts-and-definitions">Key concepts and definitions<a class="anchor" aria-label="anchor" href="#key-concepts-and-definitions"></a>
@@ -292,6 +468,12 @@ first surveillance task step by step</li>
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
+<p>The following example demonstrates the single-instance design
+principle using weather data. Notice how the action function contains
+only the logic for processing one location’s weather forecast — the same
+function would scale across all Norwegian counties if the
+<code>for_each_plan</code> were expanded. This is the same pattern
+NorSySS uses to scale across 106 diseases and 378 locations.</p>
 <p>The following example walks through designing and implementing a
 weather surveillance task.</p>
 <div class="section level3">
@@ -299,7 +481,7 @@ weather surveillance task.</p>
 </h3>
 <p>Start by creating a surveillance system. This object coordinates
 tables and tasks.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span> <span class="op">&lt;-</span> <span class="fu">cs9</span><span class="fu">::</span><span class="va"><a href="../reference/SurveillanceSystem_v9.html">SurveillanceSystem_v9</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -308,7 +490,7 @@ tables and tasks.</p>
 <p>As documented in more detail <a href="https://niphr.github.io/csdb/reference/DBTable_v9.html" class="external-link">here</a>,
 we create a database table for weather data and add it to the
 surveillance system.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
 <span>  name_access <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"anon"</span><span class="op">)</span>,</span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"example_weather"</span>,</span>
@@ -353,7 +535,7 @@ surveillance system.</p>
 <h3 id="task-configuration">Task configuration<a class="anchor" aria-label="anchor" href="#task-configuration"></a>
 </h3>
 <p>Tasks are registered with <code>ss$add_task</code>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># tm_run_task("example_weather_import_data_from_api")</span></span>
 <span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"example_weather"</span>,</span>
@@ -387,7 +569,7 @@ inside that plan.</p>
 <p>The following code produces 4 plans with 1 analysis each, where each
 analysis receives <code>argset$var_1</code> and
 <code>argset$var_2</code>:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">for_each_plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">for_each_plan</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  var_1 <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -406,7 +588,7 @@ analysis receives <code>argset$var_1</code> and
 <span>  var_2 <span class="op">=</span> <span class="st">"b"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Every task needs at least 1 plan. The simplest plan possible is:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
@@ -420,7 +602,7 @@ analysis receives <code>argset$var_1</code> and
 <p><code><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">plnr::expand_list</a></code> works like <code>expand.grid</code>,
 but returns a list instead of a data frame.</p>
 <p>The four-element example above can be written more concisely:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">for_each_plan</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span></span>
 <span>  var_1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">)</span>,</span>
 <span>  var_2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span></span>
@@ -519,7 +701,7 @@ including the package name.</p>
 interactive development. Running the function manually executes that
 block, which loads <code>argset</code> and <code>tables</code> into your
 environment so you can step through the rest of the code.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">index_plan</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span></span>
 <span><span class="va">argset</span> <span class="op">&lt;-</span> <span class="va">ss</span><span class="op">$</span><span class="fu">shortcut_get_argset</span><span class="op">(</span><span class="st">"example_weather_import_data_from_api"</span>, index_plan <span class="op">=</span> <span class="va">index_plan</span><span class="op">)</span></span>
@@ -591,7 +773,7 @@ environment so you can step through the rest of the code.</p>
 <span><span class="co">#&gt;  18: tx (DOUBLE) </span></span>
 <span><span class="co">#&gt;  19: tn (DOUBLE) </span></span>
 <span><span class="co">#&gt;  20: auto_last_updated_datetime (DATETIME)</span></span></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># **** data_selector **** ----</span></span>
 <span><span class="co">#' example_weather_import_data_from_api (data selector)</span></span>
 <span><span class="co">#' @param argset Argset</span></span>
@@ -631,7 +813,7 @@ environment so you can step through the rest of the code.</p>
 way here: running the function manually loads <code>data</code>,
 <code>argset</code>, and <code>tables</code> so you can work through the
 analysis interactively.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">index_plan</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">index_analysis</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span></span>
@@ -719,7 +901,7 @@ analysis interactively.</p>
 <span><span class="co">#&gt;  18: tx (DOUBLE) </span></span>
 <span><span class="co">#&gt;  19: tn (DOUBLE) </span></span>
 <span><span class="co">#&gt;  20: auto_last_updated_datetime (DATETIME)</span></span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># **** action **** ----</span></span>
 <span><span class="co">#' example_weather_import_data_from_api (action)</span></span>
 <span><span class="co">#' @param data Data</span></span>
@@ -817,7 +999,7 @@ analysis interactively.</p>
 <div class="section level3">
 <h3 id="run-the-task">Run the task<a class="anchor" aria-label="anchor" href="#run-the-task"></a>
 </h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"example_weather_import_data_from_api"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; task: example_weather_import_data_from_api</span></span>
 <span><span class="co">#&gt; Running task=example_weather_import_data_from_api with plans=1 and analyses=1</span></span>
@@ -880,7 +1062,7 @@ analysis interactively.</p>
 <h3 id="importing-data">Importing data<a class="anchor" aria-label="anchor" href="#importing-data"></a>
 </h3>
 <p><img src="cs9-task-import-data.png" width="100%"></p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"example"</span>,</span>
 <span>  name_action <span class="op">=</span> <span class="st">"import_data"</span>,</span>
@@ -910,7 +1092,7 @@ analysis interactively.</p>
 <h3 id="analysis">Analysis<a class="anchor" aria-label="anchor" href="#analysis"></a>
 </h3>
 <p><img src="cs9-task-analysis.png" width="100%"></p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"example"</span>,</span>
 <span>  name_action <span class="op">=</span> <span class="st">"analysis"</span>,</span>
@@ -939,7 +1121,7 @@ analysis interactively.</p>
 <h3 id="exporting-multiple-sets-of-results">Exporting multiple sets of results<a class="anchor" aria-label="anchor" href="#exporting-multiple-sets-of-results"></a>
 </h3>
 <p><img src="cs9-task-export-multiple-results.png" width="100%"></p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"example"</span>,</span>
 <span>  name_action <span class="op">=</span> <span class="st">"export_results"</span>,</span>
@@ -969,7 +1151,7 @@ analysis interactively.</p>
 <h3 id="exporting-combined-results">Exporting combined results<a class="anchor" aria-label="anchor" href="#exporting-combined-results"></a>
 </h3>
 <p><img src="cs9-task-export-combined-results.png" width="100%"></p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">tables</span><span class="op">(</span></span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"example"</span>,</span>
 <span>  name_action <span class="op">=</span> <span class="st">"export_results"</span>,</span>
@@ -1016,6 +1198,29 @@ Airflow scheduling</li>
 <strong>Monitoring</strong>: Track execution through the built-in
 logging tables</li>
 </ol>
+<div class="section level3">
+<h3 id="what-the-framework-handles-for-you">What the framework handles for you<a class="anchor" aria-label="anchor" href="#what-the-framework-handles-for-you"></a>
+</h3>
+<ul>
+<li>
+<strong>Structured logging</strong>, at the level of the individual
+analysis: execution time, data volume processed, and which
+disease-location-demographic combination threw an error.</li>
+<li>
+<strong>Database management</strong>: schema validation,
+partitioning by time period, and bulk operations over millions of rows.
+Partitioning holds query performance steady as history accumulates over
+years. Data selectors keep the database structure out of the analysis
+code.</li>
+<li>
+<strong>Parallel computation</strong>, at the framework level. You
+write sequential R code. The same code runs on a laptop with 4 cores
+during development and a server with 20 cores in production.</li>
+<li>
+<strong>Validation workflows</strong>: completeness, temporal
+consistency, and outputs against expected ranges.</li>
+</ul>
+</div>
 </div>
 <div class="section level2">
 <h2 id="getting-started">Getting started<a class="anchor" aria-label="anchor" href="#getting-started"></a>

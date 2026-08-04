@@ -157,6 +157,58 @@ To get started quickly, clone the
 [cs9example](https://github.com/niphr/cs9example) repository, which
 provides a complete template for a CS9 surveillance system.
 
+## Apache Airflow Integration
+
+For production surveillance systems, CS9 tasks are typically
+orchestrated by [Apache Airflow](https://airflow.apache.org/). NorSySS
+uses Airflow to schedule overnight processing pipelines that sequence
+data retrieval, cleaning, analysis, and output generation — with each
+step verified before the next begins.
+
+### Airflow scheduling pattern
+
+Each CS9 task maps to an Airflow task within a DAG (Directed Acyclic
+Graph). A typical surveillance DAG runs overnight:
+
+``` python
+# Example Airflow DAG for CS9 surveillance pipeline
+# Schedule: daily at 02:00
+dag = DAG(
+    'norsyss_surveillance',
+    schedule_interval='0 2 * * *',
+    default_args={'retries': 2}
+)
+
+import_data >> clean_data >> [estimate_trends, nowcasting] >> produce_figures
+```
+
+### Benefits of Airflow + CS9
+
+- **Dependency management**: Airflow ensures cleaning completes before
+  analysis begins
+- **Retry logic**: Failed tasks retry automatically with configurable
+  policies
+- **Monitoring**: Web UI shows pipeline status, execution times, and
+  failure history
+- **Scheduling**: Cron-based scheduling for daily, weekly, or custom
+  intervals
+- **Alerting**: Notifications on pipeline failures via email, Slack, or
+  other channels
+
+### Docker Compose with Airflow
+
+For a complete Airflow + CS9 deployment, see the
+[docker-examples-csids](https://github.com/csids/docker-examples-csids)
+repository. A typical production setup includes:
+
+- **Airflow webserver + scheduler**: Pipeline orchestration (port 8080)
+- **PostgreSQL**: Database backend for both Airflow metadata and
+  surveillance data
+- **CS9 worker**: R environment with cs9 and surveillance packages
+  installed
+- **Posit Workbench** (optional): Interactive development environment
+  (port 8786)
+
 ## Moving from CRAN to full setup
 
 If you installed CS9 from CRAN and want to enable full surveillance

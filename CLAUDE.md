@@ -5,11 +5,37 @@ with code in this repository.
 
 ## Overview
 
-CS9 (Core Surveillance 9) is a free and open-source framework for
-real-time analysis and disease surveillance. It’s an R package that
-provides generic infrastructure for implementing surveillance systems
-with database integration, task scheduling, and parallel processing
-capabilities.
+CS9 (Core Surveillance 9) is a domain-specific analysis framework in R
+that provides the analytical infrastructure layer for disease
+surveillance systems. Its core innovation is the **single-instance
+design principle**: epidemiologists write analytical code for a single
+scenario (e.g. influenza trends in one location), while CS9
+automatically scales that code across all diseases, locations, and
+demographic groups — handling parallelization, database operations, and
+production reliability transparently.
+
+This resolves a longstanding tension in surveillance: epidemiologists
+naturally think in terms of specific scenarios, but traditional
+implementations bury analytical logic within nested loop structures that
+manage scaling. CS9 separates the “what to analyze” (action functions)
+from the “where to apply it” (plans), so epidemiological reasoning stays
+readable and testable.
+
+CS9 has powered the Norwegian Syndromic Surveillance System (NorSySS)
+for 10 years (2014-2024), processing 18 million consultations annually
+across 106 diseases and 378 locations with 99.5% availability. During
+the COVID-19 pandemic, the team added new diagnostic codes and began
+producing daily municipal-level outputs within weeks — without
+disrupting existing surveillance.
+
+For simpler needs (no database, single computer), the
+[plnr](https://CRAN.R-project.org/package=plnr) package provides the
+same single-instance design principle without CS9’s infrastructure
+layer.
+
+Reference: White RA, Valcarcel Salamanca B. “CS9: An analysis framework
+for real-time disease surveillance.” Norwegian Institute of Public
+Health.
 
 ## Development Commands
 
@@ -27,6 +53,14 @@ testthat::test_dir("tests/testthat") # Run tests
 ```
 
 ## Architecture Overview
+
+CS9’s three-tier architecture implements the single-instance principle:
+**plans** define the iteration scope (which diseases, locations, age
+groups), **data selectors** provision data efficiently (one database
+query per plan rather than per analysis), and **action functions**
+contain the epidemiological logic operating on a single instance. The
+framework connects these layers to handle scaling, parallelization, and
+database management transparently.
 
 ### Core Framework Components
 
@@ -382,6 +416,142 @@ patterns for updates
 This real-world usage demonstrates CS9’s capabilities for complex data
 processing pipelines with robust validation, temporal calculations, and
 production deployment patterns.
+
+## NorSySS: Real-World Surveillance Deployment
+
+The Norwegian Syndromic Surveillance System (NorSySS) is the primary
+production deployment of CS9, operating continuously since 2014. These
+examples come from the academic paper (White & Valcarcel Salamanca,
+NIPH).
+
+### NorSySS Pipeline Structure
+
+``` r
+# NorSySS overnight processing pipeline (orchestrated by Apache Airflow)
+import_data → cleaning_data → estimating_trends → nowcasting → producing_figures
+     ↓              ↓                ↓                 ↓              ↓
+  raw_data    ~1B rows output   short_term_trends   nowcast       106 portrait +
+              ~1M time series   MEM thresholds      estimates     106 landscape
+              106 diseases      weekly exceedance                 figures
+              378 locations
+              9 age groups
+              3 sex groups
+```
+
+### Short-Term Trends Task Configuration
+
+This shows how a real surveillance task uses the single-instance
+principle —
+[`plnr::expand_list`](https://www.rwhite.no/plnr/reference/expand_list.html)
+generates all disease/location/age combinations, while the action
+function contains only the epidemiological analysis for one combination:
+
+``` r
+ss$add_task(
+  name_grouping = "norsyss",
+  name_action = "short_term_trends",
+  name_variant = NULL,
+  cores = 20,
+  for_each_plan = plnr::expand_list(
+    location_code = c("nation_nor", "county_nor03", "county_nor11", ...),  # 21 locations
+    age = c("000_004", "005_014", "015_019", "020_029", "030_064", "015_064", "065p")  # 7 age groups
+  ),
+  for_each_analysis = NULL,
+  universal_argset = NULL,
+  upsert_at_end_of_each_plan = FALSE,
+  insert_at_end_of_each_plan = FALSE,
+  action_fn_name = "norsyss::short_term_trends_action",
+  data_selector_fn_name = "norsyss::short_term_trends_data_selector",
+  tables = list(
+    "anon_norsyss_data" = ss$tables$anon_norsyss_data,
+    "anon_large_scale_surveillance_short_term_trends" = ss$tables$anon_large_scale_surveillance_short_term_trends
+  )
+)
+```
+
+### Single-Instance Action Function (from paper)
+
+The action function contains only the epidemiological logic for **one**
+disease-location-age combination. CS9 scales this across all
+combinations automatically:
+
+``` r
+short_term_trends_action <- function(data, argset, tables) {
+  # Run the epidemiological analysis for one instance
+  x <- csalert::short_term_trend(
+    data$data,
+    numerator = "numerator_n",
+    denominator = "denominator_n",
+    prX = c(100),
+    trend_isoyearweeks = 5,
+    remove_last_isoyearweeks = 0,
+    forecast_isoyearweeks = 2,
+    numerator_naming_prefix = "generic",
+    denominator_naming_prefix = "generic",
+    statistics_naming_prefix = "universal",
+    remove_training_data = TRUE,
+    include_decreasing = FALSE,
+    alpha = 0.10
+  )
+  # Insert the results to a database table
+  tables$anon_large_scale_surveillance_short_term_trends$insert_data(x)
+}
+```
+
+### Data Selector (from paper)
+
+``` r
+short_term_trends_data_selector <- function(argset, tables) {
+  # Extract the requested data from the database
+  data <- tables$anon_norsyss_data$tbl() %>%
+    dplyr::filter(location_code %in% argset$location_code) %>%
+    dplyr::filter(age %in% argset$age) %>%
+    dplyr::collect()
+  retval <- list(
+    "data" = data
+  )
+  retval
+}
+```
+
+### Surveillance Schema Example
+
+``` r
+field_types = c(
+  "granularity_time" = "TEXT",
+  "granularity_geo" = "TEXT",
+  "country_iso3" = "TEXT",
+  "location_code" = "TEXT",
+  "border" = "INTEGER",
+  "age" = "TEXT",
+  "sex" = "TEXT",
+
+  "isoyear" = "INTEGER",
+  "isoweek" = "INTEGER",
+  "isoyearweek" = "TEXT",
+  "season" = "TEXT",
+  "seasonweek" = "DOUBLE",
+
+  "date" = "DATE",
+
+  "n_consultations" = "INTEGER",
+  "n_population" = "INTEGER",
+  "trend_status" = "TEXT",           # "increasing", "stable", "decreasing"
+  "trend_value" = "DOUBLE",
+  "threshold_exceedance" = "DOUBLE"
+)
+```
+
+### NorSySS Performance Metrics (from Table 1)
+
+| Task                         | Scope                                           | Time       | Cores |
+|------------------------------|-------------------------------------------------|------------|-------|
+| Cleaning data                | ~300M consultations → ~1B rows, ~1M time series | 7 hours    | 10    |
+| Estimating short-term trends | 106 diseases × 9 ages × 21 locations × 20yr     | 4 hours    | 20    |
+| Nowcasting                   | 106 diseases × 9 ages × 3 sexes × 1 location    | 5 minutes  | 4     |
+| Estimating MEM thresholds    | 1 disease × 8 ages × 21 locations × 10 seasons  | 15 minutes | 2     |
+| Estimating weekly exceedance | 106 diseases × 9 ages × 21 locations × 20yr     | 10 minutes | 20    |
+| Producing summary figures    | 106 portrait + 106 landscape figures            | 5 minutes  | 20    |
 
 ## CRAN Deployment Considerations
 

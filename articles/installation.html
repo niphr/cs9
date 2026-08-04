@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.5.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -266,6 +266,71 @@ configuration items are missing.</p>
 which provides a complete template for a CS9 surveillance system.</p>
 </div>
 <div class="section level2">
+<h2 id="apache-airflow-integration">Apache Airflow Integration<a class="anchor" aria-label="anchor" href="#apache-airflow-integration"></a>
+</h2>
+<p>For production surveillance systems, CS9 tasks are typically
+orchestrated by <a href="https://airflow.apache.org/" class="external-link">Apache
+Airflow</a>. NorSySS uses Airflow to schedule overnight processing
+pipelines that sequence data retrieval, cleaning, analysis, and output
+generation — with each step verified before the next begins.</p>
+<div class="section level3">
+<h3 id="airflow-scheduling-pattern">Airflow scheduling pattern<a class="anchor" aria-label="anchor" href="#airflow-scheduling-pattern"></a>
+</h3>
+<p>Each CS9 task maps to an Airflow task within a DAG (Directed Acyclic
+Graph). A typical surveillance DAG runs overnight:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Example Airflow DAG for CS9 surveillance pipeline</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co"># Schedule: daily at 02:00</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>dag <span class="op">=</span> DAG(</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>    <span class="st">'norsyss_surveillance'</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    schedule_interval<span class="op">=</span><span class="st">'0 2 * * *'</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    default_args<span class="op">=</span>{<span class="st">'retries'</span>: <span class="dv">2</span>}</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>import_data <span class="op">&gt;&gt;</span> clean_data <span class="op">&gt;&gt;</span> [estimate_trends, nowcasting] <span class="op">&gt;&gt;</span> produce_figures</span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="benefits-of-airflow-cs9">Benefits of Airflow + CS9<a class="anchor" aria-label="anchor" href="#benefits-of-airflow-cs9"></a>
+</h3>
+<ul>
+<li>
+<strong>Dependency management</strong>: Airflow ensures cleaning
+completes before analysis begins</li>
+<li>
+<strong>Retry logic</strong>: Failed tasks retry automatically with
+configurable policies</li>
+<li>
+<strong>Monitoring</strong>: Web UI shows pipeline status, execution
+times, and failure history</li>
+<li>
+<strong>Scheduling</strong>: Cron-based scheduling for daily,
+weekly, or custom intervals</li>
+<li>
+<strong>Alerting</strong>: Notifications on pipeline failures via
+email, Slack, or other channels</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="docker-compose-with-airflow">Docker Compose with Airflow<a class="anchor" aria-label="anchor" href="#docker-compose-with-airflow"></a>
+</h3>
+<p>For a complete Airflow + CS9 deployment, see the <a href="https://github.com/csids/docker-examples-csids" class="external-link">docker-examples-csids</a>
+repository. A typical production setup includes:</p>
+<ul>
+<li>
+<strong>Airflow webserver + scheduler</strong>: Pipeline
+orchestration (port 8080)</li>
+<li>
+<strong>PostgreSQL</strong>: Database backend for both Airflow
+metadata and surveillance data</li>
+<li>
+<strong>CS9 worker</strong>: R environment with cs9 and surveillance
+packages installed</li>
+<li>
+<strong>Posit Workbench</strong> (optional): Interactive development
+environment (port 8786)</li>
+</ul>
+</div>
+</div>
+<div class="section level2">
 <h2 id="moving-from-cran-to-full-setup">Moving from CRAN to full setup<a class="anchor" aria-label="anchor" href="#moving-from-cran-to-full-setup"></a>
 </h2>
 <p>If you installed CS9 from CRAN and want to enable full surveillance
@@ -273,7 +338,7 @@ functionality:</p>
 <ol style="list-style-type: decimal">
 <li>
 <p>Check your current status:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/check_environment_setup.html">check_environment_setup</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li><p>Install PostgreSQL, create the surveillance database, and note
@@ -283,7 +348,7 @@ the connection parameters (host, port, username, password).</p></li>
 <code><a href="../reference/check_environment_setup.html">cs9::check_environment_setup()</a></code>.</p></li>
 <li>
 <p>Test that the package now loads fully:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span> <span class="op">&lt;-</span> <span class="fu">cs9</span><span class="fu">::</span><span class="va"><a href="../reference/SurveillanceSystem_v9.html">SurveillanceSystem_v9</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>name <span class="op">=</span> <span class="st">"test_system"</span><span class="op">)</span></span></code></pre></div>
 </li>
 </ol>
@@ -294,7 +359,7 @@ the connection parameters (host, port, username, password).</p></li>
 <div class="section level3">
 <h3 id="verify-your-setup">Verify your setup<a class="anchor" aria-label="anchor" href="#verify-your-setup"></a>
 </h3>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load CS9</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://niphr.github.io/cs9/">cs9</a></span><span class="op">)</span></span>
 <span></span>
@@ -322,9 +387,9 @@ Expected when no database is configured. Follow the database setup steps
 above.</p>
 <p><strong>Permission denied errors</strong>: Grant the required
 privileges:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">PRIVILEGES</span> <span class="kw">ON</span> <span class="kw">DATABASE</span> cs9_surveillance <span class="kw">TO</span> cs9_user;</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> config <span class="kw">TO</span> cs9_user;</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> anon <span class="kw">TO</span> cs9_user;</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">PRIVILEGES</span> <span class="kw">ON</span> <span class="kw">DATABASE</span> cs9_surveillance <span class="kw">TO</span> cs9_user;</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> config <span class="kw">TO</span> cs9_user;</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> anon <span class="kw">TO</span> cs9_user;</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
