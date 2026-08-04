@@ -28,6 +28,8 @@ This vignette shows how to create and configure surveillance tasks in CS9.
 
 ## Overview
 
+The task creation workflow follows CS9's single-instance design principle: you write your analytical code as if processing a single scenario (one disease, one location, one time period), then define the iteration scope through plans. CS9 automatically expands your single-instance code across all specified combinations, handling parallelization and database operations transparently. This means you can develop and debug interactively with real data for one case, then deploy the same code across hundreds of combinations without modification.
+
 Creating a task involves three main steps:
 
 1. **Define database tables** with schemas that describe your data structure

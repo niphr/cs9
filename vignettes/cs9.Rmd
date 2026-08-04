@@ -13,6 +13,64 @@ editor_options:
 
 
 
+## The problem: scaling epidemiological analysis
+
+Epidemiologists naturally think about surveillance problems in terms of specific scenarios: "How do I detect influenza outbreaks among elderly patients in Oslo?" They develop understanding through particular cases before generalizing.
+
+But comprehensive surveillance requires scaling these analyses across hundreds of diseases, locations, and demographic groups. Traditional programming forces epidemiologists to manage this complexity explicitly, burying analytical logic within nested loop structures:
+
+```r
+# Traditional approach: epidemiological logic buried in scaling code
+for (location in all_locations) {
+  for (week in all_weeks) {
+    for (age_group in all_age_groups) {
+      data <- get_data(location, week, age_group)
+      results <- analyze_disease_trends(data)
+      save_results(results, location, week, age_group)
+    }
+  }
+}
+```
+
+CS9 resolves this by **separating analytical logic from scaling**. Epidemiologists write code for a single instance — one disease, one location, one age group — while the framework handles expansion across all combinations automatically:
+
+```r
+# CS9 approach: write analysis for one instance, framework scales it
+short_term_trends_action <- function(data, argset, tables) {
+  x <- csalert::short_term_trend(data$data, ...)
+  tables$output$insert_data(x)
+}
+```
+
+This code operates identically whether run interactively for one location or scaled by CS9 across 106 diseases, 378 locations, and multiple demographic groups. When a specific analysis fails, the epidemiologist loads that exact combination interactively and steps through the code. This is the **single-instance design principle** — CS9's core innovation.
+
+## NorSySS: a decade of operation
+
+The Norwegian Syndromic Surveillance System (NorSySS) provides evidence that this approach works in practice. Operating continuously since 2014, NorSySS has:
+
+- Processed approximately **18 million** healthcare consultations annually
+- Monitored **106 diseases** across **378 geographic locations** (municipal to national)
+- Maintained **99.5% system availability** over ten years
+- Supported **9 age groups** and **3 sex categories** for demographic stratification
+
+During the COVID-19 pandemic (March 2020), the NorSySS team added new diagnostic codes and began producing daily municipal-level outputs within weeks — all while maintaining uninterrupted surveillance of the existing 106 monitored conditions. CS9's single-instance design was central to this: new COVID-19 analyses were developed and tested interactively for a single municipality, then immediately deployed across all locations without additional scaling effort.
+
+Reference: White RA, Valcarcel Salamanca B. "CS9: An analysis framework for real-time disease surveillance." Norwegian Institute of Public Health.
+
+## CS9 vs alternatives
+
+| Aspect | CS9 | plnr | Commercial Platforms | R Frameworks | Custom Scripts |
+|--------|-----|------|---------------------|--------------|----------------|
+| Customization | High — domain abstractions | High — domain abstractions | Low — vendor-limited | Medium — computational flexibility | High — unlimited freedom |
+| Maintenance | Low — systematic abstractions | Low — systematic abstractions | Medium — vendor dependencies | Medium — framework constraints | High — technical debt |
+| User model | Epidemiological concepts | Epidemiological concepts | Standardized interfaces | Computational tasks | Complete freedom |
+| Implementation speed | Medium — initial setup, then rapid | High | High — immediate capability | Medium — learning curve | Variable |
+| Long-term sustainability | High — structured evolution | Medium — limited by complexity/data size | Medium — vendor dependency | Medium — framework limitations | Low — personnel dependency |
+
+CS9 is built upon the [plnr](https://CRAN.R-project.org/package=plnr) framework, extending it with database integration and multi-plan orchestration. **For simpler needs** (no database, single computer), plnr provides the same single-instance design principle without CS9's infrastructure layer — it is the recommended starting point for smaller systems, pilots, or resource-constrained settings.
+
+Commercial platforms like ESSENCE provide immediate capability but limit rapid adaptation. General-purpose R workflow frameworks (targets, drake, workflowr) provide computational reproducibility but require translating surveillance concepts into computational abstractions. Custom scripts offer freedom but accumulate technical debt.
+
 ## What is CS9?
 
 Core Surveillance 9 (CS9) is an R framework for building real-time disease surveillance systems. It provides infrastructure for:
@@ -35,6 +93,40 @@ CS9 fits well when you need to:
 - Deploy surveillance systems in a production environment
 - Handle multiple data sources and analysis outputs
 - Apply data validation and quality control systematically
+
+CS9 is not always the right choice. The framework repays its setup cost when
+the analysis itself is complex: temporal calculations, integration across
+several data sources, or novel analytical methods. Where the analytical
+requirements are standard, that cost is not repaid.
+
+Three requirements are hard:
+
+- PostgreSQL, and containerised deployment.
+- Software architecture and systems administration capability, in-house or
+  through a partner.
+- Workflow reorganisation. Adoption changes how epidemiologists work, and the
+  productivity gain arrives over a medium-to-long horizon, not immediately.
+
+Assess your analytical requirements, your technical capability and your time
+horizon before committing. For a smaller system, a pilot, or a
+resource-constrained setting, [plnr](https://www.rwhite.no/plnr/) applies the
+same single-instance design on one computer with no database. CS9 is built on
+plnr, and adds database integration and multi-plan orchestration.
+
+### What CS9 does not decide for you
+
+**CS9 analyses each stratum independently by default.** That default reflects
+NorSySS's operational need for location-specific and demographic-specific
+municipal reporting. It is a default, not a methodological commitment.
+
+Borrowing strength across strata, and adjusting exceedance probabilities for
+multiple comparisons, are decisions about the statistical method. They are
+independent of the infrastructure, and you can implement either inside an
+action function. With 106 diseases across 378 locations and several
+demographic strata, the number of simultaneous tests is large. Whether to
+control the family-wise error rate or the false discovery rate, and how, is
+your decision. The framework does not make it for you, and does not warn you
+that it has not.
 
 ## Key concepts and definitions
 
@@ -135,6 +227,8 @@ If RAM is limited, use more plans with smaller data-pulls instead.
 - **Creating tasks**: `vignette("creating-a-task")` walks through building your first surveillance task step by step
 
 ## Example
+
+The following example demonstrates the single-instance design principle using weather data. Notice how the action function contains only the logic for processing one location's weather forecast — the same function would scale across all Norwegian counties if the `for_each_plan` were expanded. This is the same pattern NorSySS uses to scale across 106 diseases and 378 locations.
 
 The following example walks through designing and implementing a weather surveillance task.
 
@@ -850,6 +944,21 @@ A typical development-to-production cycle looks like this:
 2. **Testing**: Run individual tasks with `global$ss$run_task("task_name")`
 3. **Production**: Deploy in Docker containers with Airflow scheduling
 4. **Monitoring**: Track execution through the built-in logging tables
+
+### What the framework handles for you
+
+- **Structured logging**, at the level of the individual analysis: execution
+  time, data volume processed, and which disease-location-demographic
+  combination threw an error.
+- **Database management**: schema validation, partitioning by time period, and
+  bulk operations over millions of rows. Partitioning holds query performance
+  steady as history accumulates over years. Data selectors keep the database
+  structure out of the analysis code.
+- **Parallel computation**, at the framework level. You write sequential R
+  code. The same code runs on a laptop with 4 cores during development and a
+  server with 20 cores in production.
+- **Validation workflows**: completeness, temporal consistency, and outputs
+  against expected ranges.
 
 ## Getting started
 

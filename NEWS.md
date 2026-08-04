@@ -1,3 +1,24 @@
+# Version 26.8.4
+
+## Documentation
+* Updated introduction vignette with single-instance design principle, NorSySS case study, and comparative analysis table
+* Updated task creation vignette with single-instance framing
+* Added Apache Airflow integration guidance to installation vignette
+* Updated CLAUDE.md with surveillance-domain examples from academic paper (White & Valcarcel Salamanca, NIPH)
+* Introduction vignette now states when CS9 is **not** the right choice: the hard
+  requirements (PostgreSQL, containers, systems administration capability), the
+  workflow reorganisation adoption costs, and `plnr` as the simpler option for a
+  pilot or a resource-constrained setting
+* Introduction vignette now states that CS9 analyses each stratum independently
+  **by default**, and that borrowing strength across strata and adjusting
+  exceedance probabilities for multiple comparisons are decisions about the
+  statistical method rather than properties of the framework. With 106 diseases
+  across 378 locations the number of simultaneous tests is large, and nothing in
+  CS9 controls the family-wise error rate or the false discovery rate for you
+* Introduction vignette now lists what the framework handles: per-analysis
+  structured logging, schema validation and time-period partitioning,
+  framework-level parallelism, and validation workflows
+
 # Version 26.5.13
 
 ## New Features

@@ -7,3 +7,12 @@ _pkgdown.yaml
 @eaDir
 LICENSE.md
 vignettes/resources
+^index\.md$
+^_pkgdown\.yml$
+^pkgdown$
+^Rplots\.pdf$
+^CLAUDE\.md$
+^\.claude$
+^\.github$
+^.*\.docx$
+^docs$

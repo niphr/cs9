@@ -6,3 +6,6 @@
 inst/doc
 nul
 .DS_Store
+
+# Working paper drafts
+*.docx
