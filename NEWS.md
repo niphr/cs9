@@ -1,3 +1,17 @@
+# Version 26.8.5
+
+## New Features
+* `CS9_DBCONFIG_DRIVER=SQLite` is accepted, matched case-insensitively. SQLite is a file rather than a server, so `CS9_DBCONFIG_SERVER` and `CS9_DBCONFIG_PORT` moved out of the always-required tier of `check_environment_setup()` and are now required only by the server-based drivers. A SQLite environment needs `CS9_AUTO`, `CS9_PATH`, `CS9_DBCONFIG_ACCESS`, `CS9_DBCONFIG_DRIVER` and one `CS9_DBCONFIG_DB_<ACCESS>` file path per access. It needs no `CS9_DBCONFIG_USER`, no `CS9_DBCONFIG_PASSWORD` and no `CS9_DBCONFIG_SCHEMA_*`.
+* `check_environment_setup()` now rejects a `CS9_DBCONFIG_ACCESS` list that omits `config`. The four configuration tables are built from that access unconditionally, so its absence used to fail later and obscurely.
+* `reload_db_config()` — new export, no arguments. Re-reads every `CS9_DBCONFIG_*` variable and rebuilds the configuration tables. A package that sets its own values in `.onLoad()` needs this, because `cs9` is a dependency, loads first, and has already read the environment by then. The reload is state-safe: it disconnects every table it replaces, so a repeated reload does not leak connections, and it empties `config$tables` before rebuilding, so a reload against an invalid environment leaves an empty table list rather than tables describing the previous configuration.
+
+## Bug Fixes
+* `setup_database_tables()` now builds all four tables into a local list and assigns `config$tables` once, at the end. Assigning each table directly meant a failure in the third constructor left a partially-populated `config$tables` behind, indistinguishable from a complete one.
+* Under SQLite, a dbconfig's `id` is the database file path rather than `[db].[schema]`, and a partitioned table's per-partition name uses the `xxpxx` separator that PostgreSQL uses. `PARTITION` is a keyword in SQLite's window-function grammar.
+
+## Development
+* `DBI` and `RSQLite` added to `Suggests`, for the new `tests/testthat/test-sqlite-config.R`.
+
 # Version 26.8.4
 
 ## Documentation
