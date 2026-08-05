@@ -22,7 +22,9 @@ articles:
 - title: Main verbs
   navbar: ~
   contents:
+  - cs9
   - installation
+  - backends
   - file-layout
   - creating-a-task
 

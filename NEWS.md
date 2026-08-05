@@ -9,6 +9,15 @@
 * `setup_database_tables()` now builds all four tables into a local list and assigns `config$tables` once, at the end. Assigning each table directly meant a failure in the third constructor left a partially-populated `config$tables` behind, indistinguishable from a complete one.
 * Under SQLite, a dbconfig's `id` is the database file path rather than `[db].[schema]`, and a partitioned table's per-partition name uses the `xxpxx` separator that PostgreSQL uses. `PARTITION` is a keyword in SQLite's window-function grammar.
 
+## Documentation
+* The installation vignette starts on SQLite. A reader now installs `cs9`, writes six settings into `.Renviron`, validates them and then opens the database, all before the vignette mentions a server. The last step is deliberate: `check_environment_setup()` only checks the variables, and it takes a `$connect()` on a configuration table to create the SQLite file and the `config_log` table in it. The PostgreSQL-in-Docker guide follows below.
+* The installation vignette no longer says CS9 requires PostgreSQL for full functionality, which stopped being true when the SQLite backend landed. It says PostgreSQL is the production backend and points at the SQLite section for the alternative.
+* `vignette("backends")` — new. The `CS9_DBCONFIG_*` environments for PostgreSQL and SQLite side by side, a table of what each backend does with every variable, the tiers `check_environment_setup()` validates in, and the `.onLoad()` pattern that sets the variables from another package and then calls `reload_db_config()`. It carries no R-level detail: `vignette("backends", package = "csdb")` is the companion for that.
+* Both vignettes now warn about two traps that cost nothing to avoid and are hard to diagnose. An empty `CS9_PATH` counts as a missing variable, so `CS9_PATH=` fails validation. And an unset `CS9_DBCONFIG_ROLE_CREATE_TABLE` reaches `csdb` as `""` rather than `NULL`, which is not the `"x"` no-role sentinel, so the PostgreSQL `create_table` can emit `SET ROLE ""`. Both PostgreSQL blocks now set the variable explicitly.
+* The PostgreSQL `.Renviron` block in the installation vignette carried both of those traps, and had done since before the SQLite work: it wrote `CS9_PATH=` with no value, the variable table below it called `CS9_PATH` "usually empty", and `CS9_DBCONFIG_ROLE_CREATE_TABLE` was absent. A reader who copied the block got `Missing required environment variables: CS9_PATH`. All three are fixed.
+* `README.md` names both backends and links to the two vignettes.
+* `_pkgdown.yml` indexes all five vignettes. `cs9` and `backends` were missing from the `articles:` list; `cs9` had been missing independently of this work, although the navbar links to it.
+
 ## Development
 * `DBI` and `RSQLite` added to `Suggests`, for the new `tests/testthat/test-sqlite-config.R`.
 
