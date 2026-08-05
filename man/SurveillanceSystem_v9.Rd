@@ -56,7 +56,7 @@ ss$run_task("covid_import_daily_data")
 
 
 ## ------------------------------------------------
-## Method `SurveillanceSystem_v9$add_table`
+## Method `SurveillanceSystem_v9$add_table()`
 ## ------------------------------------------------
 
 \dontrun{
@@ -102,65 +102,67 @@ global$ss$add_table(
 }
 }
 \section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{tables}}{List of database tables managed by the surveillance system}
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{tables}}{List of database tables managed by the surveillance system}
 
-\item{\code{partitionedtables}}{List of partitioned database tables}
+    \item{\code{partitionedtables}}{List of partitioned database tables}
 
-\item{\code{tasks}}{List of surveillance tasks configured for execution}
+    \item{\code{tasks}}{List of surveillance tasks configured for execution}
 
-\item{\code{name}}{Character string identifying the surveillance system instance}
+    \item{\code{name}}{Character string identifying the surveillance system instance}
 
-\item{\code{implementation_version}}{Character string tracking the analytics code version}
-}
-\if{html}{\out{</div>}}
+    \item{\code{implementation_version}}{Character string tracking the analytics code version}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-SurveillanceSystem_v9-new}{\code{SurveillanceSystem_v9$new()}}
-\item \href{#method-SurveillanceSystem_v9-add_table}{\code{SurveillanceSystem_v9$add_table()}}
-\item \href{#method-SurveillanceSystem_v9-add_partitionedtable}{\code{SurveillanceSystem_v9$add_partitionedtable()}}
-\item \href{#method-SurveillanceSystem_v9-add_task}{\code{SurveillanceSystem_v9$add_task()}}
-\item \href{#method-SurveillanceSystem_v9-get_task}{\code{SurveillanceSystem_v9$get_task()}}
-\item \href{#method-SurveillanceSystem_v9-run_task}{\code{SurveillanceSystem_v9$run_task()}}
-\item \href{#method-SurveillanceSystem_v9-shortcut_get_tables}{\code{SurveillanceSystem_v9$shortcut_get_tables()}}
-\item \href{#method-SurveillanceSystem_v9-shortcut_get_argset}{\code{SurveillanceSystem_v9$shortcut_get_argset()}}
-\item \href{#method-SurveillanceSystem_v9-shortcut_get_data}{\code{SurveillanceSystem_v9$shortcut_get_data()}}
-\item \href{#method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt}{\code{SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt()}}
-\item \href{#method-SurveillanceSystem_v9-shortcut_get_num_analyses}{\code{SurveillanceSystem_v9$shortcut_get_num_analyses()}}
-\item \href{#method-SurveillanceSystem_v9-clone}{\code{SurveillanceSystem_v9$clone()}}
-}
+  \itemize{
+    \item \href{#method-SurveillanceSystem_v9-initialize}{\code{SurveillanceSystem_v9$new()}}
+    \item \href{#method-SurveillanceSystem_v9-add_table}{\code{SurveillanceSystem_v9$add_table()}}
+    \item \href{#method-SurveillanceSystem_v9-add_partitionedtable}{\code{SurveillanceSystem_v9$add_partitionedtable()}}
+    \item \href{#method-SurveillanceSystem_v9-add_task}{\code{SurveillanceSystem_v9$add_task()}}
+    \item \href{#method-SurveillanceSystem_v9-get_task}{\code{SurveillanceSystem_v9$get_task()}}
+    \item \href{#method-SurveillanceSystem_v9-run_task}{\code{SurveillanceSystem_v9$run_task()}}
+    \item \href{#method-SurveillanceSystem_v9-shortcut_get_tables}{\code{SurveillanceSystem_v9$shortcut_get_tables()}}
+    \item \href{#method-SurveillanceSystem_v9-shortcut_get_argset}{\code{SurveillanceSystem_v9$shortcut_get_argset()}}
+    \item \href{#method-SurveillanceSystem_v9-shortcut_get_data}{\code{SurveillanceSystem_v9$shortcut_get_data()}}
+    \item \href{#method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt}{\code{SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt()}}
+    \item \href{#method-SurveillanceSystem_v9-shortcut_get_num_analyses}{\code{SurveillanceSystem_v9$shortcut_get_num_analyses()}}
+    \item \href{#method-SurveillanceSystem_v9-clone}{\code{SurveillanceSystem_v9$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-SurveillanceSystem_v9-new"></a>}}
-\if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-new}{}}}
-\subsection{Method \code{new()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$new(
+\if{html}{\out{<a id="method-SurveillanceSystem_v9-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-initialize}{}}}
+\subsection{\code{SurveillanceSystem_v9$new()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$new(
   name = "unspecified",
   implementation_version = "unspecified"
-)}\if{html}{\out{</div>}}
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{name}}{A string that the user may choose to use to track performance metrics (runtime and RAM usage)}
+      \item{\code{implementation_version}}{A string that the user may choose to use to track performance metrics (runtime and RAM usage)}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{name}}{A string that the user may choose to use to track performance metrics (runtime and RAM usage)}
-
-\item{\code{implementation_version}}{A string that the user may choose to use to track performance metrics (runtime and RAM usage)}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_table"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_table}{}}}
-\subsection{Method \code{add_table()}}{
-Add a table
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$add_table(
+\subsection{\code{SurveillanceSystem_v9$add_table()}}{
+  Add a table
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$add_table(
   name_access,
   name_grouping = NULL,
   name_variant = NULL,
@@ -169,37 +171,29 @@ Add a table
   indexes = NULL,
   validator_field_types = csdb::validator_field_types_blank,
   validator_field_contents = csdb::validator_field_contents_blank
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{name_access}}{First part of table name, corresponding to the database where it will be stored.}
-
-\item{\code{name_grouping}}{Second part of table name, corresponding to some sort of grouping.}
-
-\item{\code{name_variant}}{Final part of table name, corresponding to a distinguishing variant.}
-
-\item{\code{field_types}}{Named character vector, where the names are the column names, and the values are the column types. Valid types are BOOLEAN, CHARACTER, INTEGER, DOUBLE, DATE, DATETIME}
-
-\item{\code{keys}}{Character vector, containing the column names that uniquely identify a row of data.}
-
-\item{\code{indexes}}{Named list, containing indexes.}
-
-\item{\code{validator_field_types}}{Function corresponding to a validator for the field types.}
-
-\item{\code{validator_field_contents}}{Function corresponding to a validator for the field contents.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-No return value. This method is called for its side effect of adding a table to the surveillance system.
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-global$ss$add_table(
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{name_access}}{First part of table name, corresponding to the database where it will be stored.}
+      \item{\code{name_grouping}}{Second part of table name, corresponding to some sort of grouping.}
+      \item{\code{name_variant}}{Final part of table name, corresponding to a distinguishing variant.}
+      \item{\code{field_types}}{Named character vector, where the names are the column names, and the values are the column types. Valid types are BOOLEAN, CHARACTER, INTEGER, DOUBLE, DATE, DATETIME}
+      \item{\code{keys}}{Character vector, containing the column names that uniquely identify a row of data.}
+      \item{\code{indexes}}{Named list, containing indexes.}
+      \item{\code{validator_field_types}}{Function corresponding to a validator for the field types.}
+      \item{\code{validator_field_contents}}{Function corresponding to a validator for the field contents.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    No return value. This method is called for its side effect of adding a table to the surveillance system.
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{global$ss$add_table(
   name_access = c("anon"),
   name_grouping = "example_weather",
   name_variant = "data",
@@ -239,19 +233,18 @@ global$ss$add_table(
   validator_field_contents = csdb::validator_field_contents_csfmt_rts_data_v1
 )
 }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
 
-}
-
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_partitionedtable"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_partitionedtable}{}}}
-\subsection{Method \code{add_partitionedtable()}}{
-Add a partitioned table to the surveillance system
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$add_partitionedtable(
+\subsection{\code{SurveillanceSystem_v9$add_partitionedtable()}}{
+  Add a partitioned table to the surveillance system
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$add_partitionedtable(
   name_access,
   name_grouping = NULL,
   name_variant = NULL,
@@ -263,47 +256,39 @@ Add a partitioned table to the surveillance system
   indexes = NULL,
   validator_field_types = csdb::validator_field_types_blank,
   validator_field_contents = csdb::validator_field_contents_blank
-)}\if{html}{\out{</div>}}
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{name_access}}{First part of table name, corresponding to the database where it will be stored}
+      \item{\code{name_grouping}}{Second part of table name, corresponding to some sort of grouping}
+      \item{\code{name_variant}}{Final part of table name, corresponding to a distinguishing variant}
+      \item{\code{name_partitions}}{Character string specifying partition naming scheme}
+      \item{\code{column_name_partition}}{Column name used for partitioning}
+      \item{\code{value_generator_partition}}{Function to generate partition values}
+      \item{\code{field_types}}{Named character vector of column names and types}
+      \item{\code{keys}}{Character vector of column names that uniquely identify rows}
+      \item{\code{indexes}}{Named list containing index definitions}
+      \item{\code{validator_field_types}}{Function to validate field types}
+      \item{\code{validator_field_contents}}{Function to validate field contents}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    No return value. This method is called for its side effect of adding a partitioned table to the surveillance system.
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{name_access}}{First part of table name, corresponding to the database where it will be stored}
-
-\item{\code{name_grouping}}{Second part of table name, corresponding to some sort of grouping}
-
-\item{\code{name_variant}}{Final part of table name, corresponding to a distinguishing variant}
-
-\item{\code{name_partitions}}{Character string specifying partition naming scheme}
-
-\item{\code{column_name_partition}}{Column name used for partitioning}
-
-\item{\code{value_generator_partition}}{Function to generate partition values}
-
-\item{\code{field_types}}{Named character vector of column names and types}
-
-\item{\code{keys}}{Character vector of column names that uniquely identify rows}
-
-\item{\code{indexes}}{Named list containing index definitions}
-
-\item{\code{validator_field_types}}{Function to validate field types}
-
-\item{\code{validator_field_contents}}{Function to validate field contents}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-No return value. This method is called for its side effect of adding a partitioned table to the surveillance system.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_task}{}}}
-\subsection{Method \code{add_task()}}{
-Add a surveillance task to the system
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$add_task(
+\subsection{\code{SurveillanceSystem_v9$add_task()}}{
+  Add a surveillance task to the system
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$add_task(
   name_grouping = NULL,
   name_action = NULL,
   name_variant = NULL,
@@ -318,211 +303,212 @@ Add a surveillance task to the system
   action_fn_name,
   data_selector_fn_name = NULL,
   tables = NULL
-)}\if{html}{\out{</div>}}
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{name_grouping}}{Name of the task (grouping)}
+      \item{\code{name_action}}{Name of the task (action)}
+      \item{\code{name_variant}}{Name of the task (variant)}
+      \item{\code{cores}}{Number of CPU cores}
+      \item{\code{permission}}{A permission R6 instance}
+      \item{\code{plan_analysis_fn_name}}{The name of a function that returns a named list \code{list(for_each_plan = list(), for_each_analysis = NULL)}.}
+      \item{\code{for_each_plan}}{A list, where each unit corresponds to one data extraction. Generally recommended to use \code{plnr::expand_list}.}
+      \item{\code{for_each_analysis}}{A list, where each unit corresponds to one analysis within a plan (data extraction). Generally recommended to use \code{plnr::expand_list}.}
+      \item{\code{universal_argset}}{A list, where these argsets are applied to all analyses univerally}
+      \item{\code{upsert_at_end_of_each_plan}}{Do you want to upsert your results automatically at the end of each plan?}
+      \item{\code{insert_at_end_of_each_plan}}{Do you want to insert your results automatically at the end of each plan?}
+      \item{\code{action_fn_name}}{The name of the function that will be called for each analysis with arguments \code{data}, \code{argset}, \code{schema}}
+      \item{\code{data_selector_fn_name}}{The name of a function that will be called to obtain the data for each analysis. The function must have the arguments \code{argset}, \code{schema} and must return a named list.}
+      \item{\code{tables}}{A named list that maps \code{cs9::config$schemas} for use in \code{action_fn_name} and \code{data_selector_fn_name}}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    No return value. This method is called for its side effect of adding a task to the surveillance system.
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{name_grouping}}{Name of the task (grouping)}
-
-\item{\code{name_action}}{Name of the task (action)}
-
-\item{\code{name_variant}}{Name of the task (variant)}
-
-\item{\code{cores}}{Number of CPU cores}
-
-\item{\code{permission}}{A permission R6 instance}
-
-\item{\code{plan_analysis_fn_name}}{The name of a function that returns a named list \code{list(for_each_plan = list(), for_each_analysis = NULL)}.}
-
-\item{\code{for_each_plan}}{A list, where each unit corresponds to one data extraction. Generally recommended to use \code{plnr::expand_list}.}
-
-\item{\code{for_each_analysis}}{A list, where each unit corresponds to one analysis within a plan (data extraction). Generally recommended to use \code{plnr::expand_list}.}
-
-\item{\code{universal_argset}}{A list, where these argsets are applied to all analyses univerally}
-
-\item{\code{upsert_at_end_of_each_plan}}{Do you want to upsert your results automatically at the end of each plan?}
-
-\item{\code{insert_at_end_of_each_plan}}{Do you want to insert your results automatically at the end of each plan?}
-
-\item{\code{action_fn_name}}{The name of the function that will be called for each analysis with arguments \code{data}, \code{argset}, \code{schema}}
-
-\item{\code{data_selector_fn_name}}{The name of a function that will be called to obtain the data for each analysis. The function must have the arguments \code{argset}, \code{schema} and must return a named list.}
-
-\item{\code{tables}}{A named list that maps \code{cs9::config$schemas} for use in \code{action_fn_name} and \code{data_selector_fn_name}}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-No return value. This method is called for its side effect of adding a task to the surveillance system.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-get_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-get_task}{}}}
-\subsection{Method \code{get_task()}}{
-Get a surveillance task by name
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$get_task(task_name)}\if{html}{\out{</div>}}
+\subsection{\code{SurveillanceSystem_v9$get_task()}}{
+  Get a surveillance task by name
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$get_task(task_name)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_name}}{Character string specifying the task name}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A Task R6 object representing the surveillance task
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{task_name}}{Character string specifying the task name}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A Task R6 object representing the surveillance task
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-run_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-run_task}{}}}
-\subsection{Method \code{run_task()}}{
-Execute a surveillance task by name
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$run_task(task_name)}\if{html}{\out{</div>}}
+\subsection{\code{SurveillanceSystem_v9$run_task()}}{
+  Execute a surveillance task by name
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$run_task(task_name)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_name}}{Character string specifying the task name to run}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    No return value. This method is called for its side effect of executing the task.
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{task_name}}{Character string specifying the task name to run}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-No return value. This method is called for its side effect of executing the task.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_tables"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_tables}{}}}
-\subsection{Method \code{shortcut_get_tables()}}{
-Get database tables associated with a task
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_tables(task_name)}\if{html}{\out{</div>}}
+\subsection{\code{SurveillanceSystem_v9$shortcut_get_tables()}}{
+  Get database tables associated with a task
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$shortcut_get_tables(task_name)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_name}}{Character string specifying the task name}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A named list of database table objects used by the task
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{task_name}}{Character string specifying the task name}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A named list of database table objects used by the task
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_argset"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_argset}{}}}
-\subsection{Method \code{shortcut_get_argset()}}{
-Get argument set for a specific plan and analysis
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_argset(
+\subsection{\code{SurveillanceSystem_v9$shortcut_get_argset()}}{
+  Get argument set for a specific plan and analysis
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$shortcut_get_argset(
   task_name,
   index_plan = 1,
   index_analysis = 1
-)}\if{html}{\out{</div>}}
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_name}}{Character string specifying the task name}
+      \item{\code{index_plan}}{Integer specifying which plan to access}
+      \item{\code{index_analysis}}{Integer specifying which analysis to access}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A named list containing the argument set for the specified plan and analysis
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{task_name}}{Character string specifying the task name}
-
-\item{\code{index_plan}}{Integer specifying which plan to access}
-
-\item{\code{index_analysis}}{Integer specifying which analysis to access}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A named list containing the argument set for the specified plan and analysis
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_data"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_data}{}}}
-\subsection{Method \code{shortcut_get_data()}}{
-Get data for a specific plan
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_data(task_name, index_plan = 1)}\if{html}{\out{</div>}}
+\subsection{\code{SurveillanceSystem_v9$shortcut_get_data()}}{
+  Get data for a specific plan
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$shortcut_get_data(task_name, index_plan = 1)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_name}}{Character string specifying the task name}
+      \item{\code{index_plan}}{Integer specifying which plan to access}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A named list containing the data extracted for the specified plan
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{task_name}}{Character string specifying the task name}
-
-\item{\code{index_plan}}{Integer specifying which plan to access}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A named list containing the data extracted for the specified plan
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt}{}}}
-\subsection{Method \code{shortcut_get_plans_argsets_as_dt()}}{
-Get plans and argsets as a data.table
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt(task_name)}\if{html}{\out{</div>}}
+\subsection{\code{SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt()}}{
+  Get plans and argsets as a data.table
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt(task_name)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_name}}{Character string specifying the task name}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A data.table containing plan and analysis information with columns including index_plan and index_analysis
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{task_name}}{Character string specifying the task name}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A data.table containing plan and analysis information with columns including index_plan and index_analysis
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_num_analyses"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_num_analyses}{}}}
-\subsection{Method \code{shortcut_get_num_analyses()}}{
-Get the total number of analyses for a task
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$shortcut_get_num_analyses(task_name)}\if{html}{\out{</div>}}
+\subsection{\code{SurveillanceSystem_v9$shortcut_get_num_analyses()}}{
+  Get the total number of analyses for a task
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$shortcut_get_num_analyses(task_name)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_name}}{Character string specifying the task name}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer value representing the total number of analyses across all plans for the task
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{task_name}}{Character string specifying the task name}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Integer value representing the total number of analyses across all plans for the task
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveillanceSystem_v9$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{SurveillanceSystem_v9$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveillanceSystem_v9$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }
