@@ -107,6 +107,21 @@ test_that("reload_db_config leaves no stale tables when the environment is inval
 })
 
 test_that("reload_db_config disconnects the tables it replaces", {
+  # csdb gained its SQLite backend in 2026.8.5. Against 2026.5.13 the driver
+  # string "SQLite" matches no branch, falls into csdb's generic ODBC arm, and
+  # $connect() fails with "Can't open lib 'SQLite' : file not found", which
+  # says nothing about the cause.
+  #
+  # The guard is not redundant with the csdb (>= 2026.8.5) in DESCRIPTION.
+  # That floor is honoured by the resolver that installs the dependency, and
+  # by R CMD check, but nothing enforces it afterwards: cs9 reaches csdb
+  # through `csdb::` alone, so NAMESPACE holds no import directive, R runs no
+  # version check at load time, and `library(cs9)` on top of csdb 2026.5.13
+  # loads without complaint. Measured on 2026-08-05: R CMD INSTALL exits 0 and
+  # library(cs9) succeeds. So this is the only thing standing between an
+  # out-of-date csdb and two opaque ODBC errors.
+  skip_if_not_installed("csdb", "2026.8.5")
+
   d <- withr::local_tempdir()
   withr::local_envvar(c(
     CS9_AUTO = "0",
@@ -242,6 +257,8 @@ test_that("a SQLite partitioned table uses the xxpxx separator", {
 test_that("connect() creates the config table in the SQLite file", {
   skip_if_not_installed("DBI")
   skip_if_not_installed("RSQLite")
+  # See the note on the same guard above: csdb's SQLite backend is 2026.8.5.
+  skip_if_not_installed("csdb", "2026.8.5")
 
   d <- withr::local_tempdir()
   db_file <- file.path(d, "config.sqlite")

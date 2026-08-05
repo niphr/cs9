@@ -16,7 +16,7 @@ Depends:
   R (>= 4.1.0)
 Imports:
   callr,
-  csdb,
+  csdb (>= 2026.8.5),
   cstime (>= 2023.5.3),
   data.table,
   dplyr,
@@ -41,6 +41,7 @@ Suggests:
     knitr,
     usethis,
     rmarkdown
+Remotes: niphr/csdb
 License: MIT + file LICENSE
 LazyData: true
 Roxygen: list(markdown = TRUE)
