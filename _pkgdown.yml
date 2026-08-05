@@ -46,9 +46,10 @@ reference:
   - get_config_tasks_stats
 
 - title: "Environment Setup"
-  desc: "Environment validation and diagnostic functions"
+  desc: "Environment validation, diagnostics, and reloading the database configuration"
   contents:
   - check_environment_setup
+  - reload_db_config
 
 - title: "File and Path Management"
   desc: "Utilities for managing directories and file paths"
