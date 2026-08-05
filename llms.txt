@@ -56,10 +56,13 @@ Functions for logging and configuration tracking
 
 ## Environment Setup
 
-Environment validation and diagnostic functions
+Environment validation, diagnostics, and reloading the database
+configuration
 
 - [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
   : Check Environment Setup
+- [`reload_db_config()`](https://niphr.github.io/cs9/reference/reload_db_config.md)
+  : Reload the database configuration from the environment
 
 ## File and Path Management
 
@@ -100,7 +103,9 @@ Re-exported functions from other packages
 
 ### Main verbs
 
+- [Introduction to CS9](https://niphr.github.io/cs9/articles/cs9.md):
 - [Installation](https://niphr.github.io/cs9/articles/installation.md):
+- [Database backends](https://niphr.github.io/cs9/articles/backends.md):
 - [File Layout](https://niphr.github.io/cs9/articles/file-layout.md):
 - [Creating a
   task](https://niphr.github.io/cs9/articles/creating-a-task.md):

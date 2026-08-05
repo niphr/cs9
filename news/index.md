@@ -1,5 +1,115 @@
 # Changelog
 
+## Version 26.8.5
+
+### New Features
+
+- `CS9_DBCONFIG_DRIVER=SQLite` is accepted, matched case-insensitively.
+  SQLite is a file rather than a server, so `CS9_DBCONFIG_SERVER` and
+  `CS9_DBCONFIG_PORT` moved out of the always-required tier of
+  [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+  and are now required only by the server-based drivers. A SQLite
+  environment needs `CS9_AUTO`, `CS9_PATH`, `CS9_DBCONFIG_ACCESS`,
+  `CS9_DBCONFIG_DRIVER` and one `CS9_DBCONFIG_DB_<ACCESS>` file path per
+  access. It needs no `CS9_DBCONFIG_USER`, no `CS9_DBCONFIG_PASSWORD`
+  and no `CS9_DBCONFIG_SCHEMA_*`.
+- [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+  now rejects a `CS9_DBCONFIG_ACCESS` list that omits `config`. The four
+  configuration tables are built from that access unconditionally, so
+  its absence used to fail later and obscurely.
+- [`reload_db_config()`](https://niphr.github.io/cs9/reference/reload_db_config.md)
+  — new export, no arguments. Re-reads every `CS9_DBCONFIG_*` variable
+  and rebuilds the configuration tables. A package that sets its own
+  values in `.onLoad()` needs this, because `cs9` is a dependency, loads
+  first, and has already read the environment by then. The reload is
+  state-safe: it disconnects every table it replaces, so a repeated
+  reload does not leak connections, and it empties `config$tables`
+  before rebuilding, so a reload against an invalid environment leaves
+  an empty table list rather than tables describing the previous
+  configuration.
+
+### Bug Fixes
+
+- `DESCRIPTION` requires `csdb (>= 2026.8.5)` and carries
+  `Remotes: niphr/csdb`. The bare `csdb` it had before let a resolver
+  satisfy the dependency with any version, and the version CRAN and RSPM
+  serve is 2026.5.13, which predates csdb’s SQLite backend. Installed
+  against that, `CS9_DBCONFIG_DRIVER=SQLite` matched no branch in csdb,
+  fell through to the generic ODBC arm, and `$connect()` failed with
+  `Can't open lib 'SQLite' : file not found`, which names neither csdb
+  nor a version. csdb 2026.8.5 is on GitHub and not on CRAN, so the
+  floor alone would leave the dependency unsatisfiable; the `Remotes`
+  field is what makes it obtainable. `cs9` is not submitted to CRAN, so
+  the field costs nothing.
+- Two blocks in `tests/testthat/test-sqlite-config.R` now call
+  `skip_if_not_installed("csdb", "2026.8.5")`. This is not redundant
+  with the version floor. Nothing enforces an `Imports` version after
+  installation: `cs9` reaches `csdb` through `csdb::` alone, so
+  `NAMESPACE` holds no import directive and R runs no version check at
+  load time. Measured on 2026-08-05 against csdb 2026.5.13,
+  `R CMD INSTALL` exits 0 and
+  [`library(cs9)`](https://niphr.github.io/cs9/) succeeds. The guard is
+  keyed on the version and on nothing else, so it cannot hide a failure
+  that is not a version mismatch.
+- `setup_database_tables()` now builds all four tables into a local list
+  and assigns `config$tables` once, at the end. Assigning each table
+  directly meant a failure in the third constructor left a
+  partially-populated `config$tables` behind, indistinguishable from a
+  complete one.
+- Under SQLite, a dbconfig’s `id` is the database file path rather than
+  `[db].[schema]`, and a partitioned table’s per-partition name uses the
+  `xxpxx` separator that PostgreSQL uses. `PARTITION` is a keyword in
+  SQLite’s window-function grammar.
+
+### Documentation
+
+- The installation vignette starts on SQLite. A reader now installs
+  `cs9`, writes six settings into `.Renviron`, validates them and then
+  opens the database, all before the vignette mentions a server. The
+  last step is deliberate:
+  [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+  only checks the variables, and it takes a `$connect()` on a
+  configuration table to create the SQLite file and the `config_log`
+  table in it. The PostgreSQL-in-Docker guide follows below.
+- The installation vignette no longer says CS9 requires PostgreSQL for
+  full functionality, which stopped being true when the SQLite backend
+  landed. It says PostgreSQL is the production backend and points at the
+  SQLite section for the alternative.
+- [`vignette("backends")`](https://niphr.github.io/cs9/articles/backends.md)
+  — new. The `CS9_DBCONFIG_*` environments for PostgreSQL and SQLite
+  side by side, a table of what each backend does with every variable,
+  the tiers
+  [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+  validates in, and the `.onLoad()` pattern that sets the variables from
+  another package and then calls
+  [`reload_db_config()`](https://niphr.github.io/cs9/reference/reload_db_config.md).
+  It carries no R-level detail:
+  [`vignette("backends", package = "csdb")`](https://niphr.github.io/csdb/articles/backends.html)
+  is the companion for that.
+- Both vignettes now warn about two traps that cost nothing to avoid and
+  are hard to diagnose. An empty `CS9_PATH` counts as a missing
+  variable, so `CS9_PATH=` fails validation. And an unset
+  `CS9_DBCONFIG_ROLE_CREATE_TABLE` reaches `csdb` as `""` rather than
+  `NULL`, which is not the `"x"` no-role sentinel, so the PostgreSQL
+  `create_table` can emit `SET ROLE ""`. Both PostgreSQL blocks now set
+  the variable explicitly.
+- The PostgreSQL `.Renviron` block in the installation vignette carried
+  both of those traps, and had done since before the SQLite work: it
+  wrote `CS9_PATH=` with no value, the variable table below it called
+  `CS9_PATH` “usually empty”, and `CS9_DBCONFIG_ROLE_CREATE_TABLE` was
+  absent. A reader who copied the block got
+  `Missing required environment variables: CS9_PATH`. All three are
+  fixed.
+- `README.md` names both backends and links to the two vignettes.
+- `_pkgdown.yml` indexes all five vignettes. `cs9` and `backends` were
+  missing from the `articles:` list; `cs9` had been missing
+  independently of this work, although the navbar links to it.
+
+### Development
+
+- `DBI` and `RSQLite` added to `Suggests`, for the new
+  `tests/testthat/test-sqlite-config.R`.
+
 ## Version 26.8.4
 
 ### Documentation
@@ -24,6 +134,13 @@
 - Introduction vignette now lists what the framework handles:
   per-analysis structured logging, schema validation and time-period
   partitioning, framework-level parallelism, and validation workflows
+
+### Development
+
+- Documentation is generated by roxygen2 8.0.0. `DESCRIPTION` now
+  declares `Config/roxygen2/version` in place of `RoxygenNote`, and
+  every `.Rd` file was regenerated by that version. `NAMESPACE` is
+  unchanged.
 
 ## Version 26.5.13
 

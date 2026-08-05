@@ -7,7 +7,3 @@ Flags/values to be used in the 'dashboards' scene
 ``` r
 config
 ```
-
-## Format
-
-An object of class `environment` of length 7.

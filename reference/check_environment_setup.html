@@ -11,7 +11,7 @@ detailed feedback for troubleshooting configuration issues."><meta property="og:
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,6 +24,7 @@ detailed feedback for troubleshooting configuration issues."><meta property="og:
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installation.html">Installation</a></li>
+    <li><a class="dropdown-item" href="../articles/backends.html">Database backends</a></li>
     <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
   </ul></li>
@@ -111,13 +112,16 @@ to be configured for full database-driven surveillance functionality.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Status:  error </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Issues found:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  -  Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -  Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -  Missing server-specific variables: CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -  No database configurations available </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -  No configuration tables initialized </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Recommendations:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -  Set required environment variables before loading CS9 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -  Refer to CS9 documentation for environment setup instructions </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -  Every driver except SQLite connects to a database server </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -  Set CS9_DBCONFIG_SERVER and CS9_DBCONFIG_PORT, or use CS9_DBCONFIG_DRIVER=SQLite </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -  Verify CS9_DBCONFIG_ACCESS is properly set </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -  Check database connectivity and permissions </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -128,8 +132,8 @@ to be configured for full database-driven surveillance functionality.</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Issues found:"</span>, <span class="va">result</span><span class="op">$</span><span class="va">issues</span>, <span class="st">"\n"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Recommendations:"</span>, <span class="va">result</span><span class="op">$</span><span class="va">recommendations</span>, <span class="st">"\n"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Issues found: Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER No database configurations available No configuration tables initialized </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Recommendations: Set required environment variables before loading CS9 Refer to CS9 documentation for environment setup instructions Verify CS9_DBCONFIG_ACCESS is properly set Check database connectivity and permissions </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Issues found: Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER Missing server-specific variables: CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER No database configurations available No configuration tables initialized </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Recommendations: Set required environment variables before loading CS9 Refer to CS9 documentation for environment setup instructions Every driver except SQLite connects to a database server Set CS9_DBCONFIG_SERVER and CS9_DBCONFIG_PORT, or use CS9_DBCONFIG_DRIVER=SQLite Verify CS9_DBCONFIG_ACCESS is properly set Check database connectivity and permissions </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

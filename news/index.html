@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,6 +20,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/installation.html">Installation</a></li>
+    <li><a class="dropdown-item" href="../articles/backends.html">Database backends</a></li>
     <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
   </ul></li>
@@ -53,6 +54,45 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.5" id="version-2685">Version 26.8.5<a class="anchor" aria-label="anchor" href="#version-2685"></a></h2>
+<div class="section level3">
+<h3 id="new-features-26-8-5">New Features<a class="anchor" aria-label="anchor" href="#new-features-26-8-5"></a></h3>
+<ul><li>
+<code>CS9_DBCONFIG_DRIVER=SQLite</code> is accepted, matched case-insensitively. SQLite is a file rather than a server, so <code>CS9_DBCONFIG_SERVER</code> and <code>CS9_DBCONFIG_PORT</code> moved out of the always-required tier of <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> and are now required only by the server-based drivers. A SQLite environment needs <code>CS9_AUTO</code>, <code>CS9_PATH</code>, <code>CS9_DBCONFIG_ACCESS</code>, <code>CS9_DBCONFIG_DRIVER</code> and one <code>CS9_DBCONFIG_DB_&lt;ACCESS&gt;</code> file path per access. It needs no <code>CS9_DBCONFIG_USER</code>, no <code>CS9_DBCONFIG_PASSWORD</code> and no <code>CS9_DBCONFIG_SCHEMA_*</code>.</li>
+<li>
+<code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> now rejects a <code>CS9_DBCONFIG_ACCESS</code> list that omits <code>config</code>. The four configuration tables are built from that access unconditionally, so its absence used to fail later and obscurely.</li>
+<li>
+<code><a href="../reference/reload_db_config.html">reload_db_config()</a></code> — new export, no arguments. Re-reads every <code>CS9_DBCONFIG_*</code> variable and rebuilds the configuration tables. A package that sets its own values in <code>.onLoad()</code> needs this, because <code>cs9</code> is a dependency, loads first, and has already read the environment by then. The reload is state-safe: it disconnects every table it replaces, so a repeated reload does not leak connections, and it empties <code>config$tables</code> before rebuilding, so a reload against an invalid environment leaves an empty table list rather than tables describing the previous configuration.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-26-8-5">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-26-8-5"></a></h3>
+<ul><li>
+<code>DESCRIPTION</code> requires <code>csdb (&gt;= 2026.8.5)</code> and carries <code>Remotes: niphr/csdb</code>. The bare <code>csdb</code> it had before let a resolver satisfy the dependency with any version, and the version CRAN and RSPM serve is 2026.5.13, which predates csdb’s SQLite backend. Installed against that, <code>CS9_DBCONFIG_DRIVER=SQLite</code> matched no branch in csdb, fell through to the generic ODBC arm, and <code>$connect()</code> failed with <code>Can't open lib 'SQLite' : file not found</code>, which names neither csdb nor a version. csdb 2026.8.5 is on GitHub and not on CRAN, so the floor alone would leave the dependency unsatisfiable; the <code>Remotes</code> field is what makes it obtainable. <code>cs9</code> is not submitted to CRAN, so the field costs nothing.</li>
+<li>Two blocks in <code>tests/testthat/test-sqlite-config.R</code> now call <code>skip_if_not_installed("csdb", "2026.8.5")</code>. This is not redundant with the version floor. Nothing enforces an <code>Imports</code> version after installation: <code>cs9</code> reaches <code>csdb</code> through <code>csdb::</code> alone, so <code>NAMESPACE</code> holds no import directive and R runs no version check at load time. Measured on 2026-08-05 against csdb 2026.5.13, <code>R CMD INSTALL</code> exits 0 and <code><a href="https://niphr.github.io/cs9/">library(cs9)</a></code> succeeds. The guard is keyed on the version and on nothing else, so it cannot hide a failure that is not a version mismatch.</li>
+<li>
+<code>setup_database_tables()</code> now builds all four tables into a local list and assigns <code>config$tables</code> once, at the end. Assigning each table directly meant a failure in the third constructor left a partially-populated <code>config$tables</code> behind, indistinguishable from a complete one.</li>
+<li>Under SQLite, a dbconfig’s <code>id</code> is the database file path rather than <code>[db].[schema]</code>, and a partitioned table’s per-partition name uses the <code>xxpxx</code> separator that PostgreSQL uses. <code>PARTITION</code> is a keyword in SQLite’s window-function grammar.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-26-8-5">Documentation<a class="anchor" aria-label="anchor" href="#documentation-26-8-5"></a></h3>
+<ul><li>The installation vignette starts on SQLite. A reader now installs <code>cs9</code>, writes six settings into <code>.Renviron</code>, validates them and then opens the database, all before the vignette mentions a server. The last step is deliberate: <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> only checks the variables, and it takes a <code>$connect()</code> on a configuration table to create the SQLite file and the <code>config_log</code> table in it. The PostgreSQL-in-Docker guide follows below.</li>
+<li>The installation vignette no longer says CS9 requires PostgreSQL for full functionality, which stopped being true when the SQLite backend landed. It says PostgreSQL is the production backend and points at the SQLite section for the alternative.</li>
+<li>
+<code><a href="../articles/backends.html">vignette("backends")</a></code> — new. The <code>CS9_DBCONFIG_*</code> environments for PostgreSQL and SQLite side by side, a table of what each backend does with every variable, the tiers <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> validates in, and the <code>.onLoad()</code> pattern that sets the variables from another package and then calls <code><a href="../reference/reload_db_config.html">reload_db_config()</a></code>. It carries no R-level detail: <code><a href="https://niphr.github.io/csdb/articles/backends.html" class="external-link">vignette("backends", package = "csdb")</a></code> is the companion for that.</li>
+<li>Both vignettes now warn about two traps that cost nothing to avoid and are hard to diagnose. An empty <code>CS9_PATH</code> counts as a missing variable, so <code>CS9_PATH=</code> fails validation. And an unset <code>CS9_DBCONFIG_ROLE_CREATE_TABLE</code> reaches <code>csdb</code> as <code>""</code> rather than <code>NULL</code>, which is not the <code>"x"</code> no-role sentinel, so the PostgreSQL <code>create_table</code> can emit <code>SET ROLE ""</code>. Both PostgreSQL blocks now set the variable explicitly.</li>
+<li>The PostgreSQL <code>.Renviron</code> block in the installation vignette carried both of those traps, and had done since before the SQLite work: it wrote <code>CS9_PATH=</code> with no value, the variable table below it called <code>CS9_PATH</code> “usually empty”, and <code>CS9_DBCONFIG_ROLE_CREATE_TABLE</code> was absent. A reader who copied the block got <code>Missing required environment variables: CS9_PATH</code>. All three are fixed.</li>
+<li>
+<code>README.md</code> names both backends and links to the two vignettes.</li>
+<li>
+<code>_pkgdown.yml</code> indexes all five vignettes. <code>cs9</code> and <code>backends</code> were missing from the <code>articles:</code> list; <code>cs9</code> had been missing independently of this work, although the navbar links to it.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="development-26-8-5">Development<a class="anchor" aria-label="anchor" href="#development-26-8-5"></a></h3>
+<ul><li>
+<code>DBI</code> and <code>RSQLite</code> added to <code>Suggests</code>, for the new <code>tests/testthat/test-sqlite-config.R</code>.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.4" id="version-2684">Version 26.8.4<a class="anchor" aria-label="anchor" href="#version-2684"></a></h2>
 <div class="section level3">
 <h3 id="documentation-26-8-4">Documentation<a class="anchor" aria-label="anchor" href="#documentation-26-8-4"></a></h3>
@@ -63,6 +103,10 @@
 <li>Introduction vignette now states when CS9 is <strong>not</strong> the right choice: the hard requirements (PostgreSQL, containers, systems administration capability), the workflow reorganisation adoption costs, and <code>plnr</code> as the simpler option for a pilot or a resource-constrained setting</li>
 <li>Introduction vignette now states that CS9 analyses each stratum independently <strong>by default</strong>, and that borrowing strength across strata and adjusting exceedance probabilities for multiple comparisons are decisions about the statistical method rather than properties of the framework. With 106 diseases across 378 locations the number of simultaneous tests is large, and nothing in CS9 controls the family-wise error rate or the false discovery rate for you</li>
 <li>Introduction vignette now lists what the framework handles: per-analysis structured logging, schema validation and time-period partitioning, framework-level parallelism, and validation workflows</li>
+</ul></div>
+<div class="section level3">
+<h3 id="development-26-8-4">Development<a class="anchor" aria-label="anchor" href="#development-26-8-4"></a></h3>
+<ul><li>Documentation is generated by roxygen2 8.0.0. <code>DESCRIPTION</code> now declares <code>Config/roxygen2/version</code> in place of <code>RoxygenNote</code>, and every <code>.Rd</code> file was regenerated by that version. <code>NAMESPACE</code> is unchanged.</li>
 </ul></div>
 </div>
     <div class="section level2">

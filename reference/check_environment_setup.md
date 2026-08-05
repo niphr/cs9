@@ -64,13 +64,16 @@ check_environment_setup()
 #> Status:  error 
 #> 
 #> Issues found:
-#>  -  Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER 
+#>  -  Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER 
+#>  -  Missing server-specific variables: CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER 
 #>  -  No database configurations available 
 #>  -  No configuration tables initialized 
 #> 
 #> Recommendations:
 #>  -  Set required environment variables before loading CS9 
 #>  -  Refer to CS9 documentation for environment setup instructions 
+#>  -  Every driver except SQLite connects to a database server 
+#>  -  Set CS9_DBCONFIG_SERVER and CS9_DBCONFIG_PORT, or use CS9_DBCONFIG_DRIVER=SQLite 
 #>  -  Verify CS9_DBCONFIG_ACCESS is properly set 
 #>  -  Check database connectivity and permissions 
 #> 
@@ -81,6 +84,6 @@ if(result$status != "ok") {
   cat("Issues found:", result$issues, "\n")
   cat("Recommendations:", result$recommendations, "\n")
 }
-#> Issues found: Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER No database configurations available No configuration tables initialized 
-#> Recommendations: Set required environment variables before loading CS9 Refer to CS9 documentation for environment setup instructions Verify CS9_DBCONFIG_ACCESS is properly set Check database connectivity and permissions 
+#> Issues found: Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER Missing server-specific variables: CS9_DBCONFIG_PORT, CS9_DBCONFIG_SERVER No database configurations available No configuration tables initialized 
+#> Recommendations: Set required environment variables before loading CS9 Refer to CS9 documentation for environment setup instructions Every driver except SQLite connects to a database server Set CS9_DBCONFIG_SERVER and CS9_DBCONFIG_PORT, or use CS9_DBCONFIG_DRIVER=SQLite Verify CS9_DBCONFIG_ACCESS is properly set Check database connectivity and permissions 
 ```

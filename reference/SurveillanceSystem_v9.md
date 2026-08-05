@@ -50,7 +50,7 @@ The surveillance system follows a structured approach:
 
 ### Public methods
 
-- [`SurveillanceSystem_v9$new()`](#method-SurveillanceSystem_v9-new)
+- [`SurveillanceSystem_v9$new()`](#method-SurveillanceSystem_v9-initialize)
 
 - [`SurveillanceSystem_v9$add_table()`](#method-SurveillanceSystem_v9-add_table)
 
@@ -76,7 +76,7 @@ The surveillance system follows a structured approach:
 
 ------------------------------------------------------------------------
 
-### Method `new()`
+### `SurveillanceSystem_v9$new()`
 
 #### Usage
 
@@ -99,7 +99,7 @@ The surveillance system follows a structured approach:
 
 ------------------------------------------------------------------------
 
-### Method `add_table()`
+### `SurveillanceSystem_v9$add_table()`
 
 Add a table
 
@@ -161,7 +161,6 @@ table to the surveillance system.
 
 #### Examples
 
-    \dontrun{
     global$ss$add_table(
       name_access = c("anon"),
       name_grouping = "example_weather",
@@ -201,11 +200,10 @@ table to the surveillance system.
       validator_field_types = csdb::validator_field_types_csfmt_rts_data_v1,
       validator_field_contents = csdb::validator_field_contents_csfmt_rts_data_v1
     )
-    }
 
 ------------------------------------------------------------------------
 
-### Method `add_partitionedtable()`
+### `SurveillanceSystem_v9$add_partitionedtable()`
 
 Add a partitioned table to the surveillance system
 
@@ -279,7 +277,7 @@ partitioned table to the surveillance system.
 
 ------------------------------------------------------------------------
 
-### Method `add_task()`
+### `SurveillanceSystem_v9$add_task()`
 
 Add a surveillance task to the system
 
@@ -378,7 +376,7 @@ task to the surveillance system.
 
 ------------------------------------------------------------------------
 
-### Method `get_task()`
+### `SurveillanceSystem_v9$get_task()`
 
 Get a surveillance task by name
 
@@ -398,7 +396,7 @@ A Task R6 object representing the surveillance task
 
 ------------------------------------------------------------------------
 
-### Method `run_task()`
+### `SurveillanceSystem_v9$run_task()`
 
 Execute a surveillance task by name
 
@@ -419,7 +417,7 @@ the task.
 
 ------------------------------------------------------------------------
 
-### Method `shortcut_get_tables()`
+### `SurveillanceSystem_v9$shortcut_get_tables()`
 
 Get database tables associated with a task
 
@@ -439,7 +437,7 @@ A named list of database table objects used by the task
 
 ------------------------------------------------------------------------
 
-### Method `shortcut_get_argset()`
+### `SurveillanceSystem_v9$shortcut_get_argset()`
 
 Get argument set for a specific plan and analysis
 
@@ -472,7 +470,7 @@ analysis
 
 ------------------------------------------------------------------------
 
-### Method `shortcut_get_data()`
+### `SurveillanceSystem_v9$shortcut_get_data()`
 
 Get data for a specific plan
 
@@ -496,7 +494,7 @@ A named list containing the data extracted for the specified plan
 
 ------------------------------------------------------------------------
 
-### Method `shortcut_get_plans_argsets_as_dt()`
+### `SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt()`
 
 Get plans and argsets as a data.table
 
@@ -517,7 +515,7 @@ including index_plan and index_analysis
 
 ------------------------------------------------------------------------
 
-### Method `shortcut_get_num_analyses()`
+### `SurveillanceSystem_v9$shortcut_get_num_analyses()`
 
 Get the total number of analyses for a task
 
@@ -538,7 +536,7 @@ for the task
 
 ------------------------------------------------------------------------
 
-### Method `clone()`
+### `SurveillanceSystem_v9$clone()`
 
 The objects of this class are cloneable with this method.
 
@@ -586,7 +584,7 @@ ss$run_task("covid_import_daily_data")
 
 
 ## ------------------------------------------------
-## Method `SurveillanceSystem_v9$add_table`
+## Method `SurveillanceSystem_v9$add_table()`
 ## ------------------------------------------------
 
 if (FALSE) { # \dontrun{

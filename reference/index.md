@@ -28,10 +28,13 @@ Functions for logging and configuration tracking
 
 ## Environment Setup
 
-Environment validation and diagnostic functions
+Environment validation, diagnostics, and reloading the database
+configuration
 
 - [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
   : Check Environment Setup
+- [`reload_db_config()`](https://niphr.github.io/cs9/reference/reload_db_config.md)
+  : Reload the database configuration from the environment
 
 ## File and Path Management
 

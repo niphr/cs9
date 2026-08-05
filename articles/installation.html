@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,6 +38,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/installation.html">Installation</a></li>
+    <li><a class="dropdown-item" href="../articles/backends.html">Database backends</a></li>
     <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
   </ul>
@@ -89,6 +90,113 @@
 <p>This vignette covers CS9 installation options and infrastructure
 requirements.</p>
 <div class="section level2">
+<h2 id="start-here-sqlite-with-no-server">Start here: SQLite, with no server<a class="anchor" aria-label="anchor" href="#start-here-sqlite-with-no-server"></a>
+</h2>
+<p>CS9 reads its database settings from <code>CS9_DBCONFIG_*</code>
+environment variables. Set the driver to <code>SQLite</code> and every
+access level becomes a file on disk. There is no server to install, no
+Docker container to start, no schema to create, and no database user to
+authenticate as.</p>
+<ol style="list-style-type: decimal">
+<li>
+<p><strong>Install CS9:</strong></p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"cs9"</span><span class="op">)</span></span></code></pre></div>
+</li>
+<li>
+<p><strong>Put these six settings in your
+<code>.Renviron</code>.</strong> Give <code>CS9_PATH</code> a real
+directory: an empty value counts as missing and
+<code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> reports it as an error.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># CS9 Core Configuration</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="va">CS9_AUTO</span><span class="op">=</span>0</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="va">CS9_PATH</span><span class="op">=</span>/home/myuser/cs9</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co"># One SQLite file per access level</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="va">CS9_DBCONFIG_ACCESS</span><span class="op">=</span>config/anon</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DRIVER</span><span class="op">=</span>SQLite</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_CONFIG</span><span class="op">=</span>/home/myuser/cs9/config.sqlite</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>/home/myuser/cs9/anon.sqlite</span></code></pre></div>
+</li>
+<li>
+<p><strong>Restart R, then check the configuration:</strong></p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://niphr.github.io/cs9/">cs9</a></span><span class="op">)</span></span>
+<span><span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/check_environment_setup.html">check_environment_setup</a></span><span class="op">(</span>verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">status</span></span>
+<span><span class="co">#&gt; [1] "ok"</span></span></code></pre></div>
+</li>
+<li>
+<p><strong>Open the database.</strong> Step 3 only validates the
+variables. It reads no file and creates no table, because CS9 builds its
+table objects lazily. Connecting is what proves SQLite works:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">cs9</span><span class="fu">::</span><span class="va"><a href="../reference/config.html">config</a></span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">config_log</span><span class="op">$</span><span class="fu">connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Creating table config_log</span></span>
+<span></span>
+<span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">dbConnect</a></span><span class="op">(</span><span class="fu">RSQLite</span><span class="fu">::</span><span class="fu"><a href="https://rsqlite.r-dbi.org/reference/SQLite.html" class="external-link">SQLite</a></span><span class="op">(</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CS9_DBCONFIG_DB_CONFIG"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbListTables.html" class="external-link">dbListTables</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "config_log"</span></span>
+<span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbDisconnect.html" class="external-link">dbDisconnect</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
+<p><code>DBI</code> and <code>RSQLite</code> arrive with
+<code>csdb</code>, which CS9 depends on, so neither needs installing
+separately.</p>
+</li>
+</ol>
+<p><code>CS9_DBCONFIG_ACCESS</code> is a <code>/</code>-separated list
+of access levels, and it must include <code>config</code>: CS9 builds
+its four configuration tables from that access level. Every access level
+in the list needs its own <code>CS9_DBCONFIG_DB_&lt;ACCESS&gt;</code>
+variable holding the path to its file, so the list above needs
+<code>CS9_DBCONFIG_DB_CONFIG</code> and
+<code>CS9_DBCONFIG_DB_ANON</code>. CS9 creates each file, and any
+missing parent directory, on the first connection.</p>
+<p>The driver string is matched case-insensitively, so
+<code>SQLite</code>, <code>sqlite</code> and <code>SQLITE</code> all
+select it.</p>
+<div class="section level3">
+<h3 id="what-sqlite-does-not-need">What SQLite does not need<a class="anchor" aria-label="anchor" href="#what-sqlite-does-not-need"></a>
+</h3>
+<p><code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> does not ask for
+<code>CS9_DBCONFIG_SERVER</code>, <code>CS9_DBCONFIG_PORT</code>,
+<code>CS9_DBCONFIG_USER</code>, <code>CS9_DBCONFIG_PASSWORD</code> or
+any <code>CS9_DBCONFIG_SCHEMA_*</code> variable when the driver is
+SQLite. SQLite is a file, and it has no schemas.</p>
+<p>That is about validation, not about reading. CS9 reads every
+<code>CS9_DBCONFIG_*</code> variable into its configuration list
+whatever the driver is, because that list has one shape for every
+backend. The SQLite connection then uses none of them. Setting
+<code>CS9_DBCONFIG_SERVER</code> under SQLite is recorded and ignored,
+not rejected.</p>
+<p><code><a href="../articles/backends.html">vignette("backends", package = "cs9")</a></code> puts the SQLite
+and PostgreSQL environments side by side, and lists what each backend
+does with every variable.</p>
+</div>
+<div class="section level3">
+<h3 id="cs9example-needs-no--renviron-at-all">cs9example needs no .Renviron at all<a class="anchor" aria-label="anchor" href="#cs9example-needs-no--renviron-at-all"></a>
+</h3>
+<p><a href="https://github.com/niphr/cs9example" class="external-link">cs9example</a> is a
+complete surveillance system you can run on a bare machine. It sets its
+own SQLite configuration under <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code> whenever
+<code>CS9_DBCONFIG_ACCESS</code> is empty, so it needs no
+<code>.Renviron</code>, no server and no configuration of any kind:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"niphr/cs9example"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">cs9example</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">global</span><span class="op">$</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">)</span></span></code></pre></div>
+<p>A real <code>.Renviron</code> still wins. The defaults apply only
+when <code>CS9_DBCONFIG_ACCESS</code> is unset.</p>
+</div>
+<div class="section level3">
+<h3 id="which-backend-to-use">Which backend to use<a class="anchor" aria-label="anchor" href="#which-backend-to-use"></a>
+</h3>
+<p>Use SQLite for a local install, for examples, for tests, and for a
+single-writer pipeline on one machine. Use PostgreSQL for a production
+surveillance system, where several processes write at once and the data
+outgrows one machine.</p>
+<p>If you chose PostgreSQL, continue below.</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="installation-options">Installation options<a class="anchor" aria-label="anchor" href="#installation-options"></a>
 </h2>
 <p>CS9 can be used in two configurations.</p>
@@ -97,7 +205,7 @@ requirements.</p>
 </h3>
 <p>Install CS9 from CRAN for documentation, examples, and development
 tools:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"cs9"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://niphr.github.io/cs9/">cs9</a></span><span class="op">)</span></span></code></pre></div>
 <p><strong>What works:</strong></p>
@@ -126,50 +234,52 @@ is the recommended approach.</p>
 <div class="section level2">
 <h2 id="database-setup">Database setup<a class="anchor" aria-label="anchor" href="#database-setup"></a>
 </h2>
-<p>CS9 requires a PostgreSQL database backend for full
-functionality.</p>
+<p>CS9 uses PostgreSQL as its production database backend. The rest of
+this section sets one up. If you want the SQLite backend instead,
+everything you need is at the top of this vignette and none of the steps
+below apply.</p>
 <div class="section level3">
 <h3 id="postgresql-installation">PostgreSQL installation<a class="anchor" aria-label="anchor" href="#postgresql-installation"></a>
 </h3>
 <div class="section level4">
 <h4 id="option-1-docker-recommended">Option 1: Docker (recommended)<a class="anchor" aria-label="anchor" href="#option-1-docker-recommended"></a>
 </h4>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Run PostgreSQL in Docker</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--name</span> cs9-postgres <span class="at">-e</span> POSTGRES_PASSWORD=yourStrongPassword100 <span class="dt">\</span></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">-e</span> POSTGRES_DB=cs9_surveillance <span class="at">-p</span> 5432:5432 <span class="at">-d</span> postgres:13</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co"># Connect to create additional databases/schemas as needed</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="ex">docker</span> exec <span class="at">-it</span> cs9-postgres psql <span class="at">-U</span> postgres <span class="at">-d</span> cs9_surveillance</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Run PostgreSQL in Docker</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--name</span> cs9-postgres <span class="at">-e</span> POSTGRES_PASSWORD=yourStrongPassword100 <span class="dt">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">-e</span> POSTGRES_DB=cs9_surveillance <span class="at">-p</span> 5432:5432 <span class="at">-d</span> postgres:13</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co"># Connect to create additional databases/schemas as needed</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="ex">docker</span> exec <span class="at">-it</span> cs9-postgres psql <span class="at">-U</span> postgres <span class="at">-d</span> cs9_surveillance</span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="option-2-system-installation">Option 2: System installation<a class="anchor" aria-label="anchor" href="#option-2-system-installation"></a>
 </h4>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Ubuntu/Debian</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">sudo</span> apt-get install postgresql postgresql-contrib</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co"># macOS with Homebrew</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="ex">brew</span> install postgresql</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co"># Start PostgreSQL service</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="fu">sudo</span> systemctl start postgresql  <span class="co"># Linux</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="ex">brew</span> services start postgresql   <span class="co"># macOS</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Ubuntu/Debian</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">sudo</span> apt-get install postgresql postgresql-contrib</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># macOS with Homebrew</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="ex">brew</span> install postgresql</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co"># Start PostgreSQL service</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="fu">sudo</span> systemctl start postgresql  <span class="co"># Linux</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="ex">brew</span> services start postgresql   <span class="co"># macOS</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
 <h3 id="database-schema-setup">Database schema setup<a class="anchor" aria-label="anchor" href="#database-schema-setup"></a>
 </h3>
 <p>Once PostgreSQL is running, create your surveillance database:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co">-- Connect as postgres user</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">DATABASE</span> cs9_surveillance;</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="kw">CREATE</span> <span class="fu">USER</span> cs9_user <span class="kw">WITH</span> <span class="kw">PASSWORD</span> <span class="st">'yourStrongPassword100'</span>;</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">PRIVILEGES</span> <span class="kw">ON</span> <span class="kw">DATABASE</span> cs9_surveillance <span class="kw">TO</span> cs9_user;</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">-- Create schemas for different access levels</span></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>\c cs9_surveillance</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">SCHEMA</span> config;</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">SCHEMA</span> anon;</span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> config <span class="kw">TO</span> cs9_user;</span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> anon <span class="kw">TO</span> cs9_user;</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co">-- Connect as postgres user</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">DATABASE</span> cs9_surveillance;</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="kw">CREATE</span> <span class="fu">USER</span> cs9_user <span class="kw">WITH</span> <span class="kw">PASSWORD</span> <span class="st">'yourStrongPassword100'</span>;</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">PRIVILEGES</span> <span class="kw">ON</span> <span class="kw">DATABASE</span> cs9_surveillance <span class="kw">TO</span> cs9_user;</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">-- Create schemas for different access levels</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>\c cs9_surveillance</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">SCHEMA</span> config;</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">SCHEMA</span> anon;</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> config <span class="kw">TO</span> cs9_user;</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> anon <span class="kw">TO</span> cs9_user;</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -184,7 +294,7 @@ file.</p>
 <ol style="list-style-type: decimal">
 <li>
 <p><strong>Find or create your .Renviron file:</strong></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check current .Renviron location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"R_ENVIRON_USER"</span><span class="op">)</span></span>
 <span></span>
@@ -193,24 +303,35 @@ file.</p>
 </li>
 <li><p><strong>Add CS9 configuration variables:</strong></p></li>
 </ol>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># CS9 Core Configuration</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="va">CS9_AUTO</span><span class="op">=</span>0</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="va">CS9_PATH</span><span class="op">=</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co"># Database Connection Settings</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="va">CS9_DBCONFIG_ACCESS</span><span class="op">=</span>config/anon</span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DRIVER</span><span class="op">=</span>PostgreSQL <span class="ex">Unicode</span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PORT</span><span class="op">=</span>5432</span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SERVER</span><span class="op">=</span>localhost</span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="va">CS9_DBCONFIG_USER</span><span class="op">=</span>cs9_user</span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PASSWORD</span><span class="op">=</span>yourStrongPassword100</span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SSLMODE</span><span class="op">=</span>prefer</span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co"># Database Schema Configuration</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_CONFIG</span><span class="op">=</span>config</span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_CONFIG</span><span class="op">=</span>cs9_surveillance</span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_ANON</span><span class="op">=</span>anon</span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>cs9_surveillance</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># CS9 Core Configuration</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="va">CS9_AUTO</span><span class="op">=</span>0</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="va">CS9_PATH</span><span class="op">=</span>/home/myuser/cs9</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co"># Database Connection Settings</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="va">CS9_DBCONFIG_ACCESS</span><span class="op">=</span>config/anon</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DRIVER</span><span class="op">=</span>PostgreSQL <span class="ex">Unicode</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PORT</span><span class="op">=</span>5432</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SERVER</span><span class="op">=</span>localhost</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="va">CS9_DBCONFIG_USER</span><span class="op">=</span>cs9_user</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PASSWORD</span><span class="op">=</span>yourStrongPassword100</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SSLMODE</span><span class="op">=</span>prefer</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="va">CS9_DBCONFIG_ROLE_CREATE_TABLE</span><span class="op">=</span>x</span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co"># Database Schema Configuration</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_CONFIG</span><span class="op">=</span>config</span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_CONFIG</span><span class="op">=</span>cs9_surveillance</span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_ANON</span><span class="op">=</span>anon</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>cs9_surveillance</span></code></pre></div>
+<p><code>CS9_PATH</code> must be a real directory. An empty value counts
+as missing, and <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> reports it as an
+error.</p>
+<p>Set <code>CS9_DBCONFIG_ROLE_CREATE_TABLE</code> even when you want no
+role, and use <code>x</code> for that. Leaving the variable out is not
+the same as leaving it unset in R: <code><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv()</a></code> returns
+<code>""</code>, <code>csdb</code> substitutes the <code>x</code>
+sentinel only for a <code>NULL</code>, and its PostgreSQL
+<code>create_table</code> then emits <code>SET ROLE ""</code> in front
+of the <code>CREATE TABLE</code>.</p>
 <ol start="3" style="list-style-type: decimal">
 <li>
 <strong>Restart your R session</strong> after editing
@@ -239,8 +360,69 @@ file.</p>
 </tr>
 <tr class="even">
 <td><code>CS9_PATH</code></td>
-<td>`<code>| Base path for cs9::path function (usually empty) | |</code>CS9_DBCONFIG_ACCESS<code>|</code>config/anon<code>| Database access levels (slash-separated) | |</code>CS9_DBCONFIG_DRIVER<code>|</code>PostgreSQL
-Unicode<code>| Database driver name | |</code>CS9_DBCONFIG_SERVER<code>|</code>localhost<code>| Database server hostname or IP | |</code>CS9_DBCONFIG_PORT<code>|</code>5432<code>| Database server port | |</code>CS9_DBCONFIG_USER<code>|</code>cs9_user<code>| Database username | |</code>CS9_DBCONFIG_PASSWORD<code>|</code>yourStrongPassword100<code>| Database password | |</code>CS9_DBCONFIG_SSLMODE<code>|</code>prefer<code>| SSL connection preference | |</code>CS9_DBCONFIG_SCHEMA_CONFIG<code>|</code>config<code>| Schema for CS9 configuration tables | |</code>CS9_DBCONFIG_DB_CONFIG<code>|</code>cs9_surveillance<code>| Database for configuration | |</code>CS9_DBCONFIG_SCHEMA_ANON<code>|</code>anon<code>| Schema for anonymous data tables | |</code>CS9_DBCONFIG_DB_ANON<code>|</code>cs9_surveillance`</td>
+<td><code>/home/myuser/cs9</code></td>
+<td>Base path for cs9::path function. Must be a real directory: an empty
+value counts as missing and fails validation</td>
+</tr>
+<tr class="odd">
+<td><code>CS9_DBCONFIG_ACCESS</code></td>
+<td><code>config/anon</code></td>
+<td>Database access levels (slash-separated)</td>
+</tr>
+<tr class="even">
+<td><code>CS9_DBCONFIG_DRIVER</code></td>
+<td><code>PostgreSQL Unicode</code></td>
+<td>Database driver name</td>
+</tr>
+<tr class="odd">
+<td><code>CS9_DBCONFIG_SERVER</code></td>
+<td><code>localhost</code></td>
+<td>Database server hostname or IP</td>
+</tr>
+<tr class="even">
+<td><code>CS9_DBCONFIG_PORT</code></td>
+<td><code>5432</code></td>
+<td>Database server port</td>
+</tr>
+<tr class="odd">
+<td><code>CS9_DBCONFIG_USER</code></td>
+<td><code>cs9_user</code></td>
+<td>Database username</td>
+</tr>
+<tr class="even">
+<td><code>CS9_DBCONFIG_PASSWORD</code></td>
+<td><code>yourStrongPassword100</code></td>
+<td>Database password</td>
+</tr>
+<tr class="odd">
+<td><code>CS9_DBCONFIG_SSLMODE</code></td>
+<td><code>prefer</code></td>
+<td>SSL connection preference</td>
+</tr>
+<tr class="even">
+<td><code>CS9_DBCONFIG_ROLE_CREATE_TABLE</code></td>
+<td><code>x</code></td>
+<td>Role to take when creating tables. <code>x</code> means take no
+role</td>
+</tr>
+<tr class="odd">
+<td><code>CS9_DBCONFIG_SCHEMA_CONFIG</code></td>
+<td><code>config</code></td>
+<td>Schema for CS9 configuration tables</td>
+</tr>
+<tr class="even">
+<td><code>CS9_DBCONFIG_DB_CONFIG</code></td>
+<td><code>cs9_surveillance</code></td>
+<td>Database for configuration</td>
+</tr>
+<tr class="odd">
+<td><code>CS9_DBCONFIG_SCHEMA_ANON</code></td>
+<td><code>anon</code></td>
+<td>Schema for anonymous data tables</td>
+</tr>
+<tr class="even">
+<td><code>CS9_DBCONFIG_DB_ANON</code></td>
+<td><code>cs9_surveillance</code></td>
 <td>Database for surveillance data</td>
 </tr>
 </tbody>
@@ -278,15 +460,15 @@ generation — with each step verified before the next begins.</p>
 </h3>
 <p>Each CS9 task maps to an Airflow task within a DAG (Directed Acyclic
 Graph). A typical surveillance DAG runs overnight:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Example Airflow DAG for CS9 surveillance pipeline</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co"># Schedule: daily at 02:00</span></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>dag <span class="op">=</span> DAG(</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>    <span class="st">'norsyss_surveillance'</span>,</span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    schedule_interval<span class="op">=</span><span class="st">'0 2 * * *'</span>,</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    default_args<span class="op">=</span>{<span class="st">'retries'</span>: <span class="dv">2</span>}</span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>)</span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>import_data <span class="op">&gt;&gt;</span> clean_data <span class="op">&gt;&gt;</span> [estimate_trends, nowcasting] <span class="op">&gt;&gt;</span> produce_figures</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Example Airflow DAG for CS9 surveillance pipeline</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co"># Schedule: daily at 02:00</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>dag <span class="op">=</span> DAG(</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>    <span class="st">'norsyss_surveillance'</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>    schedule_interval<span class="op">=</span><span class="st">'0 2 * * *'</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>    default_args<span class="op">=</span>{<span class="st">'retries'</span>: <span class="dv">2</span>}</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>)</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>import_data <span class="op">&gt;&gt;</span> clean_data <span class="op">&gt;&gt;</span> [estimate_trends, nowcasting] <span class="op">&gt;&gt;</span> produce_figures</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="benefits-of-airflow-cs9">Benefits of Airflow + CS9<a class="anchor" aria-label="anchor" href="#benefits-of-airflow-cs9"></a>
@@ -338,7 +520,7 @@ functionality:</p>
 <ol style="list-style-type: decimal">
 <li>
 <p>Check your current status:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/check_environment_setup.html">check_environment_setup</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li><p>Install PostgreSQL, create the surveillance database, and note
@@ -348,7 +530,7 @@ the connection parameters (host, port, username, password).</p></li>
 <code><a href="../reference/check_environment_setup.html">cs9::check_environment_setup()</a></code>.</p></li>
 <li>
 <p>Test that the package now loads fully:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span> <span class="op">&lt;-</span> <span class="fu">cs9</span><span class="fu">::</span><span class="va"><a href="../reference/SurveillanceSystem_v9.html">SurveillanceSystem_v9</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>name <span class="op">=</span> <span class="st">"test_system"</span><span class="op">)</span></span></code></pre></div>
 </li>
 </ol>
@@ -359,7 +541,7 @@ the connection parameters (host, port, username, password).</p></li>
 <div class="section level3">
 <h3 id="verify-your-setup">Verify your setup<a class="anchor" aria-label="anchor" href="#verify-your-setup"></a>
 </h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load CS9</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://niphr.github.io/cs9/">cs9</a></span><span class="op">)</span></span>
 <span></span>
@@ -387,9 +569,9 @@ Expected when no database is configured. Follow the database setup steps
 above.</p>
 <p><strong>Permission denied errors</strong>: Grant the required
 privileges:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">PRIVILEGES</span> <span class="kw">ON</span> <span class="kw">DATABASE</span> cs9_surveillance <span class="kw">TO</span> cs9_user;</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> config <span class="kw">TO</span> cs9_user;</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> anon <span class="kw">TO</span> cs9_user;</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">PRIVILEGES</span> <span class="kw">ON</span> <span class="kw">DATABASE</span> cs9_surveillance <span class="kw">TO</span> cs9_user;</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> config <span class="kw">TO</span> cs9_user;</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">ALL</span> <span class="kw">ON</span> <span class="kw">SCHEMA</span> anon <span class="kw">TO</span> cs9_user;</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

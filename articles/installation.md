@@ -3,6 +3,117 @@
 This vignette covers CS9 installation options and infrastructure
 requirements.
 
+## Start here: SQLite, with no server
+
+CS9 reads its database settings from `CS9_DBCONFIG_*` environment
+variables. Set the driver to `SQLite` and every access level becomes a
+file on disk. There is no server to install, no Docker container to
+start, no schema to create, and no database user to authenticate as.
+
+1.  **Install CS9:**
+
+    ``` r
+    install.packages("cs9")
+    ```
+
+2.  **Put these six settings in your `.Renviron`.** Give `CS9_PATH` a
+    real directory: an empty value counts as missing and
+    [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+    reports it as an error.
+
+    ``` bash
+    # CS9 Core Configuration
+    CS9_AUTO=0
+    CS9_PATH=/home/myuser/cs9
+
+    # One SQLite file per access level
+    CS9_DBCONFIG_ACCESS=config/anon
+    CS9_DBCONFIG_DRIVER=SQLite
+    CS9_DBCONFIG_DB_CONFIG=/home/myuser/cs9/config.sqlite
+    CS9_DBCONFIG_DB_ANON=/home/myuser/cs9/anon.sqlite
+    ```
+
+3.  **Restart R, then check the configuration:**
+
+    ``` r
+    library(cs9)
+    cs9::check_environment_setup(verbose = FALSE)$status
+    #> [1] "ok"
+    ```
+
+4.  **Open the database.** Step 3 only validates the variables. It reads
+    no file and creates no table, because CS9 builds its table objects
+    lazily. Connecting is what proves SQLite works:
+
+    ``` r
+    cs9::config$tables$config_log$connect()
+    #> Creating table config_log
+
+    con <- DBI::dbConnect(RSQLite::SQLite(), Sys.getenv("CS9_DBCONFIG_DB_CONFIG"))
+    DBI::dbListTables(con)
+    #> [1] "config_log"
+    DBI::dbDisconnect(con)
+    ```
+
+    `DBI` and `RSQLite` arrive with `csdb`, which CS9 depends on, so
+    neither needs installing separately.
+
+`CS9_DBCONFIG_ACCESS` is a `/`-separated list of access levels, and it
+must include `config`: CS9 builds its four configuration tables from
+that access level. Every access level in the list needs its own
+`CS9_DBCONFIG_DB_<ACCESS>` variable holding the path to its file, so the
+list above needs `CS9_DBCONFIG_DB_CONFIG` and `CS9_DBCONFIG_DB_ANON`.
+CS9 creates each file, and any missing parent directory, on the first
+connection.
+
+The driver string is matched case-insensitively, so `SQLite`, `sqlite`
+and `SQLITE` all select it.
+
+### What SQLite does not need
+
+[`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+does not ask for `CS9_DBCONFIG_SERVER`, `CS9_DBCONFIG_PORT`,
+`CS9_DBCONFIG_USER`, `CS9_DBCONFIG_PASSWORD` or any
+`CS9_DBCONFIG_SCHEMA_*` variable when the driver is SQLite. SQLite is a
+file, and it has no schemas.
+
+That is about validation, not about reading. CS9 reads every
+`CS9_DBCONFIG_*` variable into its configuration list whatever the
+driver is, because that list has one shape for every backend. The SQLite
+connection then uses none of them. Setting `CS9_DBCONFIG_SERVER` under
+SQLite is recorded and ignored, not rejected.
+
+[`vignette("backends", package = "cs9")`](https://niphr.github.io/cs9/articles/backends.md)
+puts the SQLite and PostgreSQL environments side by side, and lists what
+each backend does with every variable.
+
+### cs9example needs no .Renviron at all
+
+[cs9example](https://github.com/niphr/cs9example) is a complete
+surveillance system you can run on a bare machine. It sets its own
+SQLite configuration under
+[`tempdir()`](https://rdrr.io/r/base/tempfile.html) whenever
+`CS9_DBCONFIG_ACCESS` is empty, so it needs no `.Renviron`, no server
+and no configuration of any kind:
+
+``` r
+pak::pak("niphr/cs9example")
+library(cs9example)
+names(global$ss$tables)
+```
+
+A real `.Renviron` still wins. The defaults apply only when
+`CS9_DBCONFIG_ACCESS` is unset.
+
+### Which backend to use
+
+Use SQLite for a local install, for examples, for tests, and for a
+single-writer pipeline on one machine. Use PostgreSQL for a production
+surveillance system, where several processes write at once and the data
+outgrows one machine.
+
+If you chose PostgreSQL, continue below.
+
 ## Installation options
 
 CS9 can be used in two configurations.
@@ -39,7 +150,10 @@ the recommended approach.
 
 ## Database setup
 
-CS9 requires a PostgreSQL database backend for full functionality.
+CS9 uses PostgreSQL as its production database backend. The rest of this
+section sets one up. If you want the SQLite backend instead, everything
+you need is at the top of this vignette and none of the steps below
+apply.
 
 ### PostgreSQL installation
 
@@ -108,7 +222,7 @@ which are typically set in your `.Renviron` file.
 ``` bash
 # CS9 Core Configuration
 CS9_AUTO=0
-CS9_PATH=
+CS9_PATH=/home/myuser/cs9
 
 # Database Connection Settings
 CS9_DBCONFIG_ACCESS=config/anon
@@ -118,6 +232,7 @@ CS9_DBCONFIG_SERVER=localhost
 CS9_DBCONFIG_USER=cs9_user
 CS9_DBCONFIG_PASSWORD=yourStrongPassword100
 CS9_DBCONFIG_SSLMODE=prefer
+CS9_DBCONFIG_ROLE_CREATE_TABLE=x
 
 # Database Schema Configuration
 CS9_DBCONFIG_SCHEMA_CONFIG=config
@@ -126,14 +241,38 @@ CS9_DBCONFIG_SCHEMA_ANON=anon
 CS9_DBCONFIG_DB_ANON=cs9_surveillance
 ```
 
+`CS9_PATH` must be a real directory. An empty value counts as missing,
+and
+[`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+reports it as an error.
+
+Set `CS9_DBCONFIG_ROLE_CREATE_TABLE` even when you want no role, and use
+`x` for that. Leaving the variable out is not the same as leaving it
+unset in R: [`Sys.getenv()`](https://rdrr.io/r/base/Sys.getenv.html)
+returns `""`, `csdb` substitutes the `x` sentinel only for a `NULL`, and
+its PostgreSQL `create_table` then emits `SET ROLE ""` in front of the
+`CREATE TABLE`.
+
 3.  **Restart your R session** after editing `.Renviron`.
 
 ### Variable descriptions
 
-| Variable   | Example Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Description                                         |
-|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
-| `CS9_AUTO` | `0`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Set to 0 for interactive mode, 1 for automated mode |
-| `CS9_PATH` | \``| Base path for cs9::path function (usually empty) | |`CS9_DBCONFIG_ACCESS`|`config/anon`| Database access levels (slash-separated) | |`CS9_DBCONFIG_DRIVER`|`PostgreSQL Unicode`| Database driver name | |`CS9_DBCONFIG_SERVER`|`localhost`| Database server hostname or IP | |`CS9_DBCONFIG_PORT`|`5432`| Database server port | |`CS9_DBCONFIG_USER`|`cs9_user`| Database username | |`CS9_DBCONFIG_PASSWORD`|`yourStrongPassword100`| Database password | |`CS9_DBCONFIG_SSLMODE`|`prefer`| SSL connection preference | |`CS9_DBCONFIG_SCHEMA_CONFIG`|`config`| Schema for CS9 configuration tables | |`CS9_DBCONFIG_DB_CONFIG`|`cs9_surveillance`| Database for configuration | |`CS9_DBCONFIG_SCHEMA_ANON`|`anon`| Schema for anonymous data tables | |`CS9_DBCONFIG_DB_ANON`|`cs9_surveillance\` | Database for surveillance data                      |
+| Variable                         | Example Value           | Description                                                                                                       |
+|----------------------------------|-------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `CS9_AUTO`                       | `0`                     | Set to 0 for interactive mode, 1 for automated mode                                                               |
+| `CS9_PATH`                       | `/home/myuser/cs9`      | Base path for cs9::path function. Must be a real directory: an empty value counts as missing and fails validation |
+| `CS9_DBCONFIG_ACCESS`            | `config/anon`           | Database access levels (slash-separated)                                                                          |
+| `CS9_DBCONFIG_DRIVER`            | `PostgreSQL Unicode`    | Database driver name                                                                                              |
+| `CS9_DBCONFIG_SERVER`            | `localhost`             | Database server hostname or IP                                                                                    |
+| `CS9_DBCONFIG_PORT`              | `5432`                  | Database server port                                                                                              |
+| `CS9_DBCONFIG_USER`              | `cs9_user`              | Database username                                                                                                 |
+| `CS9_DBCONFIG_PASSWORD`          | `yourStrongPassword100` | Database password                                                                                                 |
+| `CS9_DBCONFIG_SSLMODE`           | `prefer`                | SSL connection preference                                                                                         |
+| `CS9_DBCONFIG_ROLE_CREATE_TABLE` | `x`                     | Role to take when creating tables. `x` means take no role                                                         |
+| `CS9_DBCONFIG_SCHEMA_CONFIG`     | `config`                | Schema for CS9 configuration tables                                                                               |
+| `CS9_DBCONFIG_DB_CONFIG`         | `cs9_surveillance`      | Database for configuration                                                                                        |
+| `CS9_DBCONFIG_SCHEMA_ANON`       | `anon`                  | Schema for anonymous data tables                                                                                  |
+| `CS9_DBCONFIG_DB_ANON`           | `cs9_surveillance`      | Database for surveillance data                                                                                    |
 
 ## Package behavior without database configuration
 

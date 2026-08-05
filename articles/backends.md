@@ -1,0 +1,183 @@
+# Database backends
+
+CS9 never takes a database configuration as an argument. It reads the
+`CS9_DBCONFIG_*` environment variables on load, builds one configuration
+per access level, and hands each one to `csdb`. Choosing a backend is
+therefore choosing a set of environment variables, and nothing else in
+your surveillance system changes.
+
+CS9 speaks to two backends: PostgreSQL and SQLite. This vignette puts
+the two environments next to each other and lists which variables each
+backend reads and which it ignores.
+
+Nothing here runs. The blocks are written to be copied into `.Renviron`.
+
+[`vignette("backends", package = "csdb")`](https://niphr.github.io/csdb/articles/backends.html)
+is the companion at the R level: the same comparison in terms of
+`dbconfig` lists, primary keys, field types and row counts.
+
+## The two environments
+
+PostgreSQL needs a running server, a database, a schema per access
+level, and credentials.
+
+``` bash
+# CS9 Core Configuration
+CS9_AUTO=0
+CS9_PATH=/home/myuser/cs9
+
+# Database Connection Settings
+CS9_DBCONFIG_ACCESS=config/anon
+CS9_DBCONFIG_DRIVER=PostgreSQL Unicode
+CS9_DBCONFIG_PORT=5432
+CS9_DBCONFIG_SERVER=localhost
+CS9_DBCONFIG_USER=cs9_user
+CS9_DBCONFIG_PASSWORD=yourStrongPassword100
+CS9_DBCONFIG_SSLMODE=prefer
+CS9_DBCONFIG_ROLE_CREATE_TABLE=x
+
+# Database Schema Configuration
+CS9_DBCONFIG_SCHEMA_CONFIG=config
+CS9_DBCONFIG_DB_CONFIG=cs9_surveillance
+CS9_DBCONFIG_SCHEMA_ANON=anon
+CS9_DBCONFIG_DB_ANON=cs9_surveillance
+```
+
+SQLite needs a file path per access level. There is nothing to install,
+nothing to start and nothing to authenticate against.
+
+``` bash
+# CS9 Core Configuration
+CS9_AUTO=0
+CS9_PATH=/home/myuser/cs9
+
+# One SQLite file per access level
+CS9_DBCONFIG_ACCESS=config/anon
+CS9_DBCONFIG_DRIVER=SQLite
+CS9_DBCONFIG_DB_CONFIG=/home/myuser/cs9/config.sqlite
+CS9_DBCONFIG_DB_ANON=/home/myuser/cs9/anon.sqlite
+```
+
+CS9 creates each file, and any missing parent directory, on the first
+connection.
+
+`CS9_PATH` must not be empty in either block.
+[`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+treats an empty value as a missing one and reports an error, so give it
+a real directory.
+
+`CS9_DBCONFIG_ROLE_CREATE_TABLE=x` is in the PostgreSQL block on
+purpose, and `x` is the sentinel meaning “take no role”. Leaving the
+variable out is not the same as leaving it unset in R.
+[`Sys.getenv()`](https://rdrr.io/r/base/Sys.getenv.html) returns `""`
+for an unset variable, `csdb` substitutes the `x` sentinel only for a
+`NULL`, and its PostgreSQL `create_table` then tests
+`role_create_table != "x"`, which is true for `""`. The result is a
+`SET ROLE ""` in front of the `CREATE TABLE`. Set the variable to a real
+role, or to `x`. SQLite ignores it either way.
+
+## Which variable each backend reads
+
+CS9 records **every** `CS9_DBCONFIG_*` variable in the table below into
+its configuration list, whatever the driver is. The configuration has
+one shape for every backend, and the backend then uses the fields that
+apply to it. So “recorded but ignored” is the accurate description, not
+“not read”: setting `CS9_DBCONFIG_SERVER` under SQLite is recorded and
+has no effect, rather than rejected.
+
+“Required” below means
+[`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+reports an error without it.
+
+| Variable                          | PostgreSQL                                                                                                                   | SQLite                                                                                          |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `CS9_DBCONFIG_ACCESS`             | Required. A `/`-separated list of access levels.                                                                             | Required, and identical in meaning.                                                             |
+| `CS9_DBCONFIG_DRIVER`             | Required. `PostgreSQL Unicode`, matched exactly, because it must equal an `odbcinst.ini` entry.                              | Required. `SQLite`, matched case-insensitively.                                                 |
+| `CS9_DBCONFIG_SERVER`             | Required, and used to open the connection.                                                                                   | Not required. Recorded by CS9, ignored by the SQLite backend.                                   |
+| `CS9_DBCONFIG_PORT`               | Required, and used to open the connection.                                                                                   | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_USER`               | Required, and used to authenticate.                                                                                          | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_PASSWORD`           | Required, and used to authenticate.                                                                                          | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_TRUSTED_CONNECTION` | Not required. Recorded, and the PostgreSQL connection does not read it.                                                      | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_SSLMODE`            | Not required. Recorded, and used: `require` selects the encrypted connection.                                                | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_ROLE_CREATE_TABLE`  | Not required, but see the `SET ROLE ""` trap above. Recorded, and taken with `SET ROLE` before `CREATE TABLE`.               | Not required. Recorded, ignored. SQLite has no roles.                                           |
+| `CS9_DBCONFIG_SCHEMA_<ACCESS>`    | Required for the `config` and `anon` access levels, which the validator names one by one. Identifiers become `schema.table`. | Not required. Recorded, ignored. SQLite has no schemas, so identifiers are the bare table name. |
+| `CS9_DBCONFIG_DB_<ACCESS>`        | Required for `config` and `anon`. The database name.                                                                         | Required for every access level in `CS9_DBCONFIG_ACCESS`. The path to the file.                 |
+
+`CS9_AUTO` and `CS9_PATH` are required by both and neither is a database
+setting. `CS9_PATH` must be a non-empty directory path:
+[`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+counts an empty value as missing.
+
+The two backends derive the required `DB` and `SCHEMA` variables
+differently, and it shows in the last two rows. The PostgreSQL tier
+names `CS9_DBCONFIG_SCHEMA_CONFIG`, `CS9_DBCONFIG_DB_CONFIG`,
+`CS9_DBCONFIG_SCHEMA_ANON` and `CS9_DBCONFIG_DB_ANON` literally, so an
+access level outside `config/anon` is not checked for. The SQLite tier
+builds `CS9_DBCONFIG_DB_<ACCESS>` from whatever `CS9_DBCONFIG_ACCESS`
+holds, so every access level in the list is checked.
+
+## What check_environment_setup() asks for
+
+[`cs9::check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+validates in tiers, and the driver decides which tiers apply.
+
+- Always: `CS9_AUTO`, `CS9_PATH`, `CS9_DBCONFIG_ACCESS`,
+  `CS9_DBCONFIG_DRIVER`.
+- Every driver except SQLite: `CS9_DBCONFIG_SERVER` and
+  `CS9_DBCONFIG_PORT`.
+- SQLite: one `CS9_DBCONFIG_DB_<ACCESS>` per access level, and `config`
+  among the access levels.
+- `PostgreSQL Unicode`: `CS9_DBCONFIG_USER`, `CS9_DBCONFIG_PASSWORD`,
+  `CS9_DBCONFIG_SCHEMA_CONFIG`, `CS9_DBCONFIG_DB_CONFIG`,
+  `CS9_DBCONFIG_SCHEMA_ANON` and `CS9_DBCONFIG_DB_ANON`.
+
+`config` is required among the access levels because CS9 builds its four
+configuration tables from that access unconditionally. An access list
+without it fails later, and obscurely.
+
+## Setting the variables from another package
+
+CS9 is a dependency, so it loads first and has read the environment
+before your own package’s `.onLoad()` runs. A package that sets its own
+`CS9_DBCONFIG_*` values there must tell CS9 to read them again.
+
+``` r
+.onLoad <- function(libname, pkgname) {
+  if (Sys.getenv("CS9_DBCONFIG_ACCESS") == "") {
+    Sys.setenv(
+      CS9_AUTO = "0",
+      CS9_PATH = tempdir(),
+      CS9_DBCONFIG_ACCESS = "config/anon",
+      CS9_DBCONFIG_DRIVER = "SQLite",
+      CS9_DBCONFIG_DB_CONFIG = fs::path(tempdir(), "cs9", "config.sqlite"),
+      CS9_DBCONFIG_DB_ANON = fs::path(tempdir(), "cs9", "anon.sqlite")
+    )
+    cs9::reload_db_config()
+  }
+}
+```
+
+The chunk does not run when the vignette is built, because defining
+`.onLoad()` in a vignette would do nothing useful. The body inside the
+`if` does run: paste it at the console in a fresh session and
+`cs9::config$dbconfigs` is rebuilt against those two files.
+
+The guard matters. It leaves a real `.Renviron` in charge whenever the
+user has written one, and supplies a working default only when nobody
+has.
+
+[`reload_db_config()`](https://niphr.github.io/cs9/reference/reload_db_config.md)
+rebuilds the configuration and the table objects. It opens nothing: CS9
+creates a table on the first `$connect()`, not on load.
+
+## Which one to use
+
+Use SQLite for a local install, for examples, for tests, and for a
+single-writer pipeline on one machine. It is a file.
+
+Use PostgreSQL for a production surveillance system: several processes
+writing at once, data that outgrows one machine, and access levels that
+different people are allowed to read.
+
+Switching between them is an edit to `.Renviron` and a restart of R. The
+table definitions, the tasks and the action functions do not change.
