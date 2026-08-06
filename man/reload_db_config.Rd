@@ -16,9 +16,10 @@ configuration tables.
 \details{
 \code{cs9} reads the environment once, in its own \code{.onLoad()}. A package that sets
 its own \verb{CS9_DBCONFIG_*} values inside \code{.onLoad()} therefore sets them too
-late: \code{cs9} is a dependency, so it loads first and has already read the
-environment by the time the dependent package runs. Call this function
-immediately after the \code{Sys.setenv()} block and \code{cs9} picks the new values up.
+late. \code{cs9} is a dependency, so \code{cs9} loads first. \code{cs9} reads the
+environment before the dependent package runs. Call this function
+immediately after the \code{Sys.setenv()} block. \code{cs9} then picks the new values
+up.
 
 It re-runs \code{set_env_vars()}, which rebuilds \code{config$dbconfigs}, and then
 \code{setup_database_tables()}, which rebuilds \code{config$tables}. Neither opens a

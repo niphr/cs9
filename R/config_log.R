@@ -23,9 +23,9 @@
 #'
 #' @export
 update_config_log <- function(
-    ss = "unspecified",
-    task = "unspecified",
-    ...
+  ss = "unspecified",
+  task = "unspecified",
+  ...
 ) {
   # Capture ... as a single string for logging
   msg <- paste0(..., collapse = "")
@@ -62,7 +62,7 @@ update_config_log <- function(
 #'
 #' @details
 #' The function retrieves entries from the `config_log` table in the current configuration.
-#' If date filters are provided, they are applied to the `timestamp` field of the log entries.
+#' The function applies any date filters to the `timestamp` field of the log entries.
 #'
 #' @return A `data.table` containing the filtered log entries.
 #'
@@ -80,10 +80,10 @@ update_config_log <- function(
 #'
 #' @export
 get_config_log <- function(
-    ss = NULL,
-    task = NULL,
-    start_date = NULL,
-    end_date = NULL
+  ss = NULL,
+  task = NULL,
+  start_date = NULL,
+  end_date = NULL
 ) {
   # Retrieve the entire config_log table
   log_data <- config$tables$config_log$tbl() %>%

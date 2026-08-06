@@ -10,10 +10,10 @@ run_task_sequentially_as_rstudio_job_using_load_all(
 )
 }
 \arguments{
-\item{task_name}{Character string specifying the name of the task to run}
+\item{task_name}{Character string specifying the name of the task to run.}
 
 \item{ss_prefix}{Character string specifying the prefix used to access the
-surveillance system object. Defaults to "global$ss"}
+surveillance system object. Defaults to "global$ss".}
 }
 \value{
 No return value. This function is called for its side effect of
@@ -25,12 +25,12 @@ for package development. This function creates a temporary R script that
 loads the package and runs the specified task sequentially (cores = 1).
 }
 \details{
-This function is primarily used during package development to test tasks
+Use this function mainly during package development, to test tasks
 interactively. It creates a temporary R script that:
 \itemize{
-\item Loads the package using \code{devtools::load_all()}
-\item Sets the task to run with single core (cores = 1)
-\item Executes the task via the surveillance system
+\item Loads the package using \code{devtools::load_all()}.
+\item Sets the task to run with single core (cores = 1).
+\item Executes the task via the surveillance system.
 }
 }
 \examples{

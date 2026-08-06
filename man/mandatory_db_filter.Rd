@@ -57,8 +57,8 @@ keep. \code{NULL} (default) applies no filter.}
 The filtered object in the same class as \code{.data}.
 }
 \description{
-Applies a set of standard include/exclude filters to a database table or
-data frame using the conventional surveillance field names. Each \code{NULL}
+Applies standard include/exclude filters to a database table or data frame.
+The filters use the conventional surveillance field names. Each \code{NULL}
 argument is a no-op, so callers only need to supply the dimensions they
 actually want to restrict.
 }

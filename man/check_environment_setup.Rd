@@ -8,7 +8,7 @@ check_environment_setup(verbose = TRUE, use_startup_message = FALSE)
 }
 \arguments{
 \item{verbose}{Logical. If TRUE (default), prints detailed diagnostic output.
-If FALSE, runs validation silently and only returns result object.}
+If FALSE, runs the check silently and only returns the result object.}
 
 \item{use_startup_message}{Logical. If TRUE, uses packageStartupMessage()
 for output (suppressible). If FALSE (default), uses cat() for console output.}
@@ -16,28 +16,29 @@ for output (suppressible). If FALSE (default), uses cat() for console output.}
 \value{
 A list containing environment setup status and recommendations:
 \itemize{
-\item status: "ok", "warning", or "error"
-\item issues: Character vector of identified problems
-\item recommendations: Character vector of suggested fixes
+\item status: "ok", "warning", or "error".
+\item issues: Character vector of identified problems.
+\item recommendations: Character vector of suggested fixes.
 }
 }
 \description{
-Diagnostic function to check CS9 environment configuration. This function
-validates required environment variables and database connectivity, providing
-detailed feedback for troubleshooting configuration issues.
+Diagnostic function that checks the CS9 environment configuration. This
+function checks the required environment variables and the database
+connectivity. It reports detailed feedback that helps you troubleshoot
+configuration problems.
 }
 \details{
-CS9 requires specific environment variables for database connectivity and
+CS9 needs specific environment variables for database connectivity and
 configuration. This function checks for:
 \itemize{
-\item Required environment variables (CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, etc.)
-\item Database configuration availability
-\item Database table initialization status
+\item Required environment variables (CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, etc.).
+\item Database configuration availability.
+\item Database table initialization status.
 }
 
-When CS9 is installed from CRAN without database configuration, the package
-loads with limited functionality. Use this function to diagnose what needs
-to be configured for full database-driven surveillance functionality.
+When you install CS9 from CRAN without a database configuration, the package
+loads with limited functionality. Use this function to identify what you
+must configure for full database-driven surveillance functionality.
 }
 \examples{
 # Check environment setup with verbose output
@@ -52,5 +53,5 @@ if(result$status != "ok") {
 
 }
 \seealso{
-The installation vignette: \code{vignette("installation", package = "cs9")}
+The installation vignette: \code{vignette("installation", package = "cs9")}.
 }

@@ -7,10 +7,10 @@
 create_folder_if_doesnt_exist(path)
 }
 \arguments{
-\item{path}{Character string specifying the directory path to create}
+\item{path}{Character string specifying the directory path to create.}
 }
 \value{
-Character string containing the created directory path
+Character string containing the created directory path.
 }
 \description{
 Creates a directory and all necessary parent directories if they don't

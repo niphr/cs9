@@ -10,12 +10,15 @@ the current R console via \code{\link[later:later]{later::later()}} polling. Equ
 depend on RStudio's job API (which Positron does not implement).
 
 Methods:
-$start()      spawn background process and begin polling
-$wait(t)      block this session, draining the event loop, until done
-$is_alive()   TRUE while the background process is running
-$status()     summary
-$tail(n)      last n lines of the log file (snapshot, not live)
-$kill()       terminate the background process
+\itemize{
+\item \verb{$start()} spawns the background process and starts to poll its output.
+\item \verb{$wait(t)} blocks this session until the task finishes. It drains the
+event loop while it waits.
+\item \verb{$is_alive()} returns TRUE while the background process runs.
+\item \verb{$status()} prints a brief status summary.
+\item \verb{$tail(n)} prints the last n lines of the log file (a snapshot, not live).
+\item \verb{$kill()} terminates the background process.
+}
 }
 \examples{
 \dontrun{
@@ -97,7 +100,7 @@ background process.
 \if{html}{\out{<a id="method-TaskJob-start"></a>}}
 \if{latex}{\out{\hypertarget{method-TaskJob-start}{}}}
 \subsection{\code{TaskJob$start()}}{
-  Spawn the background process and begin polling its output.
+  Spawn the background process and start to poll its output.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$start()}
@@ -143,7 +146,8 @@ background process.
 \if{latex}{\out{\hypertarget{method-TaskJob-wait}{}}}
 \subsection{\code{TaskJob$wait()}}{
   Block the current session until the background task finishes or the
-timeout expires, draining the \pkg{later} event loop while waiting.
+timeout expires. This method drains the \pkg{later} event loop while it
+waits.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TaskJob$wait(timeout_s = 600)}

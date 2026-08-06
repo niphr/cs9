@@ -22,11 +22,12 @@ If NULL, returns data for all elements.}
 }
 \value{
 A data.table containing the filtered hash configuration entries with
-columns: task, index_plan, element_tag, date, datetime, element_hash, all_hash
+columns: task, index_plan, element_tag, date, datetime, element_hash,
+all_hash.
 }
 \description{
-Retrieves data hash configuration entries from the database table for
-tracking data changes across surveillance task plans and elements.
+Retrieves data hash configuration entries from the database table. These
+entries track data changes across surveillance task plans and elements.
 }
 \examples{
 \dontrun{

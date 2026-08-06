@@ -11,17 +11,17 @@ epidemiological monitoring and public health surveillance.
 \details{
 SurveillanceSystem_v9 provides infrastructure for:
 \itemize{
-\item Database table management with automated logging
-\item Task scheduling and parallel execution
-\item Data validation and schema enforcement
-\item Configuration and performance monitoring
+\item Database table management with automated logging.
+\item Task scheduling and parallel execution.
+\item Data validation and schema enforcement.
+\item Configuration and performance monitoring.
 }
 
 The surveillance system follows a structured approach:
 \enumerate{
-\item Define database tables with \code{add_table()}
-\item Configure surveillance tasks with \code{add_task()}
-\item Execute tasks with \code{run_task()} or external schedulers
+\item Define database tables with \code{add_table()}.
+\item Configure surveillance tasks with \code{add_task()}.
+\item Execute tasks with \code{run_task()} or external schedulers.
 }
 }
 \examples{
@@ -104,15 +104,15 @@ global$ss$add_table(
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
-    \item{\code{tables}}{List of database tables managed by the surveillance system}
+    \item{\code{tables}}{List of database tables managed by the surveillance system.}
 
-    \item{\code{partitionedtables}}{List of partitioned database tables}
+    \item{\code{partitionedtables}}{List of partitioned database tables.}
 
-    \item{\code{tasks}}{List of surveillance tasks configured for execution}
+    \item{\code{tasks}}{List of surveillance tasks configured for execution.}
 
-    \item{\code{name}}{Character string identifying the surveillance system instance}
+    \item{\code{name}}{Character string identifying the surveillance system instance.}
 
-    \item{\code{implementation_version}}{Character string tracking the analytics code version}
+    \item{\code{implementation_version}}{Character string tracking the analytics code version.}
   }
   \if{html}{\out{</div>}}
 }
@@ -148,8 +148,8 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{name}}{A string that the user may choose to use to track performance metrics (runtime and RAM usage)}
-      \item{\code{implementation_version}}{A string that the user may choose to use to track performance metrics (runtime and RAM usage)}
+      \item{\code{name}}{A string that you may use to track performance metrics (runtime and RAM usage).}
+      \item{\code{implementation_version}}{A string that you may use to track performance metrics (runtime and RAM usage).}
     }
     \if{html}{\out{</div>}}
   }
@@ -159,7 +159,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_table"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_table}{}}}
 \subsection{\code{SurveillanceSystem_v9$add_table()}}{
-  Add a table
+  Add a table.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$add_table(
@@ -180,7 +180,7 @@ global$ss$add_table(
       \item{\code{name_access}}{First part of table name, corresponding to the database where it will be stored.}
       \item{\code{name_grouping}}{Second part of table name, corresponding to some sort of grouping.}
       \item{\code{name_variant}}{Final part of table name, corresponding to a distinguishing variant.}
-      \item{\code{field_types}}{Named character vector, where the names are the column names, and the values are the column types. Valid types are BOOLEAN, CHARACTER, INTEGER, DOUBLE, DATE, DATETIME}
+      \item{\code{field_types}}{Named character vector, where the names are the column names, and the values are the column types. Valid types are BOOLEAN, CHARACTER, INTEGER, DOUBLE, DATE, DATETIME.}
       \item{\code{keys}}{Character vector, containing the column names that uniquely identify a row of data.}
       \item{\code{indexes}}{Named list, containing indexes.}
       \item{\code{validator_field_types}}{Function corresponding to a validator for the field types.}
@@ -241,7 +241,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_partitionedtable"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_partitionedtable}{}}}
 \subsection{\code{SurveillanceSystem_v9$add_partitionedtable()}}{
-  Add a partitioned table to the surveillance system
+  Add a partitioned table to the surveillance system.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$add_partitionedtable(
@@ -262,17 +262,17 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{name_access}}{First part of table name, corresponding to the database where it will be stored}
-      \item{\code{name_grouping}}{Second part of table name, corresponding to some sort of grouping}
-      \item{\code{name_variant}}{Final part of table name, corresponding to a distinguishing variant}
-      \item{\code{name_partitions}}{Character string specifying partition naming scheme}
-      \item{\code{column_name_partition}}{Column name used for partitioning}
-      \item{\code{value_generator_partition}}{Function to generate partition values}
-      \item{\code{field_types}}{Named character vector of column names and types}
-      \item{\code{keys}}{Character vector of column names that uniquely identify rows}
-      \item{\code{indexes}}{Named list containing index definitions}
-      \item{\code{validator_field_types}}{Function to validate field types}
-      \item{\code{validator_field_contents}}{Function to validate field contents}
+      \item{\code{name_access}}{First part of table name, corresponding to the database where it will be stored.}
+      \item{\code{name_grouping}}{Second part of table name, corresponding to some sort of grouping.}
+      \item{\code{name_variant}}{Final part of table name, corresponding to a distinguishing variant.}
+      \item{\code{name_partitions}}{Character string specifying partition naming scheme.}
+      \item{\code{column_name_partition}}{Column name used for partitioning.}
+      \item{\code{value_generator_partition}}{Function to generate partition values.}
+      \item{\code{field_types}}{Named character vector of column names and types.}
+      \item{\code{keys}}{Character vector of column names that uniquely identify rows.}
+      \item{\code{indexes}}{Named list containing index definitions.}
+      \item{\code{validator_field_types}}{Function to validate field types.}
+      \item{\code{validator_field_contents}}{Function to validate field contents.}
     }
     \if{html}{\out{</div>}}
   }
@@ -285,7 +285,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-add_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_task}{}}}
 \subsection{\code{SurveillanceSystem_v9$add_task()}}{
-  Add a surveillance task to the system
+  Add a surveillance task to the system.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$add_task(
@@ -309,20 +309,20 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{name_grouping}}{Name of the task (grouping)}
-      \item{\code{name_action}}{Name of the task (action)}
-      \item{\code{name_variant}}{Name of the task (variant)}
-      \item{\code{cores}}{Number of CPU cores}
-      \item{\code{permission}}{A permission R6 instance}
+      \item{\code{name_grouping}}{Name of the task (grouping).}
+      \item{\code{name_action}}{Name of the task (action).}
+      \item{\code{name_variant}}{Name of the task (variant).}
+      \item{\code{cores}}{Number of CPU cores.}
+      \item{\code{permission}}{A permission R6 instance.}
       \item{\code{plan_analysis_fn_name}}{The name of a function that returns a named list \code{list(for_each_plan = list(), for_each_analysis = NULL)}.}
-      \item{\code{for_each_plan}}{A list, where each unit corresponds to one data extraction. Generally recommended to use \code{plnr::expand_list}.}
-      \item{\code{for_each_analysis}}{A list, where each unit corresponds to one analysis within a plan (data extraction). Generally recommended to use \code{plnr::expand_list}.}
-      \item{\code{universal_argset}}{A list, where these argsets are applied to all analyses univerally}
-      \item{\code{upsert_at_end_of_each_plan}}{Do you want to upsert your results automatically at the end of each plan?}
-      \item{\code{insert_at_end_of_each_plan}}{Do you want to insert your results automatically at the end of each plan?}
-      \item{\code{action_fn_name}}{The name of the function that will be called for each analysis with arguments \code{data}, \code{argset}, \code{schema}}
-      \item{\code{data_selector_fn_name}}{The name of a function that will be called to obtain the data for each analysis. The function must have the arguments \code{argset}, \code{schema} and must return a named list.}
-      \item{\code{tables}}{A named list that maps \code{cs9::config$schemas} for use in \code{action_fn_name} and \code{data_selector_fn_name}}
+      \item{\code{for_each_plan}}{A list, where each unit corresponds to one data extraction. You SHOULD use \code{plnr::expand_list}.}
+      \item{\code{for_each_analysis}}{A list, where each unit corresponds to one analysis within a plan (data extraction). You SHOULD use \code{plnr::expand_list}.}
+      \item{\code{universal_argset}}{A list, where these argsets are applied to all analyses universally.}
+      \item{\code{upsert_at_end_of_each_plan}}{Whether to upsert your results automatically at the end of each plan.}
+      \item{\code{insert_at_end_of_each_plan}}{Whether to insert your results automatically at the end of each plan.}
+      \item{\code{action_fn_name}}{The name of the function called for each analysis with arguments \code{data}, \code{argset}, \code{schema}.}
+      \item{\code{data_selector_fn_name}}{The name of a function called to obtain the data for each analysis. The function MUST have the arguments \code{argset}, \code{schema} and MUST return a named list.}
+      \item{\code{tables}}{A named list that maps \code{cs9::config$schemas} for use in \code{action_fn_name} and \code{data_selector_fn_name}.}
     }
     \if{html}{\out{</div>}}
   }
@@ -335,7 +335,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-get_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-get_task}{}}}
 \subsection{\code{SurveillanceSystem_v9$get_task()}}{
-  Get a surveillance task by name
+  Get a surveillance task by name.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$get_task(task_name)}
@@ -344,12 +344,12 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{task_name}}{Character string specifying the task name}
+      \item{\code{task_name}}{Character string specifying the task name.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A Task R6 object representing the surveillance task
+    A Task R6 object representing the surveillance task.
   }
 }
 
@@ -357,7 +357,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-run_task"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-run_task}{}}}
 \subsection{\code{SurveillanceSystem_v9$run_task()}}{
-  Execute a surveillance task by name
+  Execute a surveillance task by name.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$run_task(task_name)}
@@ -366,7 +366,7 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{task_name}}{Character string specifying the task name to run}
+      \item{\code{task_name}}{Character string specifying the task name to run.}
     }
     \if{html}{\out{</div>}}
   }
@@ -379,7 +379,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_tables"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_tables}{}}}
 \subsection{\code{SurveillanceSystem_v9$shortcut_get_tables()}}{
-  Get database tables associated with a task
+  Get database tables associated with a task.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$shortcut_get_tables(task_name)}
@@ -388,12 +388,12 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{task_name}}{Character string specifying the task name}
+      \item{\code{task_name}}{Character string specifying the task name.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list of database table objects used by the task
+    A named list of database table objects used by the task.
   }
 }
 
@@ -401,7 +401,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_argset"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_argset}{}}}
 \subsection{\code{SurveillanceSystem_v9$shortcut_get_argset()}}{
-  Get argument set for a specific plan and analysis
+  Get argument set for a specific plan and analysis.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$shortcut_get_argset(
@@ -414,14 +414,14 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{task_name}}{Character string specifying the task name}
-      \item{\code{index_plan}}{Integer specifying which plan to access}
-      \item{\code{index_analysis}}{Integer specifying which analysis to access}
+      \item{\code{task_name}}{Character string specifying the task name.}
+      \item{\code{index_plan}}{Integer specifying which plan to access.}
+      \item{\code{index_analysis}}{Integer specifying which analysis to access.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list containing the argument set for the specified plan and analysis
+    A named list containing the argument set for the specified plan and analysis.
   }
 }
 
@@ -429,7 +429,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_data"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_data}{}}}
 \subsection{\code{SurveillanceSystem_v9$shortcut_get_data()}}{
-  Get data for a specific plan
+  Get data for a specific plan.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$shortcut_get_data(task_name, index_plan = 1)}
@@ -438,13 +438,13 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{task_name}}{Character string specifying the task name}
-      \item{\code{index_plan}}{Integer specifying which plan to access}
+      \item{\code{task_name}}{Character string specifying the task name.}
+      \item{\code{index_plan}}{Integer specifying which plan to access.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list containing the data extracted for the specified plan
+    A named list containing the data extracted for the specified plan.
   }
 }
 
@@ -452,7 +452,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt}{}}}
 \subsection{\code{SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt()}}{
-  Get plans and argsets as a data.table
+  Get plans and argsets as a data.table.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt(task_name)}
@@ -461,12 +461,12 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{task_name}}{Character string specifying the task name}
+      \item{\code{task_name}}{Character string specifying the task name.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A data.table containing plan and analysis information with columns including index_plan and index_analysis
+    A data.table containing plan and analysis information with columns including index_plan and index_analysis.
   }
 }
 
@@ -474,7 +474,7 @@ global$ss$add_table(
 \if{html}{\out{<a id="method-SurveillanceSystem_v9-shortcut_get_num_analyses"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-shortcut_get_num_analyses}{}}}
 \subsection{\code{SurveillanceSystem_v9$shortcut_get_num_analyses()}}{
-  Get the total number of analyses for a task
+  Get the total number of analyses for a task.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$shortcut_get_num_analyses(task_name)}
@@ -483,12 +483,12 @@ global$ss$add_table(
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{task_name}}{Character string specifying the task name}
+      \item{\code{task_name}}{Character string specifying the task name.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    Integer value representing the total number of analyses across all plans for the task
+    Integer value representing the total number of analyses across all plans for the task.
   }
 }
 

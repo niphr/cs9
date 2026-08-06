@@ -1,22 +1,31 @@
+# Version 26.8.6
+
+## Documentation
+* Repository prose rewritten to ASD-STE100 (Simplified Technical English). Every sentence in the roxygen blocks, the five vignettes, `README.md`, `index.md` and `NEWS.md` is now at most 25 words. 35 sentences were over that limit before, counted over the whole repository. They divide into 2 in roxygen, 15 in the vignettes, 16 in `NEWS.md` and 2 in `index.md`. The vignette count of 15 covers both the built `.Rmd` files and their `.Rmd.orig` sources. No claim, number, condition or attribution changed. The NorSySS figures, the 106-diseases and 378-locations counts, and the White & Valcarcel Salamanca attribution are unaltered.
+* Long sentences that buried a sequence are split into one idea each. Three places stated three conditions in a single sentence and now state one per sentence. They are the `SET ROLE ""` trap in `vignette("backends")`, the same trap in `vignette("installation")`, and the `csdb` version-floor entry in `NEWS.md`.
+* RFC-2119 keywords are capitalised where the vignettes and roxygen state an obligation. `CS9_PATH` MUST NOT be empty. `CS9_DBCONFIG_ACCESS` MUST include `config`. The function named by `data_selector_fn_name` MUST return a named list.
+* Roxygen field, parameter and return descriptions now end in a full stop. The `TaskJob` method summary is a list. It was an indented block, which Rd collapsed into one paragraph.
+* Vignette prose edits were applied identically to each precompiled `.Rmd` and its `.Rmd.orig` source. `vignettes/_PRECOMPILER.R` therefore still reproduces the `.Rmd` from the `.orig`.
+
 # Version 26.8.5
 
 ## New Features
-* `CS9_DBCONFIG_DRIVER=SQLite` is accepted, matched case-insensitively. SQLite is a file rather than a server, so `CS9_DBCONFIG_SERVER` and `CS9_DBCONFIG_PORT` moved out of the always-required tier of `check_environment_setup()` and are now required only by the server-based drivers. A SQLite environment needs `CS9_AUTO`, `CS9_PATH`, `CS9_DBCONFIG_ACCESS`, `CS9_DBCONFIG_DRIVER` and one `CS9_DBCONFIG_DB_<ACCESS>` file path per access. It needs no `CS9_DBCONFIG_USER`, no `CS9_DBCONFIG_PASSWORD` and no `CS9_DBCONFIG_SCHEMA_*`.
+* `CS9_DBCONFIG_DRIVER=SQLite` is accepted, matched case-insensitively. SQLite is a file rather than a server. `CS9_DBCONFIG_SERVER` and `CS9_DBCONFIG_PORT` therefore moved out of the always-required tier of `check_environment_setup()`. Only the server-based drivers now require them. A SQLite environment needs `CS9_AUTO`, `CS9_PATH`, `CS9_DBCONFIG_ACCESS`, `CS9_DBCONFIG_DRIVER` and one `CS9_DBCONFIG_DB_<ACCESS>` file path per access. It needs no `CS9_DBCONFIG_USER`, no `CS9_DBCONFIG_PASSWORD` and no `CS9_DBCONFIG_SCHEMA_*`.
 * `check_environment_setup()` now rejects a `CS9_DBCONFIG_ACCESS` list that omits `config`. The four configuration tables are built from that access unconditionally, so its absence used to fail later and obscurely.
-* `reload_db_config()` — new export, no arguments. Re-reads every `CS9_DBCONFIG_*` variable and rebuilds the configuration tables. A package that sets its own values in `.onLoad()` needs this, because `cs9` is a dependency, loads first, and has already read the environment by then. The reload is state-safe: it disconnects every table it replaces, so a repeated reload does not leak connections, and it empties `config$tables` before rebuilding, so a reload against an invalid environment leaves an empty table list rather than tables describing the previous configuration.
+* `reload_db_config()` — new export, no arguments. Re-reads every `CS9_DBCONFIG_*` variable and rebuilds the configuration tables. A package that sets its own values in `.onLoad()` needs this. `cs9` is a dependency, loads first, and reads the environment before that package runs. The reload is state-safe. It disconnects every table it replaces, so a repeated reload does not leak connections. It also empties `config$tables` before it rebuilds them. A reload against an invalid environment therefore leaves an empty table list, not tables describing the previous configuration.
 
 ## Bug Fixes
-* `DESCRIPTION` requires `csdb (>= 2026.8.5)` and carries `Remotes: niphr/csdb`. The bare `csdb` it had before let a resolver satisfy the dependency with any version, and the version CRAN and RSPM serve is 2026.5.13, which predates csdb's SQLite backend. Installed against that, `CS9_DBCONFIG_DRIVER=SQLite` matched no branch in csdb, fell through to the generic ODBC arm, and `$connect()` failed with `Can't open lib 'SQLite' : file not found`, which names neither csdb nor a version. csdb 2026.8.5 is on GitHub and not on CRAN, so the floor alone would leave the dependency unsatisfiable; the `Remotes` field is what makes it obtainable. `cs9` is not submitted to CRAN, so the field costs nothing.
-* Two blocks in `tests/testthat/test-sqlite-config.R` now call `skip_if_not_installed("csdb", "2026.8.5")`. This is not redundant with the version floor. Nothing enforces an `Imports` version after installation: `cs9` reaches `csdb` through `csdb::` alone, so `NAMESPACE` holds no import directive and R runs no version check at load time. Measured on 2026-08-05 against csdb 2026.5.13, `R CMD INSTALL` exits 0 and `library(cs9)` succeeds. The guard is keyed on the version and on nothing else, so it cannot hide a failure that is not a version mismatch.
+* `DESCRIPTION` requires `csdb (>= 2026.8.5)` and carries `Remotes: niphr/csdb`. The bare `csdb` it had before let a resolver satisfy the dependency with any version. CRAN and RSPM serve version 2026.5.13, which predates csdb's SQLite backend. Installed against that, `CS9_DBCONFIG_DRIVER=SQLite` matched no branch in csdb and fell through to the generic ODBC arm. `$connect()` then failed with `Can't open lib 'SQLite' : file not found`, which names neither csdb nor a version. csdb 2026.8.5 is on GitHub and not on CRAN, so the floor alone would leave the dependency unsatisfiable. The `Remotes` field is what makes it obtainable. `cs9` is not submitted to CRAN, so the field costs nothing.
+* Two blocks in `tests/testthat/test-sqlite-config.R` now call `skip_if_not_installed("csdb", "2026.8.5")`. This is not redundant with the version floor. Nothing enforces an `Imports` version after installation. `cs9` reaches `csdb` through `csdb::` alone, so `NAMESPACE` holds no import directive. R therefore runs no version check at load time. Measured on 2026-08-05 against csdb 2026.5.13, `R CMD INSTALL` exits 0 and `library(cs9)` succeeds. The guard is keyed on the version and on nothing else, so it cannot hide a failure that is not a version mismatch.
 * `setup_database_tables()` now builds all four tables into a local list and assigns `config$tables` once, at the end. Assigning each table directly meant a failure in the third constructor left a partially-populated `config$tables` behind, indistinguishable from a complete one.
-* Under SQLite, a dbconfig's `id` is the database file path rather than `[db].[schema]`, and a partitioned table's per-partition name uses the `xxpxx` separator that PostgreSQL uses. `PARTITION` is a keyword in SQLite's window-function grammar.
+* Under SQLite, a dbconfig's `id` is the database file path rather than `[db].[schema]`. A partitioned table's per-partition name uses the `xxpxx` separator that PostgreSQL uses. `PARTITION` is a keyword in SQLite's window-function grammar.
 
 ## Documentation
-* The installation vignette starts on SQLite. A reader now installs `cs9`, writes six settings into `.Renviron`, validates them and then opens the database, all before the vignette mentions a server. The last step is deliberate: `check_environment_setup()` only checks the variables, and it takes a `$connect()` on a configuration table to create the SQLite file and the `config_log` table in it. The PostgreSQL-in-Docker guide follows below.
+* The installation vignette starts on SQLite. A reader now installs `cs9`, writes six settings into `.Renviron`, validates them and then opens the database, all before the vignette mentions a server. The last step is deliberate. `check_environment_setup()` only checks the variables. It takes a `$connect()` on a configuration table to create the SQLite file and the `config_log` table in it. The PostgreSQL-in-Docker guide follows below.
 * The installation vignette no longer says CS9 requires PostgreSQL for full functionality, which stopped being true when the SQLite backend landed. It says PostgreSQL is the production backend and points at the SQLite section for the alternative.
-* `vignette("backends")` — new. The `CS9_DBCONFIG_*` environments for PostgreSQL and SQLite side by side, a table of what each backend does with every variable, the tiers `check_environment_setup()` validates in, and the `.onLoad()` pattern that sets the variables from another package and then calls `reload_db_config()`. It carries no R-level detail: `vignette("backends", package = "csdb")` is the companion for that.
-* Both vignettes now warn about two traps that cost nothing to avoid and are hard to diagnose. An empty `CS9_PATH` counts as a missing variable, so `CS9_PATH=` fails validation. And an unset `CS9_DBCONFIG_ROLE_CREATE_TABLE` reaches `csdb` as `""` rather than `NULL`, which is not the `"x"` no-role sentinel, so the PostgreSQL `create_table` can emit `SET ROLE ""`. Both PostgreSQL blocks now set the variable explicitly.
-* The PostgreSQL `.Renviron` block in the installation vignette carried both of those traps, and had done since before the SQLite work: it wrote `CS9_PATH=` with no value, the variable table below it called `CS9_PATH` "usually empty", and `CS9_DBCONFIG_ROLE_CREATE_TABLE` was absent. A reader who copied the block got `Missing required environment variables: CS9_PATH`. All three are fixed.
+* `vignette("backends")` — new. It puts the `CS9_DBCONFIG_*` environments for PostgreSQL and SQLite side by side. It has a table of what each backend does with every variable. It gives the tiers `check_environment_setup()` validates in, and the `.onLoad()` pattern that sets the variables from another package and then calls `reload_db_config()`. It carries no R-level detail: `vignette("backends", package = "csdb")` is the companion for that.
+* Both vignettes now warn about two traps that cost nothing to avoid and are hard to diagnose. An empty `CS9_PATH` counts as a missing variable, so `CS9_PATH=` fails validation. And an unset `CS9_DBCONFIG_ROLE_CREATE_TABLE` reaches `csdb` as `""` rather than `NULL`. `""` is not the `"x"` no-role sentinel, so the PostgreSQL `create_table` can emit `SET ROLE ""`. Both PostgreSQL blocks now set the variable explicitly.
+* The PostgreSQL `.Renviron` block in the installation vignette carried both of those traps, and had done so since before the SQLite work. It wrote `CS9_PATH=` with no value. The variable table below it called `CS9_PATH` "usually empty". `CS9_DBCONFIG_ROLE_CREATE_TABLE` was absent. A reader who copied the block got `Missing required environment variables: CS9_PATH`. All three are fixed.
 * `README.md` names both backends and links to the two vignettes.
 * `_pkgdown.yml` indexes all five vignettes. `cs9` and `backends` were missing from the `articles:` list; `cs9` had been missing independently of this work, although the navbar links to it.
 
@@ -30,16 +39,17 @@
 * Updated task creation vignette with single-instance framing
 * Added Apache Airflow integration guidance to installation vignette
 * Updated CLAUDE.md with surveillance-domain examples from academic paper (White & Valcarcel Salamanca, NIPH)
-* Introduction vignette now states when CS9 is **not** the right choice: the hard
-  requirements (PostgreSQL, containers, systems administration capability), the
-  workflow reorganisation adoption costs, and `plnr` as the simpler option for a
-  pilot or a resource-constrained setting
+* Introduction vignette now states when CS9 is **not** the right choice. It names
+  the hard requirements (PostgreSQL, containers, systems administration
+  capability) and the workflow reorganisation adoption costs. It names `plnr` as
+  the simpler option for a pilot or a resource-constrained setting.
 * Introduction vignette now states that CS9 analyses each stratum independently
-  **by default**, and that borrowing strength across strata and adjusting
-  exceedance probabilities for multiple comparisons are decisions about the
-  statistical method rather than properties of the framework. With 106 diseases
-  across 378 locations the number of simultaneous tests is large, and nothing in
-  CS9 controls the family-wise error rate or the false discovery rate for you
+  **by default**. It also states that borrowing strength across strata is a
+  decision about the statistical method, not a property of the framework.
+  Adjusting exceedance probabilities for multiple comparisons is the same kind of
+  decision. With 106 diseases across 378 locations the number of simultaneous
+  tests is large. Nothing in CS9 controls the family-wise error rate or the false
+  discovery rate for you.
 * Introduction vignette now lists what the framework handles: per-analysis
   structured logging, schema validation and time-period partitioning,
   framework-level parallelism, and validation workflows
@@ -50,7 +60,7 @@
 # Version 26.5.13
 
 ## New Features
-* `TaskJob` R6 class and `run_task_sequentially_as_callr_bg_using_load_all()` wrapper. A drop-in alternative to `run_task_sequentially_as_rstudio_job_using_load_all()` that works in editors without RStudio's job API (notably Positron, which does not implement `runScriptJob`). Spawns the task in a fresh `callr::r_bg()` process so the current environment is not polluted, captures output via a pipe, and streams it back to the calling R console (prefixed with the task name) via `later::later()` polling. Includes `$start()`, `$wait()`, `$is_alive()`, `$status()`, `$tail()`, `$kill()`.
+* `TaskJob` R6 class and `run_task_sequentially_as_callr_bg_using_load_all()` wrapper. A drop-in alternative to `run_task_sequentially_as_rstudio_job_using_load_all()` that works in editors without RStudio's job API (notably Positron, which does not implement `runScriptJob`). Spawns the task in a fresh `callr::r_bg()` process, so the current environment is not polluted. Captures output via a pipe. Streams the output back to the calling R console (prefixed with the task name) via `later::later()` polling. Includes `$start()`, `$wait()`, `$is_alive()`, `$status()`, `$tail()`, `$kill()`.
 
 # Version 25.8.21
 

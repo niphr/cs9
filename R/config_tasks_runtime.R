@@ -1,19 +1,22 @@
 update_config_tasks_stats <- function(
-    ss = "unspecified",
-    task,
-    implementation_version = "unspecified",
-    cores_n,
-    plans_n,
-    analyses_n,
-    start_datetime,
-    stop_datetime,
-    ram_all_cores_mb,
-    ram_per_core_mb,
-    status
+  ss = "unspecified",
+  task,
+  implementation_version = "unspecified",
+  cores_n,
+  plans_n,
+  analyses_n,
+  start_datetime,
+  stop_datetime,
+  ram_all_cores_mb,
+  ram_per_core_mb,
+  status
 ) {
   stopifnot(status %in% c("succeeded", "failed"))
 
-  runtime_minutes <- round(as.numeric(difftime(stop_datetime, start_datetime, units = "min")), 2)
+  runtime_minutes <- round(
+    as.numeric(difftime(stop_datetime, start_datetime, units = "min")),
+    2
+  )
 
   start_datetime <- format(start_datetime, "%Y-%m-%d %H:%M:%S")
   start_date <- stringr::str_sub(start_datetime, 1, 10)
@@ -53,16 +56,16 @@ update_config_tasks_stats <- function(
 #'   recent run statistics. If FALSE, returns all historical data.
 #'
 #' @return A data.table containing task statistics with columns including:
-#'   task, datetime, runtime_seconds, memory_usage, status, and other metrics
+#'   task, datetime, runtime_seconds, memory_usage, status, and other metrics.
 #'
 #' @examples
 #' \dontrun{
 #' # Get all task statistics
 #' get_config_tasks_stats()
-#' 
+#'
 #' # Get statistics for a specific task
 #' get_config_tasks_stats(task = "covid_analysis")
-#' 
+#'
 #' # Get only the last run for a task
 #' get_config_tasks_stats(task = "covid_analysis", last_run = TRUE)
 #' }

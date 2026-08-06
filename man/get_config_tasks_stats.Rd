@@ -15,7 +15,7 @@ recent run statistics. If FALSE, returns all historical data.}
 }
 \value{
 A data.table containing task statistics with columns including:
-task, datetime, runtime_seconds, memory_usage, status, and other metrics
+task, datetime, runtime_seconds, memory_usage, status, and other metrics.
 }
 \description{
 Retrieves runtime statistics and performance metrics for surveillance tasks

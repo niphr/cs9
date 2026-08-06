@@ -12,7 +12,7 @@ path(
 )
 }
 \arguments{
-\item{...}{Character strings specifying the second level directory and beyond}
+\item{...}{Character strings specifying the second level directory and beyond.}
 
 \item{create_dir}{Logical value indicating whether to create the directory
 if it doesn't exist. Defaults to FALSE.}
@@ -25,7 +25,7 @@ mode (uses base directory) or interactive mode (adds "_interactive" subdirectory
 Defaults to the current cs9::config$is_auto setting.}
 }
 \value{
-Character string containing the constructed file path
+Character string containing the constructed file path.
 }
 \description{
 Constructs the appropriate folder path for surveillance system results,

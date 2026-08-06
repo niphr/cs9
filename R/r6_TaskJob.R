@@ -6,12 +6,14 @@
 #' depend on RStudio's job API (which Positron does not implement).
 #'
 #' Methods:
-#'   $start()      spawn background process and begin polling
-#'   $wait(t)      block this session, draining the event loop, until done
-#'   $is_alive()   TRUE while the background process is running
-#'   $status()     summary
-#'   $tail(n)      last n lines of the log file (snapshot, not live)
-#'   $kill()       terminate the background process
+#'
+#' - `$start()` spawns the background process and starts to poll its output.
+#' - `$wait(t)` blocks this session until the task finishes. It drains the
+#'   event loop while it waits.
+#' - `$is_alive()` returns TRUE while the background process runs.
+#' - `$status()` prints a brief status summary.
+#' - `$tail(n)` prints the last n lines of the log file (a snapshot, not live).
+#' - `$kill()` terminates the background process.
 #'
 #' @field task_name Character string. Name of the task being run.
 #' @field ss_prefix Character string. R expression used to access the
@@ -36,11 +38,11 @@
 TaskJob <- R6::R6Class(
   "TaskJob",
   public = list(
-    task_name   = NULL,
-    ss_prefix   = NULL,
+    task_name = NULL,
+    ss_prefix = NULL,
     script_path = NULL,
-    log_path    = NULL,
-    started_at  = NULL,
+    log_path = NULL,
+    started_at = NULL,
     finished_at = NULL,
 
     #' @description
@@ -54,25 +56,32 @@ TaskJob <- R6::R6Class(
     #'   log file are written. Defaults to \code{tempdir()}.
     #' @return A new \code{TaskJob} object. Call \code{$start()} to launch the
     #'   background process.
-    initialize = function(task_name, ss_prefix = "global$ss", log_dir = tempdir(check = TRUE)) {
+    initialize = function(
+      task_name,
+      ss_prefix = "global$ss",
+      log_dir = tempdir(check = TRUE)
+    ) {
       self$task_name <- task_name
       self$ss_prefix <- ss_prefix
       ts <- format(Sys.time(), "%Y%m%d_%H%M%S")
       self$script_path <- file.path(log_dir, paste0(task_name, "_", ts, ".R"))
-      self$log_path    <- file.path(log_dir, paste0(task_name, "_", ts, ".log"))
+      self$log_path <- file.path(log_dir, paste0(task_name, "_", ts, ".log"))
 
-      cat(glue::glue(
-"cat('\n**devtools::load_all**\n\n'); flush.console()
+      cat(
+        glue::glue(
+          "cat('\n**devtools::load_all**\n\n'); flush.console()
 devtools::load_all('.')
 {ss_prefix}$tasks[['{task_name}']]$cores <- 1
 cat('\n**run_task**\n\n'); flush.console()
 {ss_prefix}$run_task('{task_name}')
 "
-      ), file = self$script_path)
+        ),
+        file = self$script_path
+      )
     },
 
     #' @description
-    #' Spawn the background process and begin polling its output.
+    #' Spawn the background process and start to poll its output.
     #' @return Invisibly returns the \code{TaskJob} object.
     start = function() {
       if (!is.null(private$.process) && private$.process$is_alive()) {
@@ -95,8 +104,12 @@ cat('\n**run_task**\n\n'); flush.console()
         wd = getwd()
       )
       private$.schedule_poll()
-      message(sprintf("[%s] started (pid=%s). Log: %s",
-                      self$task_name, private$.process$get_pid(), self$log_path))
+      message(sprintf(
+        "[%s] started (pid=%s). Log: %s",
+        self$task_name,
+        private$.process$get_pid(),
+        self$log_path
+      ))
       invisible(self)
     },
 
@@ -112,8 +125,14 @@ cat('\n**run_task**\n\n'); flush.console()
     #' @return Invisibly returns the \code{TaskJob} object.
     status = function() {
       cat(sprintf("Task:    %s\n", self$task_name))
-      cat(sprintf("Started: %s\n",
-                  if (!is.null(self$started_at)) format(self$started_at) else "(not started)"))
+      cat(sprintf(
+        "Started: %s\n",
+        if (!is.null(self$started_at)) {
+          format(self$started_at)
+        } else {
+          "(not started)"
+        }
+      ))
       cat(sprintf("Alive:   %s\n", self$is_alive()))
       cat(sprintf("Log:     %s\n", self$log_path))
       invisible(self)
@@ -121,12 +140,15 @@ cat('\n**run_task**\n\n'); flush.console()
 
     #' @description
     #' Block the current session until the background task finishes or the
-    #' timeout expires, draining the \pkg{later} event loop while waiting.
+    #' timeout expires. This method drains the \pkg{later} event loop while it
+    #' waits.
     #' @param timeout_s Numeric. Maximum number of seconds to wait. Defaults to
     #'   \code{600} (10 minutes).
     #' @return Invisibly returns the \code{TaskJob} object.
     wait = function(timeout_s = 600) {
-      if (is.null(private$.process)) return(invisible(self))
+      if (is.null(private$.process)) {
+        return(invisible(self))
+      }
       deadline <- Sys.time() + timeout_s
       while (private$.process$is_alive() && Sys.time() < deadline) {
         later::run_now(timeoutSecs = 0.5)
@@ -139,7 +161,9 @@ cat('\n**run_task**\n\n'); flush.console()
     #' Terminate the background process.
     #' @return Invisibly returns the \code{TaskJob} object.
     kill = function() {
-      if (!is.null(private$.process)) try(private$.process$kill(), silent = TRUE)
+      if (!is.null(private$.process)) {
+        try(private$.process$kill(), silent = TRUE)
+      }
       invisible(self)
     },
 
@@ -149,19 +173,21 @@ cat('\n**run_task**\n\n'); flush.console()
     #' @return Invisibly returns the \code{TaskJob} object.
     tail = function(n = 20) {
       if (!file.exists(self$log_path)) {
-        cat("(no log file yet)\n"); return(invisible(self))
+        cat("(no log file yet)\n")
+        return(invisible(self))
       }
       lines <- readLines(self$log_path, warn = FALSE)
-      cat(utils::tail(lines, n), sep = "\n"); cat("\n")
+      cat(utils::tail(lines, n), sep = "\n")
+      cat("\n")
       invisible(self)
     }
   ),
   private = list(
-    .process                  = NULL,
-    .log_con                  = NULL,
-    .poll_interval            = 0.5,
-    .last_ended_with_newline  = TRUE,
-    .drained_after_exit       = FALSE,
+    .process = NULL,
+    .log_con = NULL,
+    .poll_interval = 0.5,
+    .last_ended_with_newline = TRUE,
+    .drained_after_exit = FALSE,
 
     .schedule_poll = function() {
       poller <- function() private$.poll_once()
@@ -170,16 +196,23 @@ cat('\n**run_task**\n\n'); flush.console()
 
     .drain = function() {
       out <- private$.process$read_output()
-      if (!nzchar(out)) return()
+      if (!nzchar(out)) {
+        return()
+      }
       # Raw log
       cat(out, file = private$.log_con, sep = "")
       flush(private$.log_con)
       # Prefixed console
       prefix <- paste0("[", self$task_name, "] ")
-      prefixed <- if (isTRUE(private$.last_ended_with_newline)) paste0(prefix, out) else out
+      prefixed <- if (isTRUE(private$.last_ended_with_newline)) {
+        paste0(prefix, out)
+      } else {
+        out
+      }
       prefixed <- gsub("\n(?=.)", paste0("\n", prefix), prefixed, perl = TRUE)
       cat(prefixed)
-      private$.last_ended_with_newline <- substr(out, nchar(out), nchar(out)) == "\n"
+      private$.last_ended_with_newline <- substr(out, nchar(out), nchar(out)) ==
+        "\n"
     },
 
     .poll_once = function() {
@@ -190,13 +223,24 @@ cat('\n**run_task**\n\n'); flush.console()
         private$.drain()
         try(close(private$.log_con), silent = TRUE)
         self$finished_at <- Sys.time()
-        exit <- tryCatch(private$.process$get_exit_status(), error = function(e) NA)
+        exit <- tryCatch(
+          private$.process$get_exit_status(),
+          error = function(e) NA
+        )
         # Ensure we start the finished marker on a fresh line
-        if (!isTRUE(private$.last_ended_with_newline)) cat("\n")
-        cat(sprintf("[%s] *** finished in %.1fs (exit=%s) ***\n",
-                    self$task_name,
-                    as.numeric(difftime(self$finished_at, self$started_at, units = "secs")),
-                    exit))
+        if (!isTRUE(private$.last_ended_with_newline)) {
+          cat("\n")
+        }
+        cat(sprintf(
+          "[%s] *** finished in %.1fs (exit=%s) ***\n",
+          self$task_name,
+          as.numeric(difftime(
+            self$finished_at,
+            self$started_at,
+            units = "secs"
+          )),
+          exit
+        ))
         private$.drained_after_exit <- TRUE
       }
     }
@@ -222,6 +266,9 @@ cat('\n**run_task**\n\n'); flush.console()
 #' }
 #'
 #' @export
-run_task_sequentially_as_callr_bg_using_load_all <- function(task_name, ss_prefix = "global$ss") {
+run_task_sequentially_as_callr_bg_using_load_all <- function(
+  task_name,
+  ss_prefix = "global$ss"
+) {
   TaskJob$new(task_name, ss_prefix)$start()
 }

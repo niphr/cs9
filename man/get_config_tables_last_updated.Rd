@@ -12,7 +12,7 @@ If NULL, returns data for all tables.}
 }
 \value{
 A data.table containing last updated information with columns:
-table_name, last_updated_datetime, and other tracking metadata
+table_name, last_updated_datetime, and other tracking metadata.
 }
 \description{
 Retrieves the last updated timestamps for database tables from the

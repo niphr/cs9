@@ -215,9 +215,10 @@ set_env_vars <- function() {
 #' @details
 #' `cs9` reads the environment once, in its own `.onLoad()`. A package that sets
 #' its own `CS9_DBCONFIG_*` values inside `.onLoad()` therefore sets them too
-#' late: `cs9` is a dependency, so it loads first and has already read the
-#' environment by the time the dependent package runs. Call this function
-#' immediately after the `Sys.setenv()` block and `cs9` picks the new values up.
+#' late. `cs9` is a dependency, so `cs9` loads first. `cs9` reads the
+#' environment before the dependent package runs. Call this function
+#' immediately after the `Sys.setenv()` block. `cs9` then picks the new values
+#' up.
 #'
 #' It re-runs `set_env_vars()`, which rebuilds `config$dbconfigs`, and then
 #' `setup_database_tables()`, which rebuilds `config$tables`. Neither opens a
@@ -443,32 +444,33 @@ validate_environment <- function() {
 #' Check Environment Setup
 #'
 #' @description
-#' Diagnostic function to check CS9 environment configuration. This function
-#' validates required environment variables and database connectivity, providing
-#' detailed feedback for troubleshooting configuration issues.
+#' Diagnostic function that checks the CS9 environment configuration. This
+#' function checks the required environment variables and the database
+#' connectivity. It reports detailed feedback that helps you troubleshoot
+#' configuration problems.
 #'
 #' @details
-#' CS9 requires specific environment variables for database connectivity and
+#' CS9 needs specific environment variables for database connectivity and
 #' configuration. This function checks for:
 #' \itemize{
-#'   \item Required environment variables (CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, etc.)
-#'   \item Database configuration availability
-#'   \item Database table initialization status
+#'   \item Required environment variables (CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER, etc.).
+#'   \item Database configuration availability.
+#'   \item Database table initialization status.
 #' }
 #'
-#' When CS9 is installed from CRAN without database configuration, the package
-#' loads with limited functionality. Use this function to diagnose what needs
-#' to be configured for full database-driven surveillance functionality.
+#' When you install CS9 from CRAN without a database configuration, the package
+#' loads with limited functionality. Use this function to identify what you
+#' must configure for full database-driven surveillance functionality.
 #'
 #' @param verbose Logical. If TRUE (default), prints detailed diagnostic output.
-#'   If FALSE, runs validation silently and only returns result object.
+#'   If FALSE, runs the check silently and only returns the result object.
 #' @param use_startup_message Logical. If TRUE, uses packageStartupMessage()
 #'   for output (suppressible). If FALSE (default), uses cat() for console output.
 #' @return A list containing environment setup status and recommendations:
 #' \itemize{
-#'   \item status: "ok", "warning", or "error"
-#'   \item issues: Character vector of identified problems
-#'   \item recommendations: Character vector of suggested fixes
+#'   \item status: "ok", "warning", or "error".
+#'   \item issues: Character vector of identified problems.
+#'   \item recommendations: Character vector of suggested fixes.
 #' }
 #'
 #' @examples
@@ -483,7 +485,7 @@ validate_environment <- function() {
 #' }
 #'
 #' @seealso
-#' The installation vignette: \code{vignette("installation", package = "cs9")}
+#' The installation vignette: \code{vignette("installation", package = "cs9")}.
 #'
 #' @export
 check_environment_setup <- function(
