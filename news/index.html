@@ -56,6 +56,15 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.6" id="version-2686">Version 26.8.6<a class="anchor" aria-label="anchor" href="#version-2686"></a></h2>
 <div class="section level3">
+<h3 id="licensing-26-8-6">Licensing<a class="anchor" aria-label="anchor" href="#licensing-26-8-6"></a></h3>
+<ul><li>The copyright holder is now <strong>Folkehelseinstituttet</strong>. It read “Core Surveillance”, which names the package family rather than a legal entity.</li>
+<li>
+<code>DESCRIPTION</code> <code>Authors@R</code> now declares that holder with <code>role = "cph"</code>. It declared no copyright holder at all, and neither did any other package in the fleet. Nothing in <code>R CMD check</code> reports that.</li>
+<li>The copyright year is now 2026. It read 2025.</li>
+<li>
+<code>CLAUDE.md</code> now carries a Licensing section, so the year gets checked rather than silently ageing.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="documentation-26-8-6">Documentation<a class="anchor" aria-label="anchor" href="#documentation-26-8-6"></a></h3>
 <ul><li>Repository prose rewritten to ASD-STE100 (Simplified Technical English). Every sentence in the roxygen blocks, the five vignettes, <code>README.md</code>, <code>index.md</code> and <code>NEWS.md</code> is now at most 25 words. 35 sentences were over that limit before, counted over the whole repository. They divide into 2 in roxygen, 15 in the vignettes, 16 in <code>NEWS.md</code> and 2 in <code>index.md</code>. The vignette count of 15 covers both the built <code>.Rmd</code> files and their <code>.Rmd.orig</code> sources. No claim, number, condition or attribution changed. The NorSySS figures, the 106-diseases and 378-locations counts, and the White &amp; Valcarcel Salamanca attribution are unaltered.</li>
 <li>Long sentences that buried a sequence are split into one idea each. Three places stated three conditions in a single sentence and now state one per sentence. They are the <code>SET ROLE ""</code> trap in <code><a href="../articles/backends.html">vignette("backends")</a></code>, the same trap in <code><a href="../articles/installation.html">vignette("installation")</a></code>, and the <code>csdb</code> version-floor entry in <code>NEWS.md</code>.</li>
