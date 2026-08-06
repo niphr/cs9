@@ -1,5 +1,16 @@
 # Version 26.8.6
 
+## Licensing
+
+* The copyright holder is now **Folkehelseinstituttet**. It read "Core Surveillance", which
+  names the package family rather than a legal entity.
+* `DESCRIPTION` `Authors@R` now declares that holder with `role = "cph"`.
+  It declared no copyright holder at all, and neither did any other package
+  in the fleet. Nothing in `R CMD check` reports that.
+* The copyright year is now 2026. It read 2025.
+* `CLAUDE.md` now carries a Licensing section, so the year gets checked
+  rather than silently ageing.
+
 ## Documentation
 * Repository prose rewritten to ASD-STE100 (Simplified Technical English). Every sentence in the roxygen blocks, the five vignettes, `README.md`, `index.md` and `NEWS.md` is now at most 25 words. 35 sentences were over that limit before, counted over the whole repository. They divide into 2 in roxygen, 15 in the vignettes, 16 in `NEWS.md` and 2 in `index.md`. The vignette count of 15 covers both the built `.Rmd` files and their `.Rmd.orig` sources. No claim, number, condition or attribution changed. The NorSySS figures, the 106-diseases and 378-locations counts, and the White & Valcarcel Salamanca attribution are unaltered.
 * Long sentences that buried a sequence are split into one idea each. Three places stated three conditions in a single sentence and now state one per sentence. They are the `SET ROLE ""` trap in `vignette("backends")`, the same trap in `vignette("installation")`, and the `csdb` version-floor entry in `NEWS.md`.
