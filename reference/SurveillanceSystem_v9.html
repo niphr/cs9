@@ -11,7 +11,7 @@ epidemiological monitoring and public health surveillance."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,34 +67,34 @@ epidemiological monitoring and public health surveillance.</p>
 
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>SurveillanceSystem_v9 provides infrastructure for:</p><ul><li><p>Database table management with automated logging</p></li>
-<li><p>Task scheduling and parallel execution</p></li>
-<li><p>Data validation and schema enforcement</p></li>
-<li><p>Configuration and performance monitoring</p></li>
-</ul><p>The surveillance system follows a structured approach:</p><ol><li><p>Define database tables with <code>add_table()</code></p></li>
-<li><p>Configure surveillance tasks with <code>add_task()</code></p></li>
-<li><p>Execute tasks with <code>run_task()</code> or external schedulers</p></li>
+    <p>SurveillanceSystem_v9 provides infrastructure for:</p><ul><li><p>Database table management with automated logging.</p></li>
+<li><p>Task scheduling and parallel execution.</p></li>
+<li><p>Data validation and schema enforcement.</p></li>
+<li><p>Configuration and performance monitoring.</p></li>
+</ul><p>The surveillance system follows a structured approach:</p><ol><li><p>Define database tables with <code>add_table()</code>.</p></li>
+<li><p>Configure surveillance tasks with <code>add_task()</code>.</p></li>
+<li><p>Execute tasks with <code>run_task()</code> or external schedulers.</p></li>
 </ol></div>
     <div class="section level2">
     <h2 id="public-fields">Public fields<a class="anchor" aria-label="anchor" href="#public-fields"></a></h2>
     <p></p><div class="r6-fields"><dl><dt><code>tables</code></dt>
-<dd><p>List of database tables managed by the surveillance system</p></dd>
+<dd><p>List of database tables managed by the surveillance system.</p></dd>
 
 
     <dt><code>partitionedtables</code></dt>
-<dd><p>List of partitioned database tables</p></dd>
+<dd><p>List of partitioned database tables.</p></dd>
 
 
     <dt><code>tasks</code></dt>
-<dd><p>List of surveillance tasks configured for execution</p></dd>
+<dd><p>List of surveillance tasks configured for execution.</p></dd>
 
 
     <dt><code>name</code></dt>
-<dd><p>Character string identifying the surveillance system instance</p></dd>
+<dd><p>Character string identifying the surveillance system instance.</p></dd>
 
 
     <dt><code>implementation_version</code></dt>
-<dd><p>Character string tracking the analytics code version</p></dd>
+<dd><p>Character string tracking the analytics code version.</p></dd>
 
 
 </dl><p></p></div>
@@ -127,10 +127,10 @@ epidemiological monitoring and public health surveillance.</p>
 </div><p></p><div class="section">
 <h4 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>name</code></dt>
-<dd><p>A string that the user may choose to use to track performance metrics (runtime and RAM usage)</p></dd>
+<dd><p>A string that you may use to track performance metrics (runtime and RAM usage).</p></dd>
 
       <dt><code>implementation_version</code></dt>
-<dd><p>A string that the user may choose to use to track performance metrics (runtime and RAM usage)</p></dd>
+<dd><p>A string that you may use to track performance metrics (runtime and RAM usage).</p></dd>
 
 
 </dl><p></p></div>
@@ -140,7 +140,7 @@ epidemiological monitoring and public health surveillance.</p>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-add_table"></a><div class="section">
 <h3 id="surveillancesystem-v-add-table-"><code>SurveillanceSystem_v9$add_table()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-add-table-"></a></h3>
-<p>Add a table</p><div class="section">
+<p>Add a table.</p><div class="section">
 <h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
 <span>  <span class="va">name_access</span>,</span>
@@ -164,7 +164,7 @@ epidemiological monitoring and public health surveillance.</p>
 <dd><p>Final part of table name, corresponding to a distinguishing variant.</p></dd>
 
       <dt><code>field_types</code></dt>
-<dd><p>Named character vector, where the names are the column names, and the values are the column types. Valid types are BOOLEAN, CHARACTER, INTEGER, DOUBLE, DATE, DATETIME</p></dd>
+<dd><p>Named character vector, where the names are the column names, and the values are the column types. Valid types are BOOLEAN, CHARACTER, INTEGER, DOUBLE, DATE, DATETIME.</p></dd>
 
       <dt><code>keys</code></dt>
 <dd><p>Character vector, containing the column names that uniquely identify a row of data.</p></dd>
@@ -230,7 +230,7 @@ epidemiological monitoring and public health surveillance.</p>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-add_partitionedtable"></a><div class="section">
 <h3 id="surveillancesystem-v-add-partitionedtable-"><code>SurveillanceSystem_v9$add_partitionedtable()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-add-partitionedtable-"></a></h3>
-<p>Add a partitioned table to the surveillance system</p><div class="section">
+<p>Add a partitioned table to the surveillance system.</p><div class="section">
 <h4 id="usage-2">Usage<a class="anchor" aria-label="anchor" href="#usage-2"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">add_partitionedtable</span><span class="op">(</span></span>
 <span>  <span class="va">name_access</span>,</span>
@@ -248,37 +248,37 @@ epidemiological monitoring and public health surveillance.</p>
 </div><p></p><div class="section">
 <h4 id="arguments-2">Arguments<a class="anchor" aria-label="anchor" href="#arguments-2"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>name_access</code></dt>
-<dd><p>First part of table name, corresponding to the database where it will be stored</p></dd>
+<dd><p>First part of table name, corresponding to the database where it will be stored.</p></dd>
 
       <dt><code>name_grouping</code></dt>
-<dd><p>Second part of table name, corresponding to some sort of grouping</p></dd>
+<dd><p>Second part of table name, corresponding to some sort of grouping.</p></dd>
 
       <dt><code>name_variant</code></dt>
-<dd><p>Final part of table name, corresponding to a distinguishing variant</p></dd>
+<dd><p>Final part of table name, corresponding to a distinguishing variant.</p></dd>
 
       <dt><code>name_partitions</code></dt>
-<dd><p>Character string specifying partition naming scheme</p></dd>
+<dd><p>Character string specifying partition naming scheme.</p></dd>
 
       <dt><code>column_name_partition</code></dt>
-<dd><p>Column name used for partitioning</p></dd>
+<dd><p>Column name used for partitioning.</p></dd>
 
       <dt><code>value_generator_partition</code></dt>
-<dd><p>Function to generate partition values</p></dd>
+<dd><p>Function to generate partition values.</p></dd>
 
       <dt><code>field_types</code></dt>
-<dd><p>Named character vector of column names and types</p></dd>
+<dd><p>Named character vector of column names and types.</p></dd>
 
       <dt><code>keys</code></dt>
-<dd><p>Character vector of column names that uniquely identify rows</p></dd>
+<dd><p>Character vector of column names that uniquely identify rows.</p></dd>
 
       <dt><code>indexes</code></dt>
-<dd><p>Named list containing index definitions</p></dd>
+<dd><p>Named list containing index definitions.</p></dd>
 
       <dt><code>validator_field_types</code></dt>
-<dd><p>Function to validate field types</p></dd>
+<dd><p>Function to validate field types.</p></dd>
 
       <dt><code>validator_field_contents</code></dt>
-<dd><p>Function to validate field contents</p></dd>
+<dd><p>Function to validate field contents.</p></dd>
 
 
 </dl><p></p></div>
@@ -291,7 +291,7 @@ epidemiological monitoring and public health surveillance.</p>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-add_task"></a><div class="section">
 <h3 id="surveillancesystem-v-add-task-"><code>SurveillanceSystem_v9$add_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-add-task-"></a></h3>
-<p>Add a surveillance task to the system</p><div class="section">
+<p>Add a surveillance task to the system.</p><div class="section">
 <h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
 <span>  name_grouping <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -312,46 +312,46 @@ epidemiological monitoring and public health surveillance.</p>
 </div><p></p><div class="section">
 <h4 id="arguments-3">Arguments<a class="anchor" aria-label="anchor" href="#arguments-3"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>name_grouping</code></dt>
-<dd><p>Name of the task (grouping)</p></dd>
+<dd><p>Name of the task (grouping).</p></dd>
 
       <dt><code>name_action</code></dt>
-<dd><p>Name of the task (action)</p></dd>
+<dd><p>Name of the task (action).</p></dd>
 
       <dt><code>name_variant</code></dt>
-<dd><p>Name of the task (variant)</p></dd>
+<dd><p>Name of the task (variant).</p></dd>
 
       <dt><code>cores</code></dt>
-<dd><p>Number of CPU cores</p></dd>
+<dd><p>Number of CPU cores.</p></dd>
 
       <dt><code>permission</code></dt>
-<dd><p>A permission R6 instance</p></dd>
+<dd><p>A permission R6 instance.</p></dd>
 
       <dt><code>plan_analysis_fn_name</code></dt>
 <dd><p>The name of a function that returns a named list <code>list(for_each_plan = list(), for_each_analysis = NULL)</code>.</p></dd>
 
       <dt><code>for_each_plan</code></dt>
-<dd><p>A list, where each unit corresponds to one data extraction. Generally recommended to use <code><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">plnr::expand_list</a></code>.</p></dd>
+<dd><p>A list, where each unit corresponds to one data extraction. You SHOULD use <code><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">plnr::expand_list</a></code>.</p></dd>
 
       <dt><code>for_each_analysis</code></dt>
-<dd><p>A list, where each unit corresponds to one analysis within a plan (data extraction). Generally recommended to use <code><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">plnr::expand_list</a></code>.</p></dd>
+<dd><p>A list, where each unit corresponds to one analysis within a plan (data extraction). You SHOULD use <code><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">plnr::expand_list</a></code>.</p></dd>
 
       <dt><code>universal_argset</code></dt>
-<dd><p>A list, where these argsets are applied to all analyses univerally</p></dd>
+<dd><p>A list, where these argsets are applied to all analyses universally.</p></dd>
 
       <dt><code>upsert_at_end_of_each_plan</code></dt>
-<dd><p>Do you want to upsert your results automatically at the end of each plan?</p></dd>
+<dd><p>Whether to upsert your results automatically at the end of each plan.</p></dd>
 
       <dt><code>insert_at_end_of_each_plan</code></dt>
-<dd><p>Do you want to insert your results automatically at the end of each plan?</p></dd>
+<dd><p>Whether to insert your results automatically at the end of each plan.</p></dd>
 
       <dt><code>action_fn_name</code></dt>
-<dd><p>The name of the function that will be called for each analysis with arguments <code>data</code>, <code>argset</code>, <code>schema</code></p></dd>
+<dd><p>The name of the function called for each analysis with arguments <code>data</code>, <code>argset</code>, <code>schema</code>.</p></dd>
 
       <dt><code>data_selector_fn_name</code></dt>
-<dd><p>The name of a function that will be called to obtain the data for each analysis. The function must have the arguments <code>argset</code>, <code>schema</code> and must return a named list.</p></dd>
+<dd><p>The name of a function called to obtain the data for each analysis. The function MUST have the arguments <code>argset</code>, <code>schema</code> and MUST return a named list.</p></dd>
 
       <dt><code>tables</code></dt>
-<dd><p>A named list that maps <code>cs9::config$schemas</code> for use in <code>action_fn_name</code> and <code>data_selector_fn_name</code></p></dd>
+<dd><p>A named list that maps <code>cs9::config$schemas</code> for use in <code>action_fn_name</code> and <code>data_selector_fn_name</code>.</p></dd>
 
 
 </dl><p></p></div>
@@ -364,32 +364,32 @@ epidemiological monitoring and public health surveillance.</p>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-get_task"></a><div class="section">
 <h3 id="surveillancesystem-v-get-task-"><code>SurveillanceSystem_v9$get_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-get-task-"></a></h3>
-<p>Get a surveillance task by name</p><div class="section">
+<p>Get a surveillance task by name.</p><div class="section">
 <h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">get_task</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-4">Arguments<a class="anchor" aria-label="anchor" href="#arguments-4"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_name</code></dt>
-<dd><p>Character string specifying the task name</p></dd>
+<dd><p>Character string specifying the task name.</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-3">Returns<a class="anchor" aria-label="anchor" href="#returns-3"></a></h4>
-<p>A Task R6 object representing the surveillance task</p>
+<p>A Task R6 object representing the surveillance task.</p>
 </div>
 
 </div>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-run_task"></a><div class="section">
 <h3 id="surveillancesystem-v-run-task-"><code>SurveillanceSystem_v9$run_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-run-task-"></a></h3>
-<p>Execute a surveillance task by name</p><div class="section">
+<p>Execute a surveillance task by name.</p><div class="section">
 <h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-5">Arguments<a class="anchor" aria-label="anchor" href="#arguments-5"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_name</code></dt>
-<dd><p>Character string specifying the task name to run</p></dd>
+<dd><p>Character string specifying the task name to run.</p></dd>
 
 
 </dl><p></p></div>
@@ -402,26 +402,26 @@ epidemiological monitoring and public health surveillance.</p>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-shortcut_get_tables"></a><div class="section">
 <h3 id="surveillancesystem-v-shortcut-get-tables-"><code>SurveillanceSystem_v9$shortcut_get_tables()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-shortcut-get-tables-"></a></h3>
-<p>Get database tables associated with a task</p><div class="section">
+<p>Get database tables associated with a task.</p><div class="section">
 <h4 id="usage-6">Usage<a class="anchor" aria-label="anchor" href="#usage-6"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">shortcut_get_tables</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-6">Arguments<a class="anchor" aria-label="anchor" href="#arguments-6"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_name</code></dt>
-<dd><p>Character string specifying the task name</p></dd>
+<dd><p>Character string specifying the task name.</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-5">Returns<a class="anchor" aria-label="anchor" href="#returns-5"></a></h4>
-<p>A named list of database table objects used by the task</p>
+<p>A named list of database table objects used by the task.</p>
 </div>
 
 </div>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-shortcut_get_argset"></a><div class="section">
 <h3 id="surveillancesystem-v-shortcut-get-argset-"><code>SurveillanceSystem_v9$shortcut_get_argset()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-shortcut-get-argset-"></a></h3>
-<p>Get argument set for a specific plan and analysis</p><div class="section">
+<p>Get argument set for a specific plan and analysis.</p><div class="section">
 <h4 id="usage-7">Usage<a class="anchor" aria-label="anchor" href="#usage-7"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">shortcut_get_argset</span><span class="op">(</span></span>
 <span>  <span class="va">task_name</span>,</span>
@@ -431,79 +431,79 @@ epidemiological monitoring and public health surveillance.</p>
 </div><p></p><div class="section">
 <h4 id="arguments-7">Arguments<a class="anchor" aria-label="anchor" href="#arguments-7"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_name</code></dt>
-<dd><p>Character string specifying the task name</p></dd>
+<dd><p>Character string specifying the task name.</p></dd>
 
       <dt><code>index_plan</code></dt>
-<dd><p>Integer specifying which plan to access</p></dd>
+<dd><p>Integer specifying which plan to access.</p></dd>
 
       <dt><code>index_analysis</code></dt>
-<dd><p>Integer specifying which analysis to access</p></dd>
+<dd><p>Integer specifying which analysis to access.</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-6">Returns<a class="anchor" aria-label="anchor" href="#returns-6"></a></h4>
-<p>A named list containing the argument set for the specified plan and analysis</p>
+<p>A named list containing the argument set for the specified plan and analysis.</p>
 </div>
 
 </div>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-shortcut_get_data"></a><div class="section">
 <h3 id="surveillancesystem-v-shortcut-get-data-"><code>SurveillanceSystem_v9$shortcut_get_data()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-shortcut-get-data-"></a></h3>
-<p>Get data for a specific plan</p><div class="section">
+<p>Get data for a specific plan.</p><div class="section">
 <h4 id="usage-8">Usage<a class="anchor" aria-label="anchor" href="#usage-8"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">shortcut_get_data</span><span class="op">(</span><span class="va">task_name</span>, index_plan <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-8">Arguments<a class="anchor" aria-label="anchor" href="#arguments-8"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_name</code></dt>
-<dd><p>Character string specifying the task name</p></dd>
+<dd><p>Character string specifying the task name.</p></dd>
 
       <dt><code>index_plan</code></dt>
-<dd><p>Integer specifying which plan to access</p></dd>
+<dd><p>Integer specifying which plan to access.</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-7">Returns<a class="anchor" aria-label="anchor" href="#returns-7"></a></h4>
-<p>A named list containing the data extracted for the specified plan</p>
+<p>A named list containing the data extracted for the specified plan.</p>
 </div>
 
 </div>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt"></a><div class="section">
 <h3 id="surveillancesystem-v-shortcut-get-plans-argsets-as-dt-"><code>SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-shortcut-get-plans-argsets-as-dt-"></a></h3>
-<p>Get plans and argsets as a data.table</p><div class="section">
+<p>Get plans and argsets as a data.table.</p><div class="section">
 <h4 id="usage-9">Usage<a class="anchor" aria-label="anchor" href="#usage-9"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">shortcut_get_plans_argsets_as_dt</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-9">Arguments<a class="anchor" aria-label="anchor" href="#arguments-9"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_name</code></dt>
-<dd><p>Character string specifying the task name</p></dd>
+<dd><p>Character string specifying the task name.</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-8">Returns<a class="anchor" aria-label="anchor" href="#returns-8"></a></h4>
-<p>A data.table containing plan and analysis information with columns including index_plan and index_analysis</p>
+<p>A data.table containing plan and analysis information with columns including index_plan and index_analysis.</p>
 </div>
 
 </div>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-shortcut_get_num_analyses"></a><div class="section">
 <h3 id="surveillancesystem-v-shortcut-get-num-analyses-"><code>SurveillanceSystem_v9$shortcut_get_num_analyses()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-shortcut-get-num-analyses-"></a></h3>
-<p>Get the total number of analyses for a task</p><div class="section">
+<p>Get the total number of analyses for a task.</p><div class="section">
 <h4 id="usage-10">Usage<a class="anchor" aria-label="anchor" href="#usage-10"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">shortcut_get_num_analyses</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-10">Arguments<a class="anchor" aria-label="anchor" href="#arguments-10"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_name</code></dt>
-<dd><p>Character string specifying the task name</p></dd>
+<dd><p>Character string specifying the task name.</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-9">Returns<a class="anchor" aria-label="anchor" href="#returns-9"></a></h4>
-<p>Integer value representing the total number of analyses across all plans for the task</p>
+<p>Integer value representing the total number of analyses across all plans for the task.</p>
 </div>
 
 </div>

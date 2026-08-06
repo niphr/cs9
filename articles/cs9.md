@@ -60,12 +60,13 @@ NorSySS has:
   stratification
 
 During the COVID-19 pandemic (March 2020), the NorSySS team added new
-diagnostic codes and began producing daily municipal-level outputs
-within weeks — all while maintaining uninterrupted surveillance of the
-existing 106 monitored conditions. CS9’s single-instance design was
-central to this: new COVID-19 analyses were developed and tested
-interactively for a single municipality, then immediately deployed
-across all locations without additional scaling effort.
+diagnostic codes. Within weeks the team also started to produce daily
+municipal-level outputs. Surveillance of the existing 106 monitored
+conditions continued without interruption. CS9’s single-instance design
+was central to this. The team developed and tested new COVID-19 analyses
+interactively for a single municipality. The team then deployed those
+analyses across all locations immediately, without additional scaling
+effort.
 
 Reference: White RA, Valcarcel Salamanca B. “CS9: An analysis framework
 for real-time disease surveillance.” Norwegian Institute of Public
@@ -82,10 +83,10 @@ Health.
 | Long-term sustainability | High — structured evolution        | Medium — limited by complexity/data size | Medium — vendor dependency   | Medium — framework limitations     | Low — personnel dependency |
 
 CS9 is built upon the [plnr](https://CRAN.R-project.org/package=plnr)
-framework, extending it with database integration and multi-plan
+framework. CS9 extends plnr with database integration and multi-plan
 orchestration. **For simpler needs** (no database, single computer),
 plnr provides the same single-instance design principle without CS9’s
-infrastructure layer — it is the recommended starting point for smaller
+infrastructure layer. plnr is the recommended starting point for smaller
 systems, pilots, or resource-constrained settings.
 
 Commercial platforms like ESSENCE provide immediate capability but limit
@@ -249,11 +250,11 @@ per `location_code`), that would be an analysis-heavy approach.
 ## Example
 
 The following example demonstrates the single-instance design principle
-using weather data. Notice how the action function contains only the
-logic for processing one location’s weather forecast — the same function
-would scale across all Norwegian counties if the `for_each_plan` were
-expanded. This is the same pattern NorSySS uses to scale across 106
-diseases and 378 locations.
+with weather data. Notice how the action function contains only the
+logic that processes one location’s weather forecast. The same function
+would scale across all Norwegian counties if you expanded the
+`for_each_plan`. This is the same pattern NorSySS uses to scale across
+106 diseases and 378 locations.
 
 The following example walks through designing and implementing a weather
 surveillance task.

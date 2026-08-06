@@ -1,9 +1,9 @@
 # Check Environment Setup
 
-Diagnostic function to check CS9 environment configuration. This
-function validates required environment variables and database
-connectivity, providing detailed feedback for troubleshooting
-configuration issues.
+Diagnostic function that checks the CS9 environment configuration. This
+function checks the required environment variables and the database
+connectivity. It reports detailed feedback that helps you troubleshoot
+configuration problems.
 
 ## Usage
 
@@ -16,7 +16,7 @@ check_environment_setup(verbose = TRUE, use_startup_message = FALSE)
 - verbose:
 
   Logical. If TRUE (default), prints detailed diagnostic output. If
-  FALSE, runs validation silently and only returns result object.
+  FALSE, runs the check silently and only returns the result object.
 
 - use_startup_message:
 
@@ -27,33 +27,33 @@ check_environment_setup(verbose = TRUE, use_startup_message = FALSE)
 
 A list containing environment setup status and recommendations:
 
-- status: "ok", "warning", or "error"
+- status: "ok", "warning", or "error".
 
-- issues: Character vector of identified problems
+- issues: Character vector of identified problems.
 
-- recommendations: Character vector of suggested fixes
+- recommendations: Character vector of suggested fixes.
 
 ## Details
 
-CS9 requires specific environment variables for database connectivity
-and configuration. This function checks for:
+CS9 needs specific environment variables for database connectivity and
+configuration. This function checks for:
 
 - Required environment variables (CS9_DBCONFIG_ACCESS,
-  CS9_DBCONFIG_DRIVER, etc.)
+  CS9_DBCONFIG_DRIVER, etc.).
 
-- Database configuration availability
+- Database configuration availability.
 
-- Database table initialization status
+- Database table initialization status.
 
-When CS9 is installed from CRAN without database configuration, the
-package loads with limited functionality. Use this function to diagnose
-what needs to be configured for full database-driven surveillance
+When you install CS9 from CRAN without a database configuration, the
+package loads with limited functionality. Use this function to identify
+what you must configure for full database-driven surveillance
 functionality.
 
 ## See also
 
 The installation vignette:
-[`vignette("installation", package = "cs9")`](https://niphr.github.io/cs9/articles/installation.md)
+[`vignette("installation", package = "cs9")`](https://niphr.github.io/cs9/articles/installation.md).
 
 ## Examples
 

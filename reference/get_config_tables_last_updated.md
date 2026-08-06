@@ -19,7 +19,7 @@ get_config_tables_last_updated(table_name = NULL)
 ## Value
 
 A data.table containing last updated information with columns:
-table_name, last_updated_datetime, and other tracking metadata
+table_name, last_updated_datetime, and other tracking metadata.
 
 ## Examples
 

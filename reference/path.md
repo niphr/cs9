@@ -18,7 +18,7 @@ path(
 
 - ...:
 
-  Character strings specifying the second level directory and beyond
+  Character strings specifying the second level directory and beyond.
 
 - create_dir:
 
@@ -38,7 +38,7 @@ path(
 
 ## Value
 
-Character string containing the constructed file path
+Character string containing the constructed file path.
 
 ## Examples
 

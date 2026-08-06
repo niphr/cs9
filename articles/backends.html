@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -98,8 +98,9 @@ backend reads and which it ignores.</p>
 <p>Nothing here runs. The blocks are written to be copied into
 <code>.Renviron</code>.</p>
 <p><code><a href="https://niphr.github.io/csdb/articles/backends.html" class="external-link">vignette("backends", package = "csdb")</a></code> is the companion
-at the R level: the same comparison in terms of <code>dbconfig</code>
-lists, primary keys, field types and row counts.</p>
+at the R level. It gives the same comparison in terms of
+<code>dbconfig</code> lists, primary keys, field types and row
+counts.</p>
 <div class="section level2">
 <h2 id="the-two-environments">The two environments<a class="anchor" aria-label="anchor" href="#the-two-environments"></a>
 </h2>
@@ -137,19 +138,20 @@ install, nothing to start and nothing to authenticate against.</p>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>/home/myuser/cs9/anon.sqlite</span></code></pre></div>
 <p>CS9 creates each file, and any missing parent directory, on the first
 connection.</p>
-<p><code>CS9_PATH</code> must not be empty in either block.
+<p><code>CS9_PATH</code> MUST NOT be empty in either block.
 <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> treats an empty value as a
 missing one and reports an error, so give it a real directory.</p>
 <p><code>CS9_DBCONFIG_ROLE_CREATE_TABLE=x</code> is in the PostgreSQL
 block on purpose, and <code>x</code> is the sentinel meaning “take no
 role”. Leaving the variable out is not the same as leaving it unset in
 R. <code><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv()</a></code> returns <code>""</code> for an unset
-variable, <code>csdb</code> substitutes the <code>x</code> sentinel only
-for a <code>NULL</code>, and its PostgreSQL <code>create_table</code>
-then tests <code>role_create_table != "x"</code>, which is true for
-<code>""</code>. The result is a <code>SET ROLE ""</code> in front of
-the <code>CREATE TABLE</code>. Set the variable to a real role, or to
-<code>x</code>. SQLite ignores it either way.</p>
+variable. <code>csdb</code> substitutes the <code>x</code> sentinel only
+for a <code>NULL</code>. The PostgreSQL <code>create_table</code> in
+<code>csdb</code> then tests <code>role_create_table != "x"</code>,
+which is true for <code>""</code>. The result is a
+<code>SET ROLE ""</code> in front of the <code>CREATE TABLE</code>. Set
+the variable to a real role, or to <code>x</code>. SQLite ignores it
+either way.</p>
 </div>
 <div class="section level2">
 <h2 id="which-variable-each-backend-reads">Which variable each backend reads<a class="anchor" aria-label="anchor" href="#which-variable-each-backend-reads"></a>
@@ -183,7 +185,7 @@ an error without it.</p>
 <tr class="even">
 <td><code>CS9_DBCONFIG_DRIVER</code></td>
 <td>Required. <code>PostgreSQL Unicode</code>, matched exactly, because
-it must equal an <code>odbcinst.ini</code> entry.</td>
+it MUST equal an <code>odbcinst.ini</code> entry.</td>
 <td>Required. <code>SQLite</code>, matched case-insensitively.</td>
 </tr>
 <tr class="odd">
@@ -243,7 +245,7 @@ The path to the file.</td>
 </tbody>
 </table>
 <p><code>CS9_AUTO</code> and <code>CS9_PATH</code> are required by both
-and neither is a database setting. <code>CS9_PATH</code> must be a
+and neither is a database setting. <code>CS9_PATH</code> MUST be a
 non-empty directory path: <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> counts
 an empty value as missing.</p>
 <p>The two backends derive the required <code>DB</code> and
@@ -286,7 +288,7 @@ An access list without it fails later, and obscurely.</p>
 </h2>
 <p>CS9 is a dependency, so it loads first and has read the environment
 before your own package’s <code>.onLoad()</code> runs. A package that
-sets its own <code>CS9_DBCONFIG_*</code> values there must tell CS9 to
+sets its own <code>CS9_DBCONFIG_*</code> values there MUST tell CS9 to
 read them again.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">.onLoad</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">libname</span>, <span class="va">pkgname</span><span class="op">)</span> <span class="op">{</span></span>
@@ -319,9 +321,13 @@ table objects. It opens nothing: CS9 creates a table on the first
 </h2>
 <p>Use SQLite for a local install, for examples, for tests, and for a
 single-writer pipeline on one machine. It is a file.</p>
-<p>Use PostgreSQL for a production surveillance system: several
-processes writing at once, data that outgrows one machine, and access
-levels that different people are allowed to read.</p>
+<p>Use PostgreSQL for a production surveillance system. It fits these
+conditions:</p>
+<ul>
+<li>Several processes write at once.</li>
+<li>The data outgrows one machine.</li>
+<li>Different people are allowed to read different access levels.</li>
+</ul>
 <p>Switching between them is an edit to <code>.Renviron</code> and a
 restart of R. The table definitions, the tasks and the action functions
 do not change.</p>

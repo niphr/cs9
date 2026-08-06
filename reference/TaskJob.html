@@ -4,22 +4,28 @@ the current R console via later::later() polling. Equivalent in spirit to
 run_task_sequentially_as_rstudio_job_using_load_all() but does not
 depend on RStudio's job API (which Positron does not implement).
 Methods:
-$start()      spawn background process and begin polling
-$wait(t)      block this session, draining the event loop, until done
-$is_alive()   TRUE while the background process is running
-$status()     summary
-$tail(n)      last n lines of the log file (snapshot, not live)
-$kill()       terminate the background process"><meta property="og:description" content="Run a cs9 task in a background R process with live output streaming back to
+$start() spawns the background process and starts to poll its output.
+$wait(t) blocks this session until the task finishes. It drains the
+event loop while it waits.
+$is_alive() returns TRUE while the background process runs.
+$status() prints a brief status summary.
+$tail(n) prints the last n lines of the log file (a snapshot, not live).
+$kill() terminates the background process.
+
+"><meta property="og:description" content="Run a cs9 task in a background R process with live output streaming back to
 the current R console via later::later() polling. Equivalent in spirit to
 run_task_sequentially_as_rstudio_job_using_load_all() but does not
 depend on RStudio's job API (which Positron does not implement).
 Methods:
-$start()      spawn background process and begin polling
-$wait(t)      block this session, draining the event loop, until done
-$is_alive()   TRUE while the background process is running
-$status()     summary
-$tail(n)      last n lines of the log file (snapshot, not live)
-$kill()       terminate the background process"><meta property="og:image" content="https://niphr.github.io/cs9/logo.png"></head><body>
+$start() spawns the background process and starts to poll its output.
+$wait(t) blocks this session until the task finishes. It drains the
+event loop while it waits.
+$is_alive() returns TRUE while the background process runs.
+$status() prints a brief status summary.
+$tail(n) prints the last n lines of the log file (a snapshot, not live).
+$kill() terminates the background process.
+
+"><meta property="og:image" content="https://niphr.github.io/cs9/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -27,7 +33,7 @@ $kill()       terminate the background process"><meta property="og:image" conten
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,14 +85,14 @@ $kill()       terminate the background process"><meta property="og:image" conten
 the current R console via <code><a href="https://later.r-lib.org/reference/later.html" class="external-link">later::later()</a></code> polling. Equivalent in spirit to
 <code><a href="run_task_sequentially_as_rstudio_job_using_load_all.html">run_task_sequentially_as_rstudio_job_using_load_all()</a></code> but does not
 depend on RStudio's job API (which Positron does not implement).</p>
-<p>Methods:
-$start()      spawn background process and begin polling
-$wait(t)      block this session, draining the event loop, until done
-$is_alive()   TRUE while the background process is running
-$status()     summary
-$tail(n)      last n lines of the log file (snapshot, not live)
-$kill()       terminate the background process</p>
-    </div>
+<p>Methods:</p><ul><li><p><code>$start()</code> spawns the background process and starts to poll its output.</p></li>
+<li><p><code>$wait(t)</code> blocks this session until the task finishes. It drains the
+event loop while it waits.</p></li>
+<li><p><code>$is_alive()</code> returns TRUE while the background process runs.</p></li>
+<li><p><code>$status()</code> prints a brief status summary.</p></li>
+<li><p><code>$tail(n)</code> prints the last n lines of the log file (a snapshot, not live).</p></li>
+<li><p><code>$kill()</code> terminates the background process.</p></li>
+</ul></div>
 
 
     <div class="section level2">
@@ -169,7 +175,7 @@ background process.</p>
 
 <p></p><hr><a id="method-TaskJob-start"></a><div class="section">
 <h3 id="taskjob-start-"><code>TaskJob$start()</code><a class="anchor" aria-label="anchor" href="#taskjob-start-"></a></h3>
-<p>Spawn the background process and begin polling its output.</p><div class="section">
+<p>Spawn the background process and start to poll its output.</p><div class="section">
 <h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TaskJob</span><span class="op">$</span><span class="fu">start</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
@@ -206,7 +212,8 @@ background process.</p>
 <p></p><hr><a id="method-TaskJob-wait"></a><div class="section">
 <h3 id="taskjob-wait-"><code>TaskJob$wait()</code><a class="anchor" aria-label="anchor" href="#taskjob-wait-"></a></h3>
 <p>Block the current session until the background task finishes or the
-timeout expires, draining the <span class="pkg">later</span> event loop while waiting.</p><div class="section">
+timeout expires. This method drains the <span class="pkg">later</span> event loop while it
+waits.</p><div class="section">
 <h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TaskJob</span><span class="op">$</span><span class="fu">wait</span><span class="op">(</span>timeout_s <span class="op">=</span> <span class="fl">600</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">

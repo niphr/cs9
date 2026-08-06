@@ -1,7 +1,7 @@
 # Get Configuration Data Hash for Each Plan
 
-Retrieves data hash configuration entries from the database table for
-tracking data changes across surveillance task plans and elements.
+Retrieves data hash configuration entries from the database table. These
+entries track data changes across surveillance task plans and elements.
 
 ## Usage
 
@@ -34,7 +34,7 @@ get_config_data_hash_for_each_plan(
 
 A data.table containing the filtered hash configuration entries with
 columns: task, index_plan, element_tag, date, datetime, element_hash,
-all_hash
+all_hash.
 
 ## Examples
 

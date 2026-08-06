@@ -8,43 +8,43 @@ real-time epidemiological monitoring and public health surveillance.
 
 SurveillanceSystem_v9 provides infrastructure for:
 
-- Database table management with automated logging
+- Database table management with automated logging.
 
-- Task scheduling and parallel execution
+- Task scheduling and parallel execution.
 
-- Data validation and schema enforcement
+- Data validation and schema enforcement.
 
-- Configuration and performance monitoring
+- Configuration and performance monitoring.
 
 The surveillance system follows a structured approach:
 
-1.  Define database tables with `add_table()`
+1.  Define database tables with `add_table()`.
 
-2.  Configure surveillance tasks with `add_task()`
+2.  Configure surveillance tasks with `add_task()`.
 
-3.  Execute tasks with `run_task()` or external schedulers
+3.  Execute tasks with `run_task()` or external schedulers.
 
 ## Public fields
 
 - `tables`:
 
-  List of database tables managed by the surveillance system
+  List of database tables managed by the surveillance system.
 
 - `partitionedtables`:
 
-  List of partitioned database tables
+  List of partitioned database tables.
 
 - `tasks`:
 
-  List of surveillance tasks configured for execution
+  List of surveillance tasks configured for execution.
 
 - `name`:
 
-  Character string identifying the surveillance system instance
+  Character string identifying the surveillance system instance.
 
 - `implementation_version`:
 
-  Character string tracking the analytics code version
+  Character string tracking the analytics code version.
 
 ## Methods
 
@@ -89,19 +89,19 @@ The surveillance system follows a structured approach:
 
 - `name`:
 
-  A string that the user may choose to use to track performance metrics
-  (runtime and RAM usage)
+  A string that you may use to track performance metrics (runtime and
+  RAM usage).
 
 - `implementation_version`:
 
-  A string that the user may choose to use to track performance metrics
-  (runtime and RAM usage)
+  A string that you may use to track performance metrics (runtime and
+  RAM usage).
 
 ------------------------------------------------------------------------
 
 ### `SurveillanceSystem_v9$add_table()`
 
-Add a table
+Add a table.
 
 #### Usage
 
@@ -135,7 +135,7 @@ Add a table
 
   Named character vector, where the names are the column names, and the
   values are the column types. Valid types are BOOLEAN, CHARACTER,
-  INTEGER, DOUBLE, DATE, DATETIME
+  INTEGER, DOUBLE, DATE, DATETIME.
 
 - `keys`:
 
@@ -205,7 +205,7 @@ table to the surveillance system.
 
 ### `SurveillanceSystem_v9$add_partitionedtable()`
 
-Add a partitioned table to the surveillance system
+Add a partitioned table to the surveillance system.
 
 #### Usage
 
@@ -228,47 +228,47 @@ Add a partitioned table to the surveillance system
 - `name_access`:
 
   First part of table name, corresponding to the database where it will
-  be stored
+  be stored.
 
 - `name_grouping`:
 
-  Second part of table name, corresponding to some sort of grouping
+  Second part of table name, corresponding to some sort of grouping.
 
 - `name_variant`:
 
-  Final part of table name, corresponding to a distinguishing variant
+  Final part of table name, corresponding to a distinguishing variant.
 
 - `name_partitions`:
 
-  Character string specifying partition naming scheme
+  Character string specifying partition naming scheme.
 
 - `column_name_partition`:
 
-  Column name used for partitioning
+  Column name used for partitioning.
 
 - `value_generator_partition`:
 
-  Function to generate partition values
+  Function to generate partition values.
 
 - `field_types`:
 
-  Named character vector of column names and types
+  Named character vector of column names and types.
 
 - `keys`:
 
-  Character vector of column names that uniquely identify rows
+  Character vector of column names that uniquely identify rows.
 
 - `indexes`:
 
-  Named list containing index definitions
+  Named list containing index definitions.
 
 - `validator_field_types`:
 
-  Function to validate field types
+  Function to validate field types.
 
 - `validator_field_contents`:
 
-  Function to validate field contents
+  Function to validate field contents.
 
 #### Returns
 
@@ -279,7 +279,7 @@ partitioned table to the surveillance system.
 
 ### `SurveillanceSystem_v9$add_task()`
 
-Add a surveillance task to the system
+Add a surveillance task to the system.
 
 #### Usage
 
@@ -304,23 +304,23 @@ Add a surveillance task to the system
 
 - `name_grouping`:
 
-  Name of the task (grouping)
+  Name of the task (grouping).
 
 - `name_action`:
 
-  Name of the task (action)
+  Name of the task (action).
 
 - `name_variant`:
 
-  Name of the task (variant)
+  Name of the task (variant).
 
 - `cores`:
 
-  Number of CPU cores
+  Number of CPU cores.
 
 - `permission`:
 
-  A permission R6 instance
+  A permission R6 instance.
 
 - `plan_analysis_fn_name`:
 
@@ -329,45 +329,43 @@ Add a surveillance task to the system
 
 - `for_each_plan`:
 
-  A list, where each unit corresponds to one data extraction. Generally
-  recommended to use
+  A list, where each unit corresponds to one data extraction. You SHOULD
+  use
   [`plnr::expand_list`](https://www.rwhite.no/plnr/reference/expand_list.html).
 
 - `for_each_analysis`:
 
   A list, where each unit corresponds to one analysis within a plan
-  (data extraction). Generally recommended to use
+  (data extraction). You SHOULD use
   [`plnr::expand_list`](https://www.rwhite.no/plnr/reference/expand_list.html).
 
 - `universal_argset`:
 
-  A list, where these argsets are applied to all analyses univerally
+  A list, where these argsets are applied to all analyses universally.
 
 - `upsert_at_end_of_each_plan`:
 
-  Do you want to upsert your results automatically at the end of each
-  plan?
+  Whether to upsert your results automatically at the end of each plan.
 
 - `insert_at_end_of_each_plan`:
 
-  Do you want to insert your results automatically at the end of each
-  plan?
+  Whether to insert your results automatically at the end of each plan.
 
 - `action_fn_name`:
 
-  The name of the function that will be called for each analysis with
-  arguments `data`, `argset`, `schema`
+  The name of the function called for each analysis with arguments
+  `data`, `argset`, `schema`.
 
 - `data_selector_fn_name`:
 
-  The name of a function that will be called to obtain the data for each
-  analysis. The function must have the arguments `argset`, `schema` and
-  must return a named list.
+  The name of a function called to obtain the data for each analysis.
+  The function MUST have the arguments `argset`, `schema` and MUST
+  return a named list.
 
 - `tables`:
 
   A named list that maps `cs9::config$schemas` for use in
-  `action_fn_name` and `data_selector_fn_name`
+  `action_fn_name` and `data_selector_fn_name`.
 
 #### Returns
 
@@ -378,7 +376,7 @@ task to the surveillance system.
 
 ### `SurveillanceSystem_v9$get_task()`
 
-Get a surveillance task by name
+Get a surveillance task by name.
 
 #### Usage
 
@@ -388,17 +386,17 @@ Get a surveillance task by name
 
 - `task_name`:
 
-  Character string specifying the task name
+  Character string specifying the task name.
 
 #### Returns
 
-A Task R6 object representing the surveillance task
+A Task R6 object representing the surveillance task.
 
 ------------------------------------------------------------------------
 
 ### `SurveillanceSystem_v9$run_task()`
 
-Execute a surveillance task by name
+Execute a surveillance task by name.
 
 #### Usage
 
@@ -408,7 +406,7 @@ Execute a surveillance task by name
 
 - `task_name`:
 
-  Character string specifying the task name to run
+  Character string specifying the task name to run.
 
 #### Returns
 
@@ -419,7 +417,7 @@ the task.
 
 ### `SurveillanceSystem_v9$shortcut_get_tables()`
 
-Get database tables associated with a task
+Get database tables associated with a task.
 
 #### Usage
 
@@ -429,17 +427,17 @@ Get database tables associated with a task
 
 - `task_name`:
 
-  Character string specifying the task name
+  Character string specifying the task name.
 
 #### Returns
 
-A named list of database table objects used by the task
+A named list of database table objects used by the task.
 
 ------------------------------------------------------------------------
 
 ### `SurveillanceSystem_v9$shortcut_get_argset()`
 
-Get argument set for a specific plan and analysis
+Get argument set for a specific plan and analysis.
 
 #### Usage
 
@@ -453,26 +451,26 @@ Get argument set for a specific plan and analysis
 
 - `task_name`:
 
-  Character string specifying the task name
+  Character string specifying the task name.
 
 - `index_plan`:
 
-  Integer specifying which plan to access
+  Integer specifying which plan to access.
 
 - `index_analysis`:
 
-  Integer specifying which analysis to access
+  Integer specifying which analysis to access.
 
 #### Returns
 
 A named list containing the argument set for the specified plan and
-analysis
+analysis.
 
 ------------------------------------------------------------------------
 
 ### `SurveillanceSystem_v9$shortcut_get_data()`
 
-Get data for a specific plan
+Get data for a specific plan.
 
 #### Usage
 
@@ -482,21 +480,21 @@ Get data for a specific plan
 
 - `task_name`:
 
-  Character string specifying the task name
+  Character string specifying the task name.
 
 - `index_plan`:
 
-  Integer specifying which plan to access
+  Integer specifying which plan to access.
 
 #### Returns
 
-A named list containing the data extracted for the specified plan
+A named list containing the data extracted for the specified plan.
 
 ------------------------------------------------------------------------
 
 ### `SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt()`
 
-Get plans and argsets as a data.table
+Get plans and argsets as a data.table.
 
 #### Usage
 
@@ -506,18 +504,18 @@ Get plans and argsets as a data.table
 
 - `task_name`:
 
-  Character string specifying the task name
+  Character string specifying the task name.
 
 #### Returns
 
 A data.table containing plan and analysis information with columns
-including index_plan and index_analysis
+including index_plan and index_analysis.
 
 ------------------------------------------------------------------------
 
 ### `SurveillanceSystem_v9$shortcut_get_num_analyses()`
 
-Get the total number of analyses for a task
+Get the total number of analyses for a task.
 
 #### Usage
 
@@ -527,12 +525,12 @@ Get the total number of analyses for a task
 
 - `task_name`:
 
-  Character string specifying the task name
+  Character string specifying the task name.
 
 #### Returns
 
 Integer value representing the total number of analyses across all plans
-for the task
+for the task.
 
 ------------------------------------------------------------------------
 

@@ -24,7 +24,7 @@ get_config_tasks_stats(task = NULL, last_run = FALSE)
 ## Value
 
 A data.table containing task statistics with columns including: task,
-datetime, runtime_seconds, memory_usage, status, and other metrics
+datetime, runtime_seconds, memory_usage, status, and other metrics.
 
 ## Examples
 

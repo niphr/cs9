@@ -8,11 +8,22 @@ polling. Equivalent in spirit to
 but does not depend on RStudio's job API (which Positron does not
 implement).
 
-Methods: \$start() spawn background process and begin polling \$wait(t)
-block this session, draining the event loop, until done \$is_alive()
-TRUE while the background process is running \$status() summary
-\$tail(n) last n lines of the log file (snapshot, not live) \$kill()
-terminate the background process
+Methods:
+
+- `$start()` spawns the background process and starts to poll its
+  output.
+
+- `$wait(t)` blocks this session until the task finishes. It drains the
+  event loop while it waits.
+
+- `$is_alive()` returns TRUE while the background process runs.
+
+- `$status()` prints a brief status summary.
+
+- `$tail(n)` prints the last n lines of the log file (a snapshot, not
+  live).
+
+- `$kill()` terminates the background process.
 
 ## Public fields
 
@@ -104,7 +115,7 @@ process.
 
 ### `TaskJob$start()`
 
-Spawn the background process and begin polling its output.
+Spawn the background process and start to poll its output.
 
 #### Usage
 
@@ -148,7 +159,7 @@ Invisibly returns the `TaskJob` object.
 ### `TaskJob$wait()`
 
 Block the current session until the background task finishes or the
-timeout expires, draining the later event loop while waiting.
+timeout expires. This method drains the later event loop while it waits.
 
 #### Usage
 

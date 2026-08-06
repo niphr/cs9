@@ -9,7 +9,7 @@ configuration tables."><meta property="og:image" content="https://niphr.github.i
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,9 +74,10 @@ configuration tables.</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><code>cs9</code> reads the environment once, in its own <code>.onLoad()</code>. A package that sets
 its own <code>CS9_DBCONFIG_*</code> values inside <code>.onLoad()</code> therefore sets them too
-late: <code>cs9</code> is a dependency, so it loads first and has already read the
-environment by the time the dependent package runs. Call this function
-immediately after the <code><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv()</a></code> block and <code>cs9</code> picks the new values up.</p>
+late. <code>cs9</code> is a dependency, so <code>cs9</code> loads first. <code>cs9</code> reads the
+environment before the dependent package runs. Call this function
+immediately after the <code><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv()</a></code> block. <code>cs9</code> then picks the new values
+up.</p>
 <p>It re-runs <code>set_env_vars()</code>, which rebuilds <code>config$dbconfigs</code>, and then
 <code>setup_database_tables()</code>, which rebuilds <code>config$tables</code>. Neither opens a
 database connection: <code><a href="https://niphr.github.io/csdb/reference/DBTable_v9.html" class="external-link">csdb::DBTable_v9</a></code> creates its table lazily, on first

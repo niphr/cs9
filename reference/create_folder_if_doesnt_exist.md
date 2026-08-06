@@ -13,11 +13,11 @@ create_folder_if_doesnt_exist(path)
 
 - path:
 
-  Character string specifying the directory path to create
+  Character string specifying the directory path to create.
 
 ## Value
 
-Character string containing the created directory path
+Character string containing the created directory path.
 
 ## Examples
 

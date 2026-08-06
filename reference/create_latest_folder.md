@@ -1,7 +1,7 @@
 # Create Latest Folder
 
-Copies results from a dated folder to a "latest" folder, providing easy
-access to the most recent analysis results.
+Copies results from a dated folder to a "latest" folder. The "latest"
+folder gives easy access to the most recent analysis results.
 
 ## Usage
 
@@ -14,12 +14,12 @@ create_latest_folder(results_folder_name, date)
 - results_folder_name:
 
   Character string specifying the name of the results folder
-  (subdirectory under "output")
+  (subdirectory under "output").
 
 - date:
 
   Character string specifying the date of extraction (used to identify
-  the source folder)
+  the source folder).
 
 ## Value
 
@@ -29,7 +29,7 @@ files from the dated folder to the latest folder.
 ## Details
 
 This function copies all contents from `output/results_folder_name/date`
-to `output/results_folder_name/latest`, overwriting existing files.
+to `output/results_folder_name/latest`. It overwrites existing files.
 
 ## Examples
 

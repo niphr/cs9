@@ -17,11 +17,11 @@ reload_db_config()
 
 `cs9` reads the environment once, in its own `.onLoad()`. A package that
 sets its own `CS9_DBCONFIG_*` values inside `.onLoad()` therefore sets
-them too late: `cs9` is a dependency, so it loads first and has already
-read the environment by the time the dependent package runs. Call this
-function immediately after the
-[`Sys.setenv()`](https://rdrr.io/r/base/Sys.setenv.html) block and `cs9`
-picks the new values up.
+them too late. `cs9` is a dependency, so `cs9` loads first. `cs9` reads
+the environment before the dependent package runs. Call this function
+immediately after the
+[`Sys.setenv()`](https://rdrr.io/r/base/Sys.setenv.html) block. `cs9`
+then picks the new values up.
 
 It re-runs `set_env_vars()`, which rebuilds `config$dbconfigs`, and then
 `setup_database_tables()`, which rebuilds `config$tables`. Neither opens

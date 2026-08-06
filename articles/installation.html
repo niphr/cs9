@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -143,7 +143,7 @@ separately.</p>
 </li>
 </ol>
 <p><code>CS9_DBCONFIG_ACCESS</code> is a <code>/</code>-separated list
-of access levels, and it must include <code>config</code>: CS9 builds
+of access levels, and it MUST include <code>config</code>: CS9 builds
 its four configuration tables from that access level. Every access level
 in the list needs its own <code>CS9_DBCONFIG_DB_&lt;ACCESS&gt;</code>
 variable holding the path to its file, so the list above needs
@@ -199,7 +199,7 @@ outgrows one machine.</p>
 <div class="section level2">
 <h2 id="installation-options">Installation options<a class="anchor" aria-label="anchor" href="#installation-options"></a>
 </h2>
-<p>CS9 can be used in two configurations.</p>
+<p>You can use CS9 in two configurations.</p>
 <div class="section level3">
 <h3 id="cran-installation-limited-functionality">CRAN installation (limited functionality)<a class="anchor" aria-label="anchor" href="#cran-installation-limited-functionality"></a>
 </h3>
@@ -322,16 +322,16 @@ file.</p>
 <span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_CONFIG</span><span class="op">=</span>cs9_surveillance</span>
 <span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_ANON</span><span class="op">=</span>anon</span>
 <span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>cs9_surveillance</span></code></pre></div>
-<p><code>CS9_PATH</code> must be a real directory. An empty value counts
+<p><code>CS9_PATH</code> MUST be a real directory. An empty value counts
 as missing, and <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> reports it as an
 error.</p>
 <p>Set <code>CS9_DBCONFIG_ROLE_CREATE_TABLE</code> even when you want no
 role, and use <code>x</code> for that. Leaving the variable out is not
-the same as leaving it unset in R: <code><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv()</a></code> returns
-<code>""</code>, <code>csdb</code> substitutes the <code>x</code>
-sentinel only for a <code>NULL</code>, and its PostgreSQL
-<code>create_table</code> then emits <code>SET ROLE ""</code> in front
-of the <code>CREATE TABLE</code>.</p>
+the same as leaving it unset in R. <code><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv()</a></code> returns
+<code>""</code>. <code>csdb</code> substitutes the <code>x</code>
+sentinel only for a <code>NULL</code>. The PostgreSQL
+<code>create_table</code> in <code>csdb</code> then emits
+<code>SET ROLE ""</code> in front of the <code>CREATE TABLE</code>.</p>
 <ol start="3" style="list-style-type: decimal">
 <li>
 <strong>Restart your R session</strong> after editing
@@ -361,7 +361,7 @@ of the <code>CREATE TABLE</code>.</p>
 <tr class="even">
 <td><code>CS9_PATH</code></td>
 <td><code>/home/myuser/cs9</code></td>
-<td>Base path for cs9::path function. Must be a real directory: an empty
+<td>Base path for cs9::path function. MUST be a real directory: an empty
 value counts as missing and fails validation</td>
 </tr>
 <tr class="odd">
@@ -453,8 +453,8 @@ which provides a complete template for a CS9 surveillance system.</p>
 <p>For production surveillance systems, CS9 tasks are typically
 orchestrated by <a href="https://airflow.apache.org/" class="external-link">Apache
 Airflow</a>. NorSySS uses Airflow to schedule overnight processing
-pipelines that sequence data retrieval, cleaning, analysis, and output
-generation — with each step verified before the next begins.</p>
+pipelines. These pipelines sequence data retrieval, cleaning, analysis,
+and output generation. Each step is verified before the next begins.</p>
 <div class="section level3">
 <h3 id="airflow-scheduling-pattern">Airflow scheduling pattern<a class="anchor" aria-label="anchor" href="#airflow-scheduling-pattern"></a>
 </h3>

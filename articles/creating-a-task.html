@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -93,10 +93,10 @@ CS9.</p>
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
 <p>The task creation workflow follows CS9’s single-instance design
-principle: you write your analytical code as if processing a single
-scenario (one disease, one location, one time period), then define the
-iteration scope through plans. CS9 automatically expands your
-single-instance code across all specified combinations, handling
+principle. You write your analytical code as if it processes a single
+scenario (one disease, one location, one time period). You then define
+the iteration scope through plans. CS9 automatically expands your
+single-instance code across all specified combinations. CS9 handles
 parallelization and database operations transparently. This means you
 can develop and debug interactively with real data for one case, then
 deploy the same code across hundreds of combinations without
@@ -150,7 +150,7 @@ tasks:</p>
 <div class="section level2">
 <h2 id="step-2-define-database-tables">Step 2: Define database tables<a class="anchor" aria-label="anchor" href="#step-2-define-database-tables"></a>
 </h2>
-<p>Tables must be defined before tasks can use them. Each table
+<p>Tables MUST be defined before tasks can use them. Each table
 definition requires:</p>
 <ul>
 <li>

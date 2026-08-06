@@ -13,8 +13,8 @@ backend reads and which it ignores.
 Nothing here runs. The blocks are written to be copied into `.Renviron`.
 
 [`vignette("backends", package = "csdb")`](https://niphr.github.io/csdb/articles/backends.html)
-is the companion at the R level: the same comparison in terms of
-`dbconfig` lists, primary keys, field types and row counts.
+is the companion at the R level. It gives the same comparison in terms
+of `dbconfig` lists, primary keys, field types and row counts.
 
 ## The two environments
 
@@ -61,7 +61,7 @@ CS9_DBCONFIG_DB_ANON=/home/myuser/cs9/anon.sqlite
 CS9 creates each file, and any missing parent directory, on the first
 connection.
 
-`CS9_PATH` must not be empty in either block.
+`CS9_PATH` MUST NOT be empty in either block.
 [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
 treats an empty value as a missing one and reports an error, so give it
 a real directory.
@@ -70,8 +70,8 @@ a real directory.
 purpose, and `x` is the sentinel meaning “take no role”. Leaving the
 variable out is not the same as leaving it unset in R.
 [`Sys.getenv()`](https://rdrr.io/r/base/Sys.getenv.html) returns `""`
-for an unset variable, `csdb` substitutes the `x` sentinel only for a
-`NULL`, and its PostgreSQL `create_table` then tests
+for an unset variable. `csdb` substitutes the `x` sentinel only for a
+`NULL`. The PostgreSQL `create_table` in `csdb` then tests
 `role_create_table != "x"`, which is true for `""`. The result is a
 `SET ROLE ""` in front of the `CREATE TABLE`. Set the variable to a real
 role, or to `x`. SQLite ignores it either way.
@@ -92,7 +92,7 @@ reports an error without it.
 | Variable                          | PostgreSQL                                                                                                                   | SQLite                                                                                          |
 |-----------------------------------|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
 | `CS9_DBCONFIG_ACCESS`             | Required. A `/`-separated list of access levels.                                                                             | Required, and identical in meaning.                                                             |
-| `CS9_DBCONFIG_DRIVER`             | Required. `PostgreSQL Unicode`, matched exactly, because it must equal an `odbcinst.ini` entry.                              | Required. `SQLite`, matched case-insensitively.                                                 |
+| `CS9_DBCONFIG_DRIVER`             | Required. `PostgreSQL Unicode`, matched exactly, because it MUST equal an `odbcinst.ini` entry.                              | Required. `SQLite`, matched case-insensitively.                                                 |
 | `CS9_DBCONFIG_SERVER`             | Required, and used to open the connection.                                                                                   | Not required. Recorded by CS9, ignored by the SQLite backend.                                   |
 | `CS9_DBCONFIG_PORT`               | Required, and used to open the connection.                                                                                   | Not required. Recorded, ignored.                                                                |
 | `CS9_DBCONFIG_USER`               | Required, and used to authenticate.                                                                                          | Not required. Recorded, ignored.                                                                |
@@ -104,7 +104,7 @@ reports an error without it.
 | `CS9_DBCONFIG_DB_<ACCESS>`        | Required for `config` and `anon`. The database name.                                                                         | Required for every access level in `CS9_DBCONFIG_ACCESS`. The path to the file.                 |
 
 `CS9_AUTO` and `CS9_PATH` are required by both and neither is a database
-setting. `CS9_PATH` must be a non-empty directory path:
+setting. `CS9_PATH` MUST be a non-empty directory path:
 [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
 counts an empty value as missing.
 
@@ -139,7 +139,7 @@ without it fails later, and obscurely.
 
 CS9 is a dependency, so it loads first and has read the environment
 before your own package’s `.onLoad()` runs. A package that sets its own
-`CS9_DBCONFIG_*` values there must tell CS9 to read them again.
+`CS9_DBCONFIG_*` values there MUST tell CS9 to read them again.
 
 ``` r
 .onLoad <- function(libname, pkgname) {
@@ -175,9 +175,12 @@ creates a table on the first `$connect()`, not on load.
 Use SQLite for a local install, for examples, for tests, and for a
 single-writer pipeline on one machine. It is a file.
 
-Use PostgreSQL for a production surveillance system: several processes
-writing at once, data that outgrows one machine, and access levels that
-different people are allowed to read.
+Use PostgreSQL for a production surveillance system. It fits these
+conditions:
+
+- Several processes write at once.
+- The data outgrows one machine.
+- Different people are allowed to read different access levels.
 
 Switching between them is an edit to `.Renviron` and a restart of R. The
 table definitions, the tasks and the action functions do not change.

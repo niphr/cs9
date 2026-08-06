@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -143,12 +143,13 @@ years</li>
 categories</strong> for demographic stratification</li>
 </ul>
 <p>During the COVID-19 pandemic (March 2020), the NorSySS team added new
-diagnostic codes and began producing daily municipal-level outputs
-within weeks — all while maintaining uninterrupted surveillance of the
-existing 106 monitored conditions. CS9’s single-instance design was
-central to this: new COVID-19 analyses were developed and tested
-interactively for a single municipality, then immediately deployed
-across all locations without additional scaling effort.</p>
+diagnostic codes. Within weeks the team also started to produce daily
+municipal-level outputs. Surveillance of the existing 106 monitored
+conditions continued without interruption. CS9’s single-instance design
+was central to this. The team developed and tested new COVID-19 analyses
+interactively for a single municipality. The team then deployed those
+analyses across all locations immediately, without additional scaling
+effort.</p>
 <p>Reference: White RA, Valcarcel Salamanca B. “CS9: An analysis
 framework for real-time disease surveillance.” Norwegian Institute of
 Public Health.</p>
@@ -216,11 +217,11 @@ Public Health.</p>
 </tr>
 </tbody>
 </table>
-<p>CS9 is built upon the <a href="https://CRAN.R-project.org/package=plnr" class="external-link">plnr</a> framework,
-extending it with database integration and multi-plan orchestration.
+<p>CS9 is built upon the <a href="https://CRAN.R-project.org/package=plnr" class="external-link">plnr</a> framework. CS9
+extends plnr with database integration and multi-plan orchestration.
 <strong>For simpler needs</strong> (no database, single computer), plnr
 provides the same single-instance design principle without CS9’s
-infrastructure layer — it is the recommended starting point for smaller
+infrastructure layer. plnr is the recommended starting point for smaller
 systems, pilots, or resource-constrained settings.</p>
 <p>Commercial platforms like ESSENCE provide immediate capability but
 limit rapid adaptation. General-purpose R workflow frameworks (targets,
@@ -470,11 +471,11 @@ first surveillance task step by step</li>
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
 <p>The following example demonstrates the single-instance design
-principle using weather data. Notice how the action function contains
-only the logic for processing one location’s weather forecast — the same
-function would scale across all Norwegian counties if the
-<code>for_each_plan</code> were expanded. This is the same pattern
-NorSySS uses to scale across 106 diseases and 378 locations.</p>
+principle with weather data. Notice how the action function contains
+only the logic that processes one location’s weather forecast. The same
+function would scale across all Norwegian counties if you expanded the
+<code>for_each_plan</code>. This is the same pattern NorSySS uses to
+scale across 106 diseases and 378 locations.</p>
 <p>The following example walks through designing and implementing a
 weather surveillance task.</p>
 <div class="section level3">

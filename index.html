@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -103,7 +103,7 @@ How it works
 Surveillance system
 </h3>
 <p>
-A single <code>SurveillanceSystem_v9</code> R6 object registers all database tables and tasks, giving the whole pipeline one place to configure and run.
+A single <code>SurveillanceSystem_v9</code> R6 object registers all database tables and tasks. It gives the whole pipeline one place to configure and run.
 </p>
 </div>
 <div class="cs-card">
@@ -114,7 +114,7 @@ A single <code>SurveillanceSystem_v9</code> R6 object registers all database tab
 Tasks, plans, analyses
 </h3>
 <p>
-Work is arranged in a three-level hierarchy — tasks contain plans, plans contain analyses — so data is pulled once per plan and reused across all analyses inside it, with optional parallel execution across plans.
+CS9 arranges work in a three-level hierarchy — tasks contain plans, plans contain analyses. CS9 pulls data once per plan and reuses it across all analyses inside that plan. Parallel execution across plans is optional.
 </p>
 </div>
 <div class="cs-card">
@@ -125,7 +125,7 @@ Work is arranged in a three-level hierarchy — tasks contain plans, plans conta
 Execution logging
 </h3>
 <p>
-Every task run is recorded via <code><a href="reference/update_config_log.html">update_config_log()</a></code>, and <code><a href="reference/get_config_tasks_stats.html">get_config_tasks_stats()</a></code> returns timing and status so you can diagnose failures and track pipeline performance over time.
+<code><a href="reference/update_config_log.html">update_config_log()</a></code> records every task run. <code><a href="reference/get_config_tasks_stats.html">get_config_tasks_stats()</a></code> returns timing and status, so you can diagnose failures and track pipeline performance over time.
 </p>
 </div>
 </div>

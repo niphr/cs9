@@ -38,8 +38,8 @@ A `data.table` containing the filtered log entries.
 ## Details
 
 The function retrieves entries from the `config_log` table in the
-current configuration. If date filters are provided, they are applied to
-the `timestamp` field of the log entries.
+current configuration. The function applies any date filters to the
+`timestamp` field of the log entries.
 
 ## Examples
 

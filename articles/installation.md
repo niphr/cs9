@@ -59,7 +59,7 @@ start, no schema to create, and no database user to authenticate as.
     neither needs installing separately.
 
 `CS9_DBCONFIG_ACCESS` is a `/`-separated list of access levels, and it
-must include `config`: CS9 builds its four configuration tables from
+MUST include `config`: CS9 builds its four configuration tables from
 that access level. Every access level in the list needs its own
 `CS9_DBCONFIG_DB_<ACCESS>` variable holding the path to its file, so the
 list above needs `CS9_DBCONFIG_DB_CONFIG` and `CS9_DBCONFIG_DB_ANON`.
@@ -116,7 +116,7 @@ If you chose PostgreSQL, continue below.
 
 ## Installation options
 
-CS9 can be used in two configurations.
+You can use CS9 in two configurations.
 
 ### CRAN installation (limited functionality)
 
@@ -241,17 +241,17 @@ CS9_DBCONFIG_SCHEMA_ANON=anon
 CS9_DBCONFIG_DB_ANON=cs9_surveillance
 ```
 
-`CS9_PATH` must be a real directory. An empty value counts as missing,
+`CS9_PATH` MUST be a real directory. An empty value counts as missing,
 and
 [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
 reports it as an error.
 
 Set `CS9_DBCONFIG_ROLE_CREATE_TABLE` even when you want no role, and use
 `x` for that. Leaving the variable out is not the same as leaving it
-unset in R: [`Sys.getenv()`](https://rdrr.io/r/base/Sys.getenv.html)
-returns `""`, `csdb` substitutes the `x` sentinel only for a `NULL`, and
-its PostgreSQL `create_table` then emits `SET ROLE ""` in front of the
-`CREATE TABLE`.
+unset in R. [`Sys.getenv()`](https://rdrr.io/r/base/Sys.getenv.html)
+returns `""`. `csdb` substitutes the `x` sentinel only for a `NULL`. The
+PostgreSQL `create_table` in `csdb` then emits `SET ROLE ""` in front of
+the `CREATE TABLE`.
 
 3.  **Restart your R session** after editing `.Renviron`.
 
@@ -260,7 +260,7 @@ its PostgreSQL `create_table` then emits `SET ROLE ""` in front of the
 | Variable                         | Example Value           | Description                                                                                                       |
 |----------------------------------|-------------------------|-------------------------------------------------------------------------------------------------------------------|
 | `CS9_AUTO`                       | `0`                     | Set to 0 for interactive mode, 1 for automated mode                                                               |
-| `CS9_PATH`                       | `/home/myuser/cs9`      | Base path for cs9::path function. Must be a real directory: an empty value counts as missing and fails validation |
+| `CS9_PATH`                       | `/home/myuser/cs9`      | Base path for cs9::path function. MUST be a real directory: an empty value counts as missing and fails validation |
 | `CS9_DBCONFIG_ACCESS`            | `config/anon`           | Database access levels (slash-separated)                                                                          |
 | `CS9_DBCONFIG_DRIVER`            | `PostgreSQL Unicode`    | Database driver name                                                                                              |
 | `CS9_DBCONFIG_SERVER`            | `localhost`             | Database server hostname or IP                                                                                    |
@@ -300,9 +300,9 @@ provides a complete template for a CS9 surveillance system.
 
 For production surveillance systems, CS9 tasks are typically
 orchestrated by [Apache Airflow](https://airflow.apache.org/). NorSySS
-uses Airflow to schedule overnight processing pipelines that sequence
-data retrieval, cleaning, analysis, and output generation — with each
-step verified before the next begins.
+uses Airflow to schedule overnight processing pipelines. These pipelines
+sequence data retrieval, cleaning, analysis, and output generation. Each
+step is verified before the next begins.
 
 ### Airflow scheduling pattern
 
