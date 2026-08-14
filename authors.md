@@ -18,13 +18,13 @@ Source:
 [`DESCRIPTION`](https://github.com/niphr/cs9/blob/main/DESCRIPTION)
 
 White RA (2026). *cs9: A Framework for Real-Time Analysis and Disease
-Surveillance*. R package version 26.8.14,
+Surveillance*. R package version 26.8.15,
 <https://niphr.github.io/cs9/>.
 
     @Manual{,
       title = {cs9: A Framework for Real-Time Analysis and Disease Surveillance},
       author = {Richard Aubrey White},
       year = {2026},
-      note = {R package version 26.8.14},
+      note = {R package version 26.8.15},
       url = {https://niphr.github.io/cs9/},
     }

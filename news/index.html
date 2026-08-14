@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,22 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.15" id="version-26815">Version 26.8.15<a class="anchor" aria-label="anchor" href="#version-26815"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-26-8-15">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-26-8-15"></a></h3>
+<ul><li>
+<code>DESCRIPTION</code> requires <code>csdb (&gt;= 2026.8.15)</code>. That is the release where <code>DBConnection_v9</code> refuses a connection another process opened. <code>Task$run_parallel_plans()</code> forks with <code><a href="https://rdrr.io/pkg/pbmcapply/man/pbmclapply.html" class="external-link">pbmcapply::pbmclapply</a></code> and passes the table objects into the workers, and every partition of a partitioned table now shares one connection. A forked child that used the parent’s connection received wrong results and no error.</li>
+<li>
+<code>csdb 2026.8.14</code> carries the shared connection without that guard, so this floor names <code>2026.8.15</code> rather than the release it would otherwise pair with.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="development-26-8-15">Development<a class="anchor" aria-label="anchor" href="#development-26-8-15"></a></h3>
+<ul><li>No <code>cs9</code> source file changed in this release. The version moves so the raised floor reaches a distinct tree, because <code>26.8.14</code> is already published.</li>
+<li>
+<code>Task$run()</code> closes every connection in <code>run_sequential()</code> before it forks, so production never reached the corrupt state. Nothing asserts that ordering. <code>csdb 2026.8.15</code> removes the dependency on it.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.14" id="version-26814">Version 26.8.14<a class="anchor" aria-label="anchor" href="#version-26814"></a></h2>
 <div class="section level3">
