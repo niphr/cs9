@@ -9,11 +9,14 @@ DBTableExtended_v9 <- R6::R6Class(
       keys,
       indexes = NULL,
       validator_field_types = validator_field_types_blank,
-      validator_field_contents = validator_field_contents_blank
+      validator_field_contents = validator_field_contents_blank,
+      dbconnection = NULL
     ) {
       field_types <- c(field_types, "DATETIME")
       names(field_types)[length(field_types)] <- "auto_last_updated_datetime"
 
+      # csdb::DBTable_v9 takes dbconnection as its eighth and last argument.
+      # A supplied connection is borrowed, so the child does not close it.
       super$initialize(
         dbconfig,
         table_name,
@@ -21,7 +24,8 @@ DBTableExtended_v9 <- R6::R6Class(
         keys,
         indexes,
         validator_field_types,
-        validator_field_contents
+        validator_field_contents,
+        dbconnection
       )
     },
     insert_data = function(newdata, confirm_insert_via_nrow = FALSE, verbose = TRUE){

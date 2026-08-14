@@ -1,3 +1,11 @@
+# The class is not exported, so @noRd is right and no .Rd is wanted. The class
+# block is also what keeps roxygen2 quiet. Without one, roxygen2 8.1.0 reports
+# every other method as undocumented and then skips the topic anyway. Measured
+# on the pod on 2026-08-14.
+
+#' Partitioned database table with one shared connection
+#'
+#' @noRd
 DBPartitionedTableExtended_v9 <- R6::R6Class(
   "DBPartitionedTableExtended_v9",
   public = list(
@@ -5,6 +13,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     partitions = c(),
     column_name_partition = "",
     value_generator_partition = NULL,
+    dbconnection = NULL,
     initialize = function(
       dbconfig,
       table_name_base,
@@ -33,6 +42,25 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       field_types <- c(field_types, "TEXT")
       names(field_types)[length(field_types)] <- column_name_partition
 
+      # One connection for the whole partitioned table. Each child borrows it.
+      # csdb::DBTable_v9 would otherwise build one connection per partition. A
+      # table with 106 partitions then needs 106 simultaneous connections,
+      # which exceeded the NorSySS PostgreSQL limit of 100 on 2026-08-13.
+      # Every child has an identical dbconfig, so one connection serves all of
+      # them.
+      self$dbconnection <- csdb::DBConnection_v9$new(
+        driver = dbconfig$driver,
+        server = dbconfig$server,
+        port = dbconfig$port,
+        db = dbconfig$db,
+        schema = dbconfig$schema,
+        user = dbconfig$user,
+        password = dbconfig$password,
+        trusted_connection = dbconfig$trusted_connection,
+        sslmode = dbconfig$sslmode,
+        role_create_table = dbconfig$role_create_table
+      )
+
       self$tables <- vector("list", length(self$partitions))
       names(self$tables) <- self$partitions
       for (i in self$partitions) {
@@ -56,15 +84,28 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           keys = keys,
           indexes = indexes,
           validator_field_types = validator_field_types,
-          validator_field_contents = validator_field_contents
+          validator_field_contents = validator_field_contents,
+          dbconnection = self$dbconnection
         )
         self$tables[[i]] <- dbtable
       }
     },
+    #' @description
+    #' Close the shared connection.
+    #'
+    #' The parent owns the connection and closes it here, once. A child borrows
+    #' the same connection, so a child's `disconnect()` closes nothing.
+    #'
+    #' @details
+    #' A child that a caller keeps after this call can reopen the shared
+    #' connection. `csdb::DBConnection_v9$autoconnection` calls `connect()` on
+    #' every access, so any later use of that child opens a new connection. The
+    #' child cannot close that connection again, because it does not own it.
+    #' Only `DBPartitionedTableExtended_v9$disconnect()` closes it. Callers MUST
+    #' NOT use a child after they disconnect the parent. A caller that does MUST
+    #' disconnect the parent again.
     disconnect = function() {
-      for (i in self$partitions_randomized) {
-        self$tables[[i]]$disconnect()
-      }
+      self$dbconnection$disconnect()
     },
     insert_data = function(
       newdata,
