@@ -1,5 +1,59 @@
 # Changelog
 
+## Version 26.8.16
+
+### Bug Fixes
+
+- `DBPartitionedTableExtended_v9$nrow(collapse = FALSE)` now returns a
+  `partition` column. The column holds the partition tag of the table on
+  that row. `$info()` returns the same column. A caller no longer has to
+  recover the tag from the table name.
+- The tag was already known, and both methods discarded it. Each one
+  loops over `self$partitions_randomized` and marks the matching row
+  with `keep := TRUE`. The loop variable IS the tag at that moment. Both
+  methods now write it into the row.
+- `partition` is `character`, so it matches `names(self$tables)` and
+  indexes `self$tables[[...]]` directly.
+- The change is additive, and `partition` is the LAST column.
+  `nrow(collapse = FALSE)` returns `table_name`, `nrow`, `partition`, in
+  that order. `info(collapse = FALSE)` appends `partition` after the
+  columns that csdb returns, and moves nothing else. An existing caller
+  that reads column 1 or column 2 by position therefore reads what it
+  read before. `table_name` and `nrow` also keep their names, their
+  types and their values. `nrow(collapse = TRUE)` still returns one
+  number. `info(collapse = TRUE)` aggregates over every partition, so it
+  has no single tag and returns no `partition` column.
+- This removes a defect in every caller that parses a table name for the
+  tag. The separator is not one string.
+  `DBPartitionedTableExtended_v9$initialize()` writes `xxpxx` for
+  PostgreSQL and for SQLite, and `PARTITION` for the MSSQL fallback.
+  `norsyss.cs9` split the name on `_PARTITION_` to find the partition
+  with the fewest rows. Production is PostgreSQL, so the split returned
+  `NA`, `self$tables[[NA]]` returned `NULL`, and the consultations
+  import died on `attempt to apply non-function`. That task therefore
+  never ran against PostgreSQL. Measured on a NorSySS pod on 2026-08-14.
+- Both methods declare `partition` before the loop, beside `keep`, so
+  the column is `character` from the start. The declaration is not what
+  creates the column. A `:=` whose `i` matches no row still creates it,
+  and gives it the type of the assigned value. Measured with data.table
+  1.18.4 on 2026-08-14.
+
+### Development
+
+- `tests/testthat/test-partition-safety.R` pins the new column. It
+  asserts set equality against `names(pt$tables)`, because
+  `partitions_randomized` shuffles the row order. It also asserts that
+  `pt$tables[[row$partition]]$table_name` equals `row$table_name` for
+  every row. That second assertion is the one that catches the original
+  defect. No test names a separator, because the point of the change is
+  that a caller does not know one.
+- Three further tests in the same file pin the compatibility contract.
+  One asserts that `table_name` is column 1 of `nrow(collapse = FALSE)`
+  and that `nrow` is column 2, by position and by type. One asserts that
+  `info(collapse = TRUE)` returns its four aggregate columns and no
+  `partition`. One asserts that `info(collapse = FALSE)` appends
+  `partition` last, against the base columns read from csdb itself.
+
 ## Version 26.8.15
 
 ### Bug Fixes

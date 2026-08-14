@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,26 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.16" id="version-26816">Version 26.8.16<a class="anchor" aria-label="anchor" href="#version-26816"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-26-8-16">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-26-8-16"></a></h3>
+<ul><li>
+<code>DBPartitionedTableExtended_v9$nrow(collapse = FALSE)</code> now returns a <code>partition</code> column. The column holds the partition tag of the table on that row. <code>$info()</code> returns the same column. A caller no longer has to recover the tag from the table name.</li>
+<li>The tag was already known, and both methods discarded it. Each one loops over <code>self$partitions_randomized</code> and marks the matching row with <code>keep := TRUE</code>. The loop variable IS the tag at that moment. Both methods now write it into the row.</li>
+<li>
+<code>partition</code> is <code>character</code>, so it matches <code>names(self$tables)</code> and indexes <code>self$tables[[...]]</code> directly.</li>
+<li>The change is additive, and <code>partition</code> is the LAST column. <code>nrow(collapse = FALSE)</code> returns <code>table_name</code>, <code>nrow</code>, <code>partition</code>, in that order. <code>info(collapse = FALSE)</code> appends <code>partition</code> after the columns that csdb returns, and moves nothing else. An existing caller that reads column 1 or column 2 by position therefore reads what it read before. <code>table_name</code> and <code>nrow</code> also keep their names, their types and their values. <code>nrow(collapse = TRUE)</code> still returns one number. <code>info(collapse = TRUE)</code> aggregates over every partition, so it has no single tag and returns no <code>partition</code> column.</li>
+<li>This removes a defect in every caller that parses a table name for the tag. The separator is not one string. <code>DBPartitionedTableExtended_v9$initialize()</code> writes <code>xxpxx</code> for PostgreSQL and for SQLite, and <code>PARTITION</code> for the MSSQL fallback. <code>norsyss.cs9</code> split the name on <code>_PARTITION_</code> to find the partition with the fewest rows. Production is PostgreSQL, so the split returned <code>NA</code>, <code>self$tables[[NA]]</code> returned <code>NULL</code>, and the consultations import died on <code>attempt to apply non-function</code>. That task therefore never ran against PostgreSQL. Measured on a NorSySS pod on 2026-08-14.</li>
+<li>Both methods declare <code>partition</code> before the loop, beside <code>keep</code>, so the column is <code>character</code> from the start. The declaration is not what creates the column. A <code>:=</code> whose <code>i</code> matches no row still creates it, and gives it the type of the assigned value. Measured with data.table 1.18.4 on 2026-08-14.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="development-26-8-16">Development<a class="anchor" aria-label="anchor" href="#development-26-8-16"></a></h3>
+<ul><li>
+<code>tests/testthat/test-partition-safety.R</code> pins the new column. It asserts set equality against <code>names(pt$tables)</code>, because <code>partitions_randomized</code> shuffles the row order. It also asserts that <code>pt$tables[[row$partition]]$table_name</code> equals <code>row$table_name</code> for every row. That second assertion is the one that catches the original defect. No test names a separator, because the point of the change is that a caller does not know one.</li>
+<li>Three further tests in the same file pin the compatibility contract. One asserts that <code>table_name</code> is column 1 of <code>nrow(collapse = FALSE)</code> and that <code>nrow</code> is column 2, by position and by type. One asserts that <code>info(collapse = TRUE)</code> returns its four aggregate columns and no <code>partition</code>. One asserts that <code>info(collapse = FALSE)</code> appends <code>partition</code> last, against the base columns read from csdb itself.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.15" id="version-26815">Version 26.8.15<a class="anchor" aria-label="anchor" href="#version-26815"></a></h2>
 <div class="section level3">
