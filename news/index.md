@@ -39,6 +39,136 @@
   whole table lost every row, with no error and no warning.
   `drop_all_rows_and_then_insert_data()` reads `newdata` and is
   unchanged.
+- `DBPartitionedTableExtended_v9` now rejects a `newdata` that it cannot
+  route, before any method destroys a row. This is the third defect of
+  this shape in the class in one week, and the routing fix above does
+  not cover it. `private$check_for_correct_partitions_in_data()` read
+  `newdata[[self$column_name_partition]]`, and `[[` returns `NULL` for a
+  column that `newdata` does not carry. `unique(NULL)` is `NULL`,
+  `!NULL %in% x` is `logical(0)`, and `sum(logical(0))` is 0, so
+  validation passed. Both `drop_all_rows_and_then_*` methods then
+  computed `NULL == i`, which is `logical(0)`. Each took zero rows for
+  every partition, dropped all of them and wrote nothing back. The whole
+  table lost every row, with no error and no warning. The check now
+  rejects four things, in this order.
+  - A `newdata` that is not a `data.frame`. It names the class it
+    received.
+  - A `newdata` with no partition column. It names the column it
+    expected.
+  - An `NA` in the partition column.
+  - A value that no partition covers. It names those values.
+- A zero-row `newdata` that carries the partition column is still
+  accepted. Clearing every partition is a legitimate operation, and
+  `tests/testthat/test-partition-safety.R` pins it. Only a `NULL`, or a
+  table without the column, is rejected.
+- `DBPartitionedTableExtended_v9` now writes a generated partition
+  column with a valid `:=` call, and it writes into a copy. Four methods
+  held `newdata[, .(self$column_name_partition) := part]`. That form
+  raises `LHS of := must be a symbol, or an atomic vector`. Every table
+  with a non-`NULL` `value_generator_partition` therefore failed on its
+  first write. No test built one, which is why the defect survived. The
+  form is now `newdata[, (self$column_name_partition) := part]`. `:=`
+  also writes by reference. The old form therefore added a column to the
+  caller’s own data.table, as a side effect of a write.
+  [`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html)
+  now runs first. The copy is inside the `value_generator_partition`
+  branch only, and not on the common path. A NorSySS production import
+  is memory-bound against about 20 GiB of usable pod memory, so a copy
+  of every `newdata` would double the peak.
+- `DBPartitionedTableExtended_v9` now handles a numeric partition value,
+  which two separate defects broke. First, `sample(x, length(x))` reads
+  a length-1 numeric `x` as the range `1:x`. A single partition numbered
+  9 therefore became a draw from 1 to 9. Both call sites, in
+  `insert_data()` and in the `partitions_randomized` active binding, now
+  index by a permutation: `x[sample.int(length(x))]`. That form has no
+  such special case and is a no-op below length 2. Second, `[[` on a
+  list takes a numeric index as a position, so `self$tables[[5L]]`
+  returned the fifth child rather than the child named “5”. In the
+  constructor it also grew the list to five elements, three of them
+  `NULL`. All 16 `self$tables[[...]]` sites in
+  `R/r6_DBPartitionedTableExtended_v9.R` now index by
+  [`as.character()`](https://rdrr.io/r/base/character.html). A character
+  partition value was never affected by either defect.
+- `DBPartitionedTableExtended_v9` now declares `indexes` as a public
+  field, and `initialize()` assigns it. The class took `indexes` as a
+  constructor argument and gave it to every child, but it held no field
+  of that name. `self$indexes` was therefore `NULL`, and the
+  `drop_indexes = names(self$indexes)` default in `upsert_data()` and in
+  `drop_all_rows_and_then_upsert_data()` evaluated to `NULL`. Each child
+  received an explicit `NULL`, which overrode the child’s own
+  `names(child$indexes)` default. Both defaults are now a plain `NULL`,
+  so the runtime behaviour is identical and is now explicit. Nothing
+  drops an index by default. Whether an index rebuild beats row-by-row
+  index maintenance depends on four things: rows changed per child,
+  index count and width, table size, and concurrency. A `DROP INDEX`
+  also briefly blocks reads and writes. That needs measurement against
+  real batch sizes. A caller who wants the drop now passes
+  `drop_indexes = names(pt$indexes)`.
+- `DBPartitionedTableExtended_v9$upsert_data()` computed
+  `partitions_in_use` twice from the same expression. One of the two
+  lines is removed. Nothing observable changes. The method still writes
+  to the partitions in the order `newdata` names them. It is not
+  randomised, because no transaction spans the partition loop, so each
+  child releases its locks before the next runs.
+- `DBPartitionedTableExtended_v9` now computes one route vector, and all
+  four write methods route with it.
+  `private$check_for_correct_partitions_in_data()` returns
+  [`as.character()`](https://rdrr.io/r/base/character.html) of the
+  partition column. Each write method captures that vector and indexes
+  with `route == as.character(i)`, beside
+  `self$tables[[as.character(i)]]`. One coercion now names the child and
+  selects its rows. Validation used
+  [`setdiff()`](https://rdrr.io/r/base/sets.html) on the raw values
+  before, while the write methods used `==`. Those were two independent
+  answers to one question, and they agreed. An adversarial review said a
+  factor column made them diverge and wiped every partition. Measured
+  against the real class on 2026-08-14, it does not.
+  [`setdiff()`](https://rdrr.io/r/base/sets.html) converts a factor to
+  character, and `==` against a factor compares its labels, so both
+  sides already read the same thing. The class is refactored so that the
+  question has one answer, not because the two answers differed.
+- `DBPartitionedTableExtended_v9` now rejects a partition column that is
+  not atomic. A list column passed the old check, because
+  [`setdiff()`](https://rdrr.io/r/base/sets.html) also converts a list
+  to character. `setdiff(list("a"), c("a", "b", "c"))` is therefore
+  empty. `drop_all_rows_and_then_upsert_data()` then dropped every
+  partition and died inside csdb on `is.infinite(get(i))`, which has no
+  list method. A three-partition table holding six rows lost all six,
+  and nothing failed until after the last drop. That is the fourth
+  silent-data-loss defect of this shape in the class in one week.
+  [`is.atomic()`](https://rdrr.io/r/base/is.recursive.html) now rejects
+  the column before the first drop. A factor is atomic, so a factor
+  column still routes.
+- `DBPartitionedTableExtended_v9$initialize()` now rejects a partition
+  set that the class cannot use. It ran no check on
+  `table_name_partitions` at all before. The check runs before the class
+  opens its connection, so a rejected construction leaves no database
+  connection open. It rejects four things.
+  - A zero-length set. The table then carried no children, and every
+    write was a silent no-op.
+  - An `NA`.
+  - An empty string after
+    [`as.character()`](https://rdrr.io/r/base/character.html).
+    `self$tables[[""]] <- child` matches no name, so it APPENDS. A set
+    of `c("a", "")` built three children for two partitions.
+  - A duplicate after
+    [`as.character()`](https://rdrr.io/r/base/character.html).
+    `self$tables[[name]]` takes the first match, so a duplicated
+    partition made one child unreachable while `length(self$partitions)`
+    still counted it.
+- The guard now compares the character form of a partition value, not
+  the raw value. `names(self$tables)` and all 16 `self$tables[[...]]`
+  sites already used
+  [`as.character()`](https://rdrr.io/r/base/character.html), so the
+  character form was already the identity of a partition. One accepted
+  input changes as a result. A `newdata` value of `1.0000000000000002`
+  against a partition of `1` was rejected before, because
+  [`setdiff()`](https://rdrr.io/r/base/sets.html) compares two doubles
+  exactly. It now routes to the child named “1”. Both values print as
+  `1`, and the partition column is stored as `TEXT`. A caller MUST NOT
+  give one table two partition values that
+  [`as.character()`](https://rdrr.io/r/base/character.html) renders
+  identically. `initialize()` now rejects that set.
 
 ### Known limitation
 
@@ -89,6 +219,42 @@
     same partitions.
   - `drop_all_rows_and_then_upsert_data()` empties a partition that
     `newdata` does not name.
+- `tests/testthat/test-partition-safety.R` is new. It holds 21 tests and
+  178 assertions against a temporary SQLite file. The duplicated
+  `partitions_in_use` line has no test, because its removal changes
+  nothing that a test can observe. The whole cs9 suite now reports 298
+  passing assertions, up from 256.
+  - The first test is the one that matters. It writes two sentinel rows
+    into each of three partitions, calls
+    `drop_all_rows_and_then_upsert_data()` with a `newdata` that lacks
+    the partition column, and then re-reads every partition. Before the
+    fix it reported no error and zero rows in all three partitions. An
+    error alone would not prove that the rows survived.
+  - A zero-row `newdata` that carries the partition column still clears
+    every partition.
+  - A table with a `value_generator_partition` routes every row, and all
+    four write methods leave the caller’s data.table unchanged.
+  - A single numeric partition numbered 9 gives
+    `partitions_randomized == 9`. Under seed 5 the old
+    [`sample()`](https://rdrr.io/r/base/sample.html) returned 2.
+  - A table with partitions `c(5L, 7L)` holds exactly two children,
+    named “5” and “7”, and a row routes to the child its value names.
+  - A `newdata` that names exactly one numeric partition reaches that
+    partition. This covers the second
+    [`sample()`](https://rdrr.io/r/base/sample.html) call site, which is
+    inside `insert_data()`.
+  - `pt$indexes` holds the list the constructor received.
+  - A factor partition column against numeric partitions routes every
+    row, and every row survives. This is the case the adversarial review
+    named. The test pins the measured behaviour, so a later change
+    cannot regress it in silence.
+  - A list partition column is rejected, and all six sentinel rows
+    survive.
+  - The constructor rejects each of the four unusable partition sets.
+    Each error message names the problem.
+  - `check_for_correct_partitions_in_data()` returns a character vector
+    whose length is `nrow(newdata)`. The test reaches private through
+    `pt$.__enclos_env__$private`, and it is the only test that does.
 
 ## Version 26.8.6
 
