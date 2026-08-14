@@ -9,6 +9,9 @@
 ## Known limitation
 * A child that a caller keeps after `DBPartitionedTableExtended_v9$disconnect()` can reopen the shared connection. `csdb::DBConnection_v9$autoconnection` calls `connect()` on every access, so any later use of that child opens a new connection. The child cannot close that connection again, because it does not own it. Only the parent closes it. Callers MUST NOT use a child after they disconnect the parent. A caller that does MUST disconnect the parent again. `r6_Task.R` calls `disconnect()` on the objects in the task's table list. A partitioned table is registered there as the parent, so the production teardown path is unaffected.
 
+## Licensing
+* `DESCRIPTION` no longer carries explicit `Author` and `Maintainer` fields. R derives both from `Authors@R`, which is the single source. The explicit fields named "Core Surveillance" as the copyright holder, while `Authors@R` names Folkehelseinstituttet. The 2026-08-06 sweep corrected `Authors@R` and left the free text behind, so the two disagreed on the legal entity.
+
 ## Development
 * `tests/testthat/test-shared-connection.R` is new. It builds a three-partition table against a temporary SQLite file, and it asserts five things.
   * The three children hold one connection object, counted by `data.table::address()`.
