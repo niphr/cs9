@@ -263,23 +263,47 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         self$tables[[as.character(i)]]$confirm_indexes()
       }
     },
+    # The loop below already knows the partition tag. `i` IS that tag, and the
+    # row it marks is the row of that partition's table. The tag therefore
+    # travels out with the row, in the `partition` column.
+    #
+    # A caller that needs the tag would otherwise split `table_name` on the
+    # separator. The separator is not one string: it is `xxpxx` for PostgreSQL
+    # and for SQLite, and `PARTITION` for the MSSQL fallback. A caller that
+    # split on `_PARTITION_` therefore got `NA` against PostgreSQL, and
+    # `self$tables[[NA]]` is `NULL`. `norsyss.cs9` did exactly that, and the
+    # consultations import died on `attempt to apply non-function`. Measured on
+    # a NorSySS pod on 2026-08-14.
+    #
+    # `partition` is character, so it matches `names(self$tables)` and indexes
+    # `self$tables[[...]]` directly.
+    #
+    # `partition` is the LAST column of the result, in both methods. `nrow()`
+    # returns `table_name`, `nrow`, `partition`. `info()` appends `partition`
+    # after the columns that csdb returns. A caller that reads column 1 or
+    # column 2 by position therefore reads what it read before.
     nrow = function(collapse = TRUE) {
       table_rows <- self$tables[[
         as.character(self$partitions[1])
       ]]$dbconnection$autoconnection %>%
         csdb::get_table_names_and_info()
-      table_rows[, keep := FALSE]
+      # This line declares `partition` beside `keep`, so the column is character
+      # from the start. The declaration is not what creates the column. A `:=`
+      # whose `i` matches no row still creates it, and gives it the type of the
+      # assigned value. Measured with data.table 1.18.4 on 2026-08-14.
+      table_rows[, `:=`(keep = FALSE, partition = NA_character_)]
       for (i in self$partitions_randomized) {
         table_rows[
           table_name == self$tables[[as.character(i)]]$table_name,
-          keep := TRUE
+          `:=`(keep = TRUE, partition = as.character(i))
         ]
       }
       table_rows <- table_rows[
         keep == T,
         .(
           table_name,
-          nrow
+          nrow,
+          partition
         )
       ]
       if (collapse) {
@@ -294,17 +318,21 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         as.character(self$partitions[1])
       ]]$dbconnection$autoconnection %>%
         csdb::get_table_names_and_info()
-      table_rows[, keep := FALSE]
+      table_rows[, `:=`(keep = FALSE, partition = NA_character_)]
       for (i in self$partitions_randomized) {
         table_rows[
           table_name == self$tables[[as.character(i)]]$table_name,
-          keep := TRUE
+          `:=`(keep = TRUE, partition = as.character(i))
         ]
       }
       table_rows <- table_rows[keep == T]
+      # A `:=` appends, so the columns run: the columns csdb returns, then
+      # `keep`, then `partition`. Dropping `keep` leaves `partition` last.
       table_rows[, keep := NULL]
 
       if (collapse) {
+        # An aggregate spans every partition, so it has no single tag. The
+        # select below therefore drops `partition`.
         table_rows <- table_rows[,
           .(
             size_total_gb = sum(size_total_gb),

@@ -1,6 +1,6 @@
 # Safety guards for `DBPartitionedTableExtended_v9`.
 #
-# Six defects are pinned here. Each one destroyed data, broke a write, or made
+# Seven defects are pinned here. Each one destroyed data, broke a write, or made
 # the object misreport its own state.
 #
 #  1. A `newdata` with no partition column passed validation. Both
@@ -18,9 +18,18 @@
 #     inside csdb. A three-partition table lost every row.
 #  6. The constructor accepted a partition set it cannot use: zero length, NA,
 #     an empty string, or a duplicate.
+#  7. `nrow(collapse = FALSE)` and `info()` knew the partition tag of each row
+#     and discarded it. A caller then parsed the table name to get it back, and
+#     the separator is not one string. The tests below never name a separator.
 #
 # The duplicated `partitions_in_use` line in `upsert_data()` has no test. It
 # assigned the same value twice, so its removal changes nothing observable.
+#
+# Three tests carry no defect of their own and guard the compatibility
+# contract of the new `partition` column. The column goes LAST, so `table_name`
+# stays column 1 of `nrow(collapse = FALSE)` and `nrow` stays column 2.
+# `info(collapse = FALSE)` appends the column and moves nothing else.
+# `info(collapse = TRUE)` aggregates over every partition, so it drops it.
 #
 # Two tests carry no defect of their own and guard the routing contract.
 # `check_for_correct_partitions_in_data()` returns the route vector, and the
@@ -526,6 +535,218 @@ test_that("the constructor rejects a duplicate in the partition set", {
     "table_name_partitions holds duplicate values: a.",
     fixed = TRUE
   )
+})
+
+# Four rows over three partitions, so the row counts differ per partition. A
+# `partition` column attached to the wrong row is then visible as a count, and
+# not only as a name.
+#
+# No tag is a substring of another, so a partial match cannot pass. "5" is
+# numeric-looking, and that catches a coercion mistake. The returned value must
+# index `self$tables` by NAME, because `[[` takes a number as a POSITION.
+partition_col_rows <- function() {
+  data.table::data.table(
+    x = c("pc1", "pc2", "pc3", "pc4"),
+    n = c(1L, 2L, 3L, 4L),
+    part = c("alpha", "5", "5", "zulu")
+  )
+}
+
+# `pt$tables[[row$partition]]$table_name` equals `row$table_name`, for every
+# row. This is the assertion that the discarded tag fails.
+#
+# It names no separator, and that is the point of the change. cs9 builds a
+# partition table name with `xxpxx` on two drivers and with `PARTITION` on the
+# third. A test that encoded one of those would rebuild the defect it pins.
+expect_partition_matches_table_name <- function(pt, x) {
+  expect_type(x$partition, "character")
+  expect_setequal(x$partition, names(pt$tables))
+  expect_equal(anyDuplicated(x$partition), 0L)
+  for (j in seq_len(nrow(x))) {
+    expect_equal(pt$tables[[x$partition[j]]]$table_name, x$table_name[j])
+  }
+}
+
+test_that("nrow(collapse = FALSE) carries the partition tag of every row", {
+  dbconfig <- local_sqlite_dbconfig()
+  parts <- c("alpha", "5", "zulu")
+  pt <- new_safety_table(
+    dbconfig,
+    "anon_safety_nrow_partition",
+    partitions = parts
+  )
+  withr::defer(pt$disconnect())
+  suppressMessages(pt$insert_data(partition_col_rows()))
+
+  x <- pt$nrow(collapse = FALSE)
+
+  expect_true("partition" %in% names(x))
+  expect_equal(nrow(x), length(parts))
+  # `partitions_randomized` shuffles, so this is set equality and never row
+  # order.
+  expect_partition_matches_table_name(pt, x)
+
+  # Each count is read by tag, not by position.
+  expect_equal(x$nrow[match("alpha", x$partition)], 1)
+  expect_equal(x$nrow[match("5", x$partition)], 2)
+  expect_equal(x$nrow[match("zulu", x$partition)], 1)
+})
+
+test_that("nrow keeps its old columns and its collapsed number", {
+  # The change is additive. `table_name` and `nrow` keep their names, their
+  # types and their values, so an existing caller is unaffected.
+  dbconfig <- local_sqlite_dbconfig()
+  pt <- new_safety_table(
+    dbconfig,
+    "anon_safety_nrow_additive",
+    partitions = c("alpha", "5", "zulu")
+  )
+  withr::defer(pt$disconnect())
+  suppressMessages(pt$insert_data(partition_col_rows()))
+
+  x <- pt$nrow(collapse = FALSE)
+  expect_equal(names(x), c("table_name", "nrow", "partition"))
+  expect_type(x$table_name, "character")
+  expect_setequal(
+    x$table_name,
+    vapply(pt$tables, function(tab) tab$table_name, character(1))
+  )
+
+  total <- pt$nrow(collapse = TRUE)
+  expect_length(total, 1L)
+  expect_equal(total, 4)
+})
+
+test_that("nrow(collapse = FALSE) holds table_name at 1 and nrow at 2", {
+  # This is the compatibility contract, measured rather than asserted. The new
+  # column goes LAST. An external caller that reads `x[[1]]` or `x[, 1]` gets
+  # what it got before `partition` existed, and by position, not only by name.
+  dbconfig <- local_sqlite_dbconfig()
+  pt <- new_safety_table(
+    dbconfig,
+    "anon_safety_nrow_positions",
+    partitions = c("alpha", "5", "zulu")
+  )
+  withr::defer(pt$disconnect())
+  suppressMessages(pt$insert_data(partition_col_rows()))
+
+  x <- pt$nrow(collapse = FALSE)
+
+  expect_equal(names(x)[1], "table_name")
+  expect_equal(names(x)[2], "nrow")
+  expect_equal(names(x), c("table_name", "nrow", "partition"))
+
+  # The exact types of the two pre-existing columns, measured on the pod on
+  # 2026-08-14. `nrow` is double and not integer, because csdb returns it so.
+  expect_type(x[[1]], "character")
+  expect_type(x[[2]], "double")
+
+  # Access by position and access by name return the same vector.
+  expect_identical(x[[1]], x$table_name)
+  expect_identical(x[[2]], x$nrow)
+
+  # The count of each partition is read by position, through column 1 and
+  # column 2 alone. A caller that never heard of `partition` still works.
+  expect_equal(x[[2]][match(pt$tables[["alpha"]]$table_name, x[[1]])], 1)
+  expect_equal(x[[2]][match(pt$tables[["5"]]$table_name, x[[1]])], 2)
+  expect_equal(x[[2]][match(pt$tables[["zulu"]]$table_name, x[[1]])], 1)
+})
+
+test_that("info(collapse = TRUE) returns its four aggregates and no partition", {
+  # An aggregate spans every partition, so it has no single tag. These four
+  # columns are the whole return, and they are what `info(collapse = TRUE)`
+  # returned before this change.
+  dbconfig <- local_sqlite_dbconfig()
+  pt <- new_safety_table(
+    dbconfig,
+    "anon_safety_info_collapsed",
+    partitions = c("alpha", "5", "zulu")
+  )
+  withr::defer(pt$disconnect())
+  suppressMessages(pt$insert_data(partition_col_rows()))
+
+  x <- pt$info(collapse = TRUE)
+
+  expect_equal(
+    names(x),
+    c("size_total_gb", "size_data_gb", "size_index_gb", "nrow")
+  )
+  expect_false("partition" %in% names(x))
+  expect_false("keep" %in% names(x))
+  expect_equal(nrow(x), 1L)
+  expect_equal(x$nrow, 4)
+})
+
+test_that("info(collapse = FALSE) puts partition in the last column", {
+  # `partition` is appended, and nothing else moves. The expectation reads the
+  # base columns from csdb itself, so a change inside csdb does not turn this
+  # test red for the wrong reason.
+  dbconfig <- local_sqlite_dbconfig()
+  pt <- new_safety_table(
+    dbconfig,
+    "anon_safety_info_last_column",
+    partitions = c("alpha", "5", "zulu")
+  )
+  withr::defer(pt$disconnect())
+  suppressMessages(pt$insert_data(partition_col_rows()))
+
+  base_cols <- names(csdb::get_table_names_and_info(
+    pt$tables[["alpha"]]$dbconnection$autoconnection
+  ))
+
+  x <- pt$info(collapse = FALSE)
+
+  expect_equal(names(x)[length(names(x))], "partition")
+  expect_equal(names(x), c(base_cols, "partition"))
+  expect_false("keep" %in% names(x))
+})
+
+test_that("info() carries the partition tag of every row", {
+  dbconfig <- local_sqlite_dbconfig()
+  parts <- c("alpha", "5", "zulu")
+  pt <- new_safety_table(
+    dbconfig,
+    "anon_safety_info_partition",
+    partitions = parts
+  )
+  withr::defer(pt$disconnect())
+  suppressMessages(pt$insert_data(partition_col_rows()))
+
+  x <- pt$info()
+
+  expect_true("partition" %in% names(x))
+  expect_false("keep" %in% names(x))
+  expect_true(all(c("table_name", "nrow") %in% names(x)))
+  expect_equal(nrow(x), length(parts))
+  expect_partition_matches_table_name(pt, x)
+})
+
+test_that("a numeric partition comes back as a character partition", {
+  # `self$tables[[5L]]` returns the fifth child, and this list holds two. An
+  # integer in the `partition` column would therefore fail the lookup below,
+  # and a caller reading it would index the wrong child.
+  dbconfig <- local_sqlite_dbconfig()
+  pt <- new_safety_table(
+    dbconfig,
+    "anon_safety_nrow_partition_num",
+    partitions = c(5L, 7L)
+  )
+  withr::defer(pt$disconnect())
+
+  d <- data.table::data.table(
+    x = c("row5", "row7"),
+    n = c(1L, 2L),
+    part = c(5L, 7L)
+  )
+  suppressMessages(pt$insert_data(d))
+
+  x <- pt$nrow(collapse = FALSE)
+  expect_partition_matches_table_name(pt, x)
+  expect_equal(sort(x$partition), c("5", "7"))
+
+  x_info <- pt$info()
+  expect_partition_matches_table_name(pt, x_info)
+  expect_equal(sort(x_info$partition), c("5", "7"))
 })
 
 test_that("the guard returns the route vector that the write methods use", {
