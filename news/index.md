@@ -1,5 +1,63 @@
 # Changelog
 
+## Version 26.8.14
+
+### Bug Fixes
+
+- `DBPartitionedTableExtended_v9` now opens one database connection for
+  the whole table, not one per partition. It builds a single
+  [`csdb::DBConnection_v9`](https://niphr.github.io/csdb/reference/DBConnection_v9.html)
+  before the partition loop and passes it to every `DBTableExtended_v9`.
+  A table with 106 partitions needed 106 simultaneous connections before
+  this change. That exceeded the NorSySS PostgreSQL limit of 100
+  connections on 2026-08-13. The import died with
+  `FATAL: remaining connection slots are reserved for roles with the SUPERUSER attribute`.
+  The failure did not depend on the run size, because the partition
+  count exceeds the budget before the first row is inserted.
+- `DBPartitionedTableExtended_v9$disconnect()` now closes the shared
+  connection once, at the parent. It looped over the partitions and
+  closed each child before. Each child borrows the connection, so a
+  child’s `disconnect()` is a no-op in `csdb` 2026.8.14.
+- `DBTableExtended_v9$initialize()` gains `dbconnection` as its eighth
+  and last argument. It forwards that argument to
+  [`csdb::DBTable_v9`](https://niphr.github.io/csdb/reference/DBTable_v9.html)
+  in the eighth position. The argument defaults to `NULL`, which keeps
+  the previous behaviour: the object builds and owns its own connection.
+  `SurveillanceSystem_v9$add_table()` names every argument it passes and
+  passes no `dbconnection`, so it is unaffected.
+- `DESCRIPTION` requires `csdb (>= 2026.8.14)`. That is the version
+  where `DBTable_v9$initialize()` accepts `dbconnection`. Without this
+  version floor, the incompatibility would fail at run time rather than
+  at install time.
+
+### Known limitation
+
+- A child that a caller keeps after
+  `DBPartitionedTableExtended_v9$disconnect()` can reopen the shared
+  connection. `csdb::DBConnection_v9$autoconnection` calls `connect()`
+  on every access, so any later use of that child opens a new
+  connection. The child cannot close that connection again, because it
+  does not own it. Only the parent closes it. Callers MUST NOT use a
+  child after they disconnect the parent. A caller that does MUST
+  disconnect the parent again. `r6_Task.R` calls `disconnect()` on the
+  objects in the task’s table list. A partitioned table is registered
+  there as the parent, so the production teardown path is unaffected.
+
+### Development
+
+- `tests/testthat/test-shared-connection.R` is new. It builds a
+  three-partition table against a temporary SQLite file, and it asserts
+  five things.
+  - The three children hold one connection object, counted by
+    [`data.table::address()`](https://rdrr.io/pkg/data.table/man/address.html).
+  - A write reaches the partition that its `part` column names.
+  - `disconnect()` on the parent closes the shared connection exactly
+    once. The test counts the closes.
+  - A `disconnect()` loop over every child leaves the partitioned table
+    usable.
+  - A child kept past the parent’s `disconnect()` reopens the shared
+    connection, and only the parent closes it again.
+
 ## Version 26.8.6
 
 ### Licensing

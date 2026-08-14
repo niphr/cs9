@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,36 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.14" id="version-26814">Version 26.8.14<a class="anchor" aria-label="anchor" href="#version-26814"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-26-8-14">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-26-8-14"></a></h3>
+<ul><li>
+<code>DBPartitionedTableExtended_v9</code> now opens one database connection for the whole table, not one per partition. It builds a single <code><a href="https://niphr.github.io/csdb/reference/DBConnection_v9.html" class="external-link">csdb::DBConnection_v9</a></code> before the partition loop and passes it to every <code>DBTableExtended_v9</code>. A table with 106 partitions needed 106 simultaneous connections before this change. That exceeded the NorSySS PostgreSQL limit of 100 connections on 2026-08-13. The import died with <code>FATAL: remaining connection slots are reserved for roles with the SUPERUSER attribute</code>. The failure did not depend on the run size, because the partition count exceeds the budget before the first row is inserted.</li>
+<li>
+<code>DBPartitionedTableExtended_v9$disconnect()</code> now closes the shared connection once, at the parent. It looped over the partitions and closed each child before. Each child borrows the connection, so a child’s <code>disconnect()</code> is a no-op in <code>csdb</code> 2026.8.14.</li>
+<li>
+<code>DBTableExtended_v9$initialize()</code> gains <code>dbconnection</code> as its eighth and last argument. It forwards that argument to <code><a href="https://niphr.github.io/csdb/reference/DBTable_v9.html" class="external-link">csdb::DBTable_v9</a></code> in the eighth position. The argument defaults to <code>NULL</code>, which keeps the previous behaviour: the object builds and owns its own connection. <code>SurveillanceSystem_v9$add_table()</code> names every argument it passes and passes no <code>dbconnection</code>, so it is unaffected.</li>
+<li>
+<code>DESCRIPTION</code> requires <code>csdb (&gt;= 2026.8.14)</code>. That is the version where <code>DBTable_v9$initialize()</code> accepts <code>dbconnection</code>. Without this version floor, the incompatibility would fail at run time rather than at install time.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="known-limitation-26-8-14">Known limitation<a class="anchor" aria-label="anchor" href="#known-limitation-26-8-14"></a></h3>
+<ul><li>A child that a caller keeps after <code>DBPartitionedTableExtended_v9$disconnect()</code> can reopen the shared connection. <code>csdb::DBConnection_v9$autoconnection</code> calls <code>connect()</code> on every access, so any later use of that child opens a new connection. The child cannot close that connection again, because it does not own it. Only the parent closes it. Callers MUST NOT use a child after they disconnect the parent. A caller that does MUST disconnect the parent again. <code>r6_Task.R</code> calls <code>disconnect()</code> on the objects in the task’s table list. A partitioned table is registered there as the parent, so the production teardown path is unaffected.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="development-26-8-14">Development<a class="anchor" aria-label="anchor" href="#development-26-8-14"></a></h3>
+<ul><li>
+<code>tests/testthat/test-shared-connection.R</code> is new. It builds a three-partition table against a temporary SQLite file, and it asserts five things.
+<ul><li>The three children hold one connection object, counted by <code><a href="https://rdrr.io/pkg/data.table/man/address.html" class="external-link">data.table::address()</a></code>.</li>
+<li>A write reaches the partition that its <code>part</code> column names.</li>
+<li>
+<code>disconnect()</code> on the parent closes the shared connection exactly once. The test counts the closes.</li>
+<li>A <code>disconnect()</code> loop over every child leaves the partitioned table usable.</li>
+<li>A child kept past the parent’s <code>disconnect()</code> reopens the shared connection, and only the parent closes it again.</li>
+</ul></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.6" id="version-2686">Version 26.8.6<a class="anchor" aria-label="anchor" href="#version-2686"></a></h2>
 <div class="section level3">
