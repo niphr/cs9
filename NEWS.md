@@ -1,3 +1,13 @@
+# Version 26.8.15
+
+## Bug Fixes
+* `DESCRIPTION` requires `csdb (>= 2026.8.15)`. That is the release where `DBConnection_v9` refuses a connection another process opened. `Task$run_parallel_plans()` forks with `pbmcapply::pbmclapply` and passes the table objects into the workers, and every partition of a partitioned table now shares one connection. A forked child that used the parent's connection received wrong results and no error.
+* `csdb 2026.8.14` carries the shared connection without that guard, so this floor names `2026.8.15` rather than the release it would otherwise pair with.
+
+## Development
+* No `cs9` source file changed in this release. The version moves so the raised floor reaches a distinct tree, because `26.8.14` is already published.
+* `Task$run()` closes every connection in `run_sequential()` before it forks, so production never reached the corrupt state. Nothing asserts that ordering. `csdb 2026.8.15` removes the dependency on it.
+
 # Version 26.8.14
 
 ## Bug Fixes
