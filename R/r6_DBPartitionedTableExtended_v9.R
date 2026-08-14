@@ -12,8 +12,18 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     tables = list(),
     partitions = c(),
     column_name_partition = "",
+    # A generated partition column goes into a copy of `newdata`. A write then
+    # does not add a column to the caller's data.table. The copy is inside that
+    # branch only. A production import is memory-bound, so a copy of every
+    # `newdata` would double the peak memory.
     value_generator_partition = NULL,
     dbconnection = NULL,
+    # The indexes the constructor gave to every child. `drop_indexes` in
+    # `upsert_data()` and in `drop_all_rows_and_then_upsert_data()` defaults to
+    # NULL, not to `names(self$indexes)`. Each child therefore receives NULL,
+    # which is what it received before this field existed. A caller who wants
+    # the drop passes `drop_indexes = names(pt$indexes)`.
+    indexes = NULL,
     initialize = function(
       dbconfig,
       table_name_base,
@@ -27,6 +37,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       validator_field_contents = validator_field_contents_blank
     ) {
       force(table_name_partitions)
+      # This runs before `csdb::DBConnection_v9$new()` below. A rejected
+      # partition set therefore leaves no database connection open.
+      private$check_for_correct_partition_set(table_name_partitions)
       self$partitions <- table_name_partitions
 
       force(column_name_partition)
@@ -34,6 +47,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
 
       force(value_generator_partition)
       self$value_generator_partition <- value_generator_partition
+
+      force(indexes)
+      self$indexes <- indexes
 
       # ensure that partition name is last in dataset
       if (column_name_partition %in% names(field_types)) {
@@ -62,6 +78,11 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       )
 
       self$tables <- vector("list", length(self$partitions))
+      # `names()` coerces, so every child is reachable under as.character() of
+      # its partition value. Every `self$tables[[...]]` below indexes by that
+      # character. `[[` on a list takes a numeric index as a POSITION, so
+      # `self$tables[[5]]` returns the fifth child rather than the child named
+      # "5", and it grows the list to five elements when it assigns.
       names(self$tables) <- self$partitions
       for (i in self$partitions) {
         if (toupper(dbconfig$driver) == "SQLITE") {
@@ -87,7 +108,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           validator_field_contents = validator_field_contents,
           dbconnection = self$dbconnection
         )
-        self$tables[[i]] <- dbtable
+        self$tables[[as.character(i)]] <- dbtable
       }
     },
     #' @description
@@ -114,15 +135,19 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     ) {
       if (!is.null(self$value_generator_partition)) {
         part <- do.call(self$value_generator_partition, newdata)
-        newdata[, .(self$column_name_partition) := part]
+        newdata <- data.table::copy(newdata)
+        newdata[, (self$column_name_partition) := part]
       }
-      private$check_for_correct_partitions_in_data(newdata)
+      route <- private$check_for_correct_partitions_in_data(newdata)
 
-      partitions_in_use <- unique(newdata[[self$column_name_partition]])
-      partitions_in_use <- sample(partitions_in_use, length(partitions_in_use)) # randomize order
+      partitions_in_use <- unique(route)
+      # randomize order
+      partitions_in_use <- partitions_in_use[sample.int(length(
+        partitions_in_use
+      ))]
       for (i in partitions_in_use) {
-        index <- newdata[[self$column_name_partition]] == i
-        self$tables[[i]]$insert_data(
+        index <- route == as.character(i)
+        self$tables[[as.character(i)]]$insert_data(
           newdata[index, ],
           confirm_insert_via_nrow,
           verbose
@@ -131,25 +156,29 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     },
     upsert_data = function(
       newdata,
-      drop_indexes = names(self$indexes),
+      drop_indexes = NULL,
       verbose = TRUE
     ) {
       if (!is.null(self$value_generator_partition)) {
         part <- do.call(self$value_generator_partition, newdata)
-        newdata[, .(self$column_name_partition) := part]
+        newdata <- data.table::copy(newdata)
+        newdata[, (self$column_name_partition) := part]
       }
-      private$check_for_correct_partitions_in_data(newdata)
+      route <- private$check_for_correct_partitions_in_data(newdata)
 
-      partitions_in_use <- unique(newdata[[self$column_name_partition]])
-      partitions_in_use <- unique(newdata[[self$column_name_partition]])
+      partitions_in_use <- unique(route)
       for (i in partitions_in_use) {
-        index <- newdata[[self$column_name_partition]] == i
-        self$tables[[i]]$upsert_data(newdata[index, ], drop_indexes, verbose)
+        index <- route == as.character(i)
+        self$tables[[as.character(i)]]$upsert_data(
+          newdata[index, ],
+          drop_indexes,
+          verbose
+        )
       }
     },
     drop_all_rows = function() {
       for (i in self$partitions_randomized) {
-        self$tables[[i]]$drop_all_rows()
+        self$tables[[as.character(i)]]$drop_all_rows()
       }
     },
     drop_rows_where = function(condition, verbose = FALSE) {
@@ -164,28 +193,29 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
             length(self$partitions)
           )
         }
-        self$tables[[i]]$drop_rows_where(condition)
+        self$tables[[as.character(i)]]$drop_rows_where(condition)
       }
     },
     keep_rows_where = function(condition, verbose = FALSE) {
       for (i in self$partitions_randomized) {
-        self$tables[[i]]$keep_rows_where(condition)
+        self$tables[[as.character(i)]]$keep_rows_where(condition)
       }
     },
     drop_all_rows_and_then_upsert_data = function(
       newdata,
-      drop_indexes = names(self$indexes),
+      drop_indexes = NULL,
       verbose = TRUE
     ) {
       if (!is.null(self$value_generator_partition)) {
         part <- do.call(self$value_generator_partition, newdata)
-        newdata[, .(self$column_name_partition) := part]
+        newdata <- data.table::copy(newdata)
+        newdata[, (self$column_name_partition) := part]
       }
-      private$check_for_correct_partitions_in_data(newdata)
+      route <- private$check_for_correct_partitions_in_data(newdata)
 
       for (i in self$partitions_randomized) {
-        index <- newdata[[self$column_name_partition]] == i
-        self$tables[[i]]$drop_all_rows_and_then_upsert_data(
+        index <- route == as.character(i)
+        self$tables[[as.character(i)]]$drop_all_rows_and_then_upsert_data(
           newdata[index, ],
           drop_indexes,
           verbose
@@ -199,13 +229,14 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     ) {
       if (!is.null(self$value_generator_partition)) {
         part <- do.call(self$value_generator_partition, newdata)
-        newdata[, .(self$column_name_partition) := part]
+        newdata <- data.table::copy(newdata)
+        newdata[, (self$column_name_partition) := part]
       }
-      private$check_for_correct_partitions_in_data(newdata)
+      route <- private$check_for_correct_partitions_in_data(newdata)
 
       for (i in self$partitions_randomized) {
-        index <- newdata[[self$column_name_partition]] == i
-        self$tables[[i]]$drop_all_rows_and_then_insert_data(
+        index <- route == as.character(i)
+        self$tables[[as.character(i)]]$drop_all_rows_and_then_insert_data(
           newdata[index, ],
           confirm_insert_via_nrow,
           verbose
@@ -214,30 +245,35 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     },
     remove_table = function() {
       for (i in self$partitions_randomized) {
-        self$tables[[i]]$remove_table()
+        self$tables[[as.character(i)]]$remove_table()
       }
     },
     drop_indexes = function() {
       for (i in self$partitions_randomized) {
-        self$tables[[i]]$drop_indexes()
+        self$tables[[as.character(i)]]$drop_indexes()
       }
     },
     add_indexes = function() {
       for (i in self$partitions_randomized) {
-        self$tables[[i]]$add_indexes()
+        self$tables[[as.character(i)]]$add_indexes()
       }
     },
     confirm_indexes = function() {
       for (i in self$partitions_randomized) {
-        self$tables[[i]]$confirm_indexes()
+        self$tables[[as.character(i)]]$confirm_indexes()
       }
     },
     nrow = function(collapse = TRUE) {
-      table_rows <- self$tables[[1]]$dbconnection$autoconnection %>%
+      table_rows <- self$tables[[
+        as.character(self$partitions[1])
+      ]]$dbconnection$autoconnection %>%
         csdb::get_table_names_and_info()
       table_rows[, keep := FALSE]
       for (i in self$partitions_randomized) {
-        table_rows[table_name == self$tables[[i]]$table_name, keep := TRUE]
+        table_rows[
+          table_name == self$tables[[as.character(i)]]$table_name,
+          keep := TRUE
+        ]
       }
       table_rows <- table_rows[
         keep == T,
@@ -254,11 +290,16 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       return(table_rows)
     },
     info = function(collapse = FALSE) {
-      table_rows <- self$tables[[1]]$dbconnection$autoconnection %>%
+      table_rows <- self$tables[[
+        as.character(self$partitions[1])
+      ]]$dbconnection$autoconnection %>%
         csdb::get_table_names_and_info()
       table_rows[, keep := FALSE]
       for (i in self$partitions_randomized) {
-        table_rows[table_name == self$tables[[i]]$table_name, keep := TRUE]
+        table_rows[
+          table_name == self$tables[[as.character(i)]]$table_name,
+          keep := TRUE
+        ]
       }
       table_rows <- table_rows[keep == T]
       table_rows[, keep := NULL]
@@ -279,18 +320,134 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
   ),
   active = list(
     # sometimes we want this in a randomized order, so that the SQL table isnt locked and blocked
+    #
+    # `sample(x, length(x))` reads a length-1 numeric `x` as the range `1:x`.
+    # One partition numbered 9 then becomes a draw from 1 to 9. Indexing by a
+    # permutation has no such special case, and it is a no-op below length 2.
     partitions_randomized = function() {
-      sample(self$partitions, length(self$partitions))
+      self$partitions[sample.int(length(self$partitions))]
     }
   ),
   private = list(
-    check_for_correct_partitions_in_data = function(newdata) {
-      partitions_in_use <- unique(newdata[[self$column_name_partition]])
-      if (sum(!partitions_in_use %in% self$partitions)) {
+    # Reject a partition set that the class cannot use. `initialize()` runs this
+    # before it opens the connection, so a rejected construction leaves no
+    # database connection open.
+    #
+    # `names(self$tables) <- self$partitions` coerces, and all 16
+    # `self$tables[[...]]` sites index by `as.character()`. The character form
+    # is therefore the identity of a partition, and three of these four checks
+    # read it.
+    #
+    # A duplicate is the reason this method exists. `self$tables[[name]]` takes
+    # the FIRST match, so a duplicated partition makes one child unreachable
+    # while `length(self$partitions)` still counts it.
+    #
+    # An empty string is worse. `self$tables[[""]] <- child` matches no name, so
+    # it APPENDS. A set of `c("a", "")` built three children for two partitions,
+    # measured on 2026-08-14.
+    check_for_correct_partition_set = function(table_name_partitions) {
+      if (length(table_name_partitions) == 0) {
         stop(
-          "Some partitions exist in the data that do not exist in the partion"
+          "table_name_partitions is empty. ",
+          "A partitioned table needs at least one partition."
         )
       }
+      if (any(is.na(table_name_partitions))) {
+        stop("table_name_partitions holds NA.")
+      }
+      partition_names <- as.character(table_name_partitions)
+      if (any(partition_names == "")) {
+        stop("table_name_partitions holds an empty string.")
+      }
+      duplicates <- unique(partition_names[duplicated(partition_names)])
+      if (length(duplicates) > 0) {
+        stop(
+          "table_name_partitions holds duplicate values: ",
+          paste0(duplicates, collapse = ", "),
+          "."
+        )
+      }
+      invisible(partition_names)
+    },
+    # Reject data that the four write methods cannot route, and RETURN the route
+    # vector they route with, before any of them destroys a row.
+    #
+    # That returned vector is the only expression in this file that decides
+    # which partition a row belongs to. Validation and routing cannot disagree,
+    # because they read the same vector. `setdiff()` here and `==` in the write
+    # methods were two independent answers to one question before. They agreed.
+    # Three silent-data-loss defects in this class in one week were each a
+    # routing expression that looked right. Agreement today is therefore not a
+    # guarantee for tomorrow.
+    #
+    # Every write method pairs `route == as.character(i)` with
+    # `self$tables[[as.character(i)]]`. One coercion names the child and selects
+    # its rows, so a row cannot reach a child that its value does not name.
+    #
+    # `[[` returns NULL for a column that `newdata` does not carry, so the
+    # earlier check read `sum(!NULL %in% self$partitions)`, which is 0, and it
+    # passed. `drop_all_rows_and_then_upsert_data()` then computed
+    # `NULL == i`, which is `logical(0)`, took zero rows for every partition,
+    # dropped all of them and wrote nothing back.
+    #
+    # A list column passed the same check for a second reason. `setdiff()`
+    # converts a list to character, so `setdiff(list("a"), c("a", "b"))` is
+    # empty. `drop_all_rows_and_then_upsert_data()` then dropped every partition
+    # and died inside csdb on `is.infinite(get(i))`, which has no list method. A
+    # three-partition table lost every row, measured on 2026-08-14. The
+    # `is.atomic()` check below rejects that column before the first drop.
+    #
+    # A zero-row `newdata` that carries the partition column is accepted. That
+    # is how a caller clears every partition.
+    #
+    # Every caller runs this AFTER the `value_generator_partition` branch. A
+    # generated partition column is absent until that branch adds it.
+    check_for_correct_partitions_in_data = function(newdata) {
+      if (!is.data.frame(newdata)) {
+        stop(
+          "newdata must be a data.frame. Cannot route a ",
+          class(newdata)[1],
+          "."
+        )
+      }
+      if (!self$column_name_partition %in% names(newdata)) {
+        stop(
+          "newdata has no partition column. Expected a column named '",
+          self$column_name_partition,
+          "'."
+        )
+      }
+      values <- newdata[[self$column_name_partition]]
+      # A factor is atomic, so this accepts one. `as.character()` on a factor
+      # gives its labels, which is what `==` against a factor already compared.
+      if (!is.atomic(values)) {
+        stop(
+          "The partition column '",
+          self$column_name_partition,
+          "' must be atomic. Cannot route a ",
+          class(values)[1],
+          " column."
+        )
+      }
+      route <- as.character(values)
+      if (any(is.na(route))) {
+        stop(
+          "The partition column '",
+          self$column_name_partition,
+          "' holds NA."
+        )
+      }
+      unknown <- setdiff(route, as.character(self$partitions))
+      if (length(unknown) > 0) {
+        stop(
+          "The partition column '",
+          self$column_name_partition,
+          "' holds values that no partition covers: ",
+          paste0(unknown, collapse = ", "),
+          "."
+        )
+      }
+      invisible(route)
     }
   )
 )
