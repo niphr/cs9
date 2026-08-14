@@ -184,7 +184,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       private$check_for_correct_partitions_in_data(newdata)
 
       for (i in self$partitions_randomized) {
-        index <- self[[self$column_name_partition]] == i
+        index <- newdata[[self$column_name_partition]] == i
         self$tables[[i]]$drop_all_rows_and_then_upsert_data(
           newdata[index, ],
           drop_indexes,

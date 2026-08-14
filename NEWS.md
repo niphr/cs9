@@ -5,6 +5,7 @@
 * `DBPartitionedTableExtended_v9$disconnect()` now closes the shared connection once, at the parent. It looped over the partitions and closed each child before. Each child borrows the connection, so a child's `disconnect()` is a no-op in `csdb` 2026.8.14.
 * `DBTableExtended_v9$initialize()` gains `dbconnection` as its eighth and last argument. It forwards that argument to `csdb::DBTable_v9` in the eighth position. The argument defaults to `NULL`, which keeps the previous behaviour: the object builds and owns its own connection. `SurveillanceSystem_v9$add_table()` names every argument it passes and passes no `dbconnection`, so it is unaffected.
 * `DESCRIPTION` requires `csdb (>= 2026.8.14)`. That is the version where `DBTable_v9$initialize()` accepts `dbconnection`. Without this version floor, the incompatibility would fail at run time rather than at install time.
+* `DBPartitionedTableExtended_v9$drop_all_rows_and_then_upsert_data()` now sends each row of `newdata` to the partition that its partition column names. It read `self[[self$column_name_partition]]` before. `self` is the R6 object and holds no field with that name, so `[[` returned `NULL`. `NULL == "a"` returns `logical(0)`, and a data.table indexed by `logical(0)` holds zero rows. The method therefore ran `drop_all_rows()` on every partition and then upserted nothing. The whole table lost every row, with no error and no warning. `drop_all_rows_and_then_insert_data()` reads `newdata` and is unchanged.
 
 ## Known limitation
 * A child that a caller keeps after `DBPartitionedTableExtended_v9$disconnect()` can reopen the shared connection. `csdb::DBConnection_v9$autoconnection` calls `connect()` on every access, so any later use of that child opens a new connection. The child cannot close that connection again, because it does not own it. Only the parent closes it. Callers MUST NOT use a child after they disconnect the parent. A caller that does MUST disconnect the parent again. `r6_Task.R` calls `disconnect()` on the objects in the task's table list. A partitioned table is registered there as the parent, so the production teardown path is unaffected.
@@ -19,6 +20,10 @@
   * `disconnect()` on the parent closes the shared connection exactly once. The test counts the closes.
   * A `disconnect()` loop over every child leaves the partitioned table usable.
   * A child kept past the parent's `disconnect()` reopens the shared connection, and only the parent closes it again.
+* `tests/testthat/test-partition-routing.R` is new. It builds a three-partition table against a temporary SQLite file, and it asserts three things. The file holds 35 assertions, and 29 of them fail when the routing defect is present.
+  * `drop_all_rows_and_then_upsert_data()` sends every row to the partition that its `part` column names. The three partitions receive 2, 1 and 3 rows, so a row that reaches the wrong partition changes a count.
+  * `drop_all_rows_and_then_upsert_data()` and `drop_all_rows_and_then_insert_data()` write the same rows to the same partitions.
+  * `drop_all_rows_and_then_upsert_data()` empties a partition that `newdata` does not name.
 
 # Version 26.8.6
 
