@@ -65,10 +65,17 @@
 <code>DBTableExtended_v9$initialize()</code> gains <code>dbconnection</code> as its eighth and last argument. It forwards that argument to <code><a href="https://niphr.github.io/csdb/reference/DBTable_v9.html" class="external-link">csdb::DBTable_v9</a></code> in the eighth position. The argument defaults to <code>NULL</code>, which keeps the previous behaviour: the object builds and owns its own connection. <code>SurveillanceSystem_v9$add_table()</code> names every argument it passes and passes no <code>dbconnection</code>, so it is unaffected.</li>
 <li>
 <code>DESCRIPTION</code> requires <code>csdb (&gt;= 2026.8.14)</code>. That is the version where <code>DBTable_v9$initialize()</code> accepts <code>dbconnection</code>. Without this version floor, the incompatibility would fail at run time rather than at install time.</li>
+<li>
+<code>DBPartitionedTableExtended_v9$drop_all_rows_and_then_upsert_data()</code> now sends each row of <code>newdata</code> to the partition that its partition column names. It read <code>self[[self$column_name_partition]]</code> before. <code>self</code> is the R6 object and holds no field with that name, so <code>[[</code> returned <code>NULL</code>. <code>NULL == "a"</code> returns <code>logical(0)</code>, and a data.table indexed by <code>logical(0)</code> holds zero rows. The method therefore ran <code>drop_all_rows()</code> on every partition and then upserted nothing. The whole table lost every row, with no error and no warning. <code>drop_all_rows_and_then_insert_data()</code> reads <code>newdata</code> and is unchanged.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="known-limitation-26-8-14">Known limitation<a class="anchor" aria-label="anchor" href="#known-limitation-26-8-14"></a></h3>
 <ul><li>A child that a caller keeps after <code>DBPartitionedTableExtended_v9$disconnect()</code> can reopen the shared connection. <code>csdb::DBConnection_v9$autoconnection</code> calls <code>connect()</code> on every access, so any later use of that child opens a new connection. The child cannot close that connection again, because it does not own it. Only the parent closes it. Callers MUST NOT use a child after they disconnect the parent. A caller that does MUST disconnect the parent again. <code>r6_Task.R</code> calls <code>disconnect()</code> on the objects in the task’s table list. A partitioned table is registered there as the parent, so the production teardown path is unaffected.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="licensing-26-8-14">Licensing<a class="anchor" aria-label="anchor" href="#licensing-26-8-14"></a></h3>
+<ul><li>
+<code>DESCRIPTION</code> no longer carries explicit <code>Author</code> and <code>Maintainer</code> fields. R derives both from <code>Authors@R</code>, which is the single source. The explicit fields named “Core Surveillance” as the copyright holder, while <code>Authors@R</code> names Folkehelseinstituttet. The 2026-08-06 sweep corrected <code>Authors@R</code> and left the free text behind, so the two disagreed on the legal entity.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="development-26-8-14">Development<a class="anchor" aria-label="anchor" href="#development-26-8-14"></a></h3>
@@ -80,6 +87,15 @@
 <code>disconnect()</code> on the parent closes the shared connection exactly once. The test counts the closes.</li>
 <li>A <code>disconnect()</code> loop over every child leaves the partitioned table usable.</li>
 <li>A child kept past the parent’s <code>disconnect()</code> reopens the shared connection, and only the parent closes it again.</li>
+</ul></li>
+<li>
+<code>tests/testthat/test-partition-routing.R</code> is new. It builds a three-partition table against a temporary SQLite file, and it asserts three things. The file holds 35 assertions, and 29 of them fail when the routing defect is present.
+<ul><li>
+<code>drop_all_rows_and_then_upsert_data()</code> sends every row to the partition that its <code>part</code> column names. The three partitions receive 2, 1 and 3 rows, so a row that reaches the wrong partition changes a count.</li>
+<li>
+<code>drop_all_rows_and_then_upsert_data()</code> and <code>drop_all_rows_and_then_insert_data()</code> write the same rows to the same partitions.</li>
+<li>
+<code>drop_all_rows_and_then_upsert_data()</code> empties a partition that <code>newdata</code> does not name.</li>
 </ul></li>
 </ul></div>
 </div>
