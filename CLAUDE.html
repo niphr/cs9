@@ -618,16 +618,41 @@ tests/testthat/                # Test suite</code></pre>
 <li>A <strong>declared</strong> package still lands in <code>Namespaces in Imports field not imported from</code>, because the scan finds no use of it.</li>
 </ul><p>Measured on 2026-08-15, cs9 26.8.18: that NOTE listed <code>callr</code>, <code>foreach</code>, <code>future</code>, <code>later</code> and <code>progress</code>. Four of the five WERE used, each by a <code>::</code> call inside an R6 method. Only <code>progress</code> was genuinely unused. <strong>The NOTE is therefore mostly a false positive and does not clear by using the package more.</strong> Read it as “check by hand”, not as “delete these”.</p>
 <p><strong>Check both directions before you act on it.</strong> <code>26.8.19</code> removed <code>future</code> and <code>foreach</code>, because the audit showed those two calls reset a backend cs9 never sets. That is the opposite conclusion from <code>callr</code> and <code>later</code>, which are live. The NOTE cannot tell you which case you have.</p>
+<p><strong>The NOTE has an exact meaning, and <code>26.8.19</code> measured it.</strong> It lists every package used ONLY inside an R6 method, plus every package genuinely unused. Nothing else. That release declared three packages and CI reported:</p>
+<pre><code>Namespaces in Imports field not imported from:
+  'callr' 'csutil' 'later' 'pbmcapply' 'progress'</code></pre>
+<p><code>csutil</code> and <code>pbmcapply</code> joined the list. <code>utils</code> did not, although all three were declared in the same commit. The reason is where the calls sit:</p>
+<table class="table"><colgroup><col width="33%"><col width="33%"><col width="33%"></colgroup><thead><tr class="header"><th>Package</th>
+<th>Calls</th>
+<th>In the NOTE</th>
+</tr></thead><tbody><tr class="odd"><td>
+<code>csutil</code>, <code>pbmcapply</code>
+</td>
+<td>R6 methods only</td>
+<td>yes</td>
+</tr><tr class="even"><td><code>utils</code></td>
+<td>
+<code>.onAttach()</code> and <code>update_config_tasks_stats()</code> are plain functions, plus one R6 method</td>
+<td>no</td>
+</tr><tr class="odd"><td>
+<code>callr</code>, <code>later</code>
+</td>
+<td>R6 methods only</td>
+<td>yes</td>
+</tr><tr class="even"><td><code>progress</code></td>
+<td>none</td>
+<td>yes</td>
+</tr></tbody></table><p>One call in a plain top-level function is enough to clear a package from the NOTE. So a package listed there is either R6-only or dead, and telling those apart needs the hand sweep below. <code>csutil</code> and <code>pbmcapply</code> are on the NOTE and are load-bearing: <code>26.8.19</code> proves it by reverting <code>csutil</code> and watching four tests go red.</p>
 <p>The cost is not cosmetic, and it hit twice.</p>
 <p><code>Task$run()</code> called <code><a href="https://future.futureverse.org/reference/plan.html" class="external-link">future::plan()</a></code> and <code><a href="https://rdrr.io/pkg/foreach/man/registerDoSEQ.html" class="external-link">foreach::registerDoSEQ()</a></code> for years with neither package declared. <code>R CMD check</code> could not see the calls, and no test executed them, so both safety nets were down at once. It surfaced only when <code>26.8.17</code> added a test that drives the public <code>Task$run()</code> to completion.</p>
 <p><code>Task</code> called <code>splutil::unnest_dfs_within_list_of_fully_named_lists()</code> at four sites, with <code>splutil</code> undeclared and absent from every NorSySS pod. <code>upsert_at_end_of_each_plan = TRUE</code> and <code>insert_at_end_of_each_plan = TRUE</code> therefore raised <code>there is no package called 'splutil'</code> on every pod. <code>26.8.19</code> switched them to <code>csutil</code>, which publishes the same utilities and IS installed, and added <code>tests/testthat/test-plan-end-write.R</code>. <strong>Neither feature had a test at all</strong>, which is the reason a broken call sat there unseen.</p>
 <p><strong>The four sites are in TWO methods, and that split is easy to miss.</strong> <code>run_sequential()</code> holds <code>R/r6_Task.R:295</code> and <code>:301</code>. <code>run_parallel_plans()</code> holds <code>:351</code> and <code>:357</code>. A test that drives only the sequential branch leaves half of it uncovered, and the NEWS entry for 26.8.19 claimed full coverage on the strength of exactly that mistake before an adversarial review caught it.</p>
 <p>The parallel pair fails worse. The worker wraps its body in a <code>tryCatch</code> with five attempts and <code>Sys.sleep(5)</code> between them, so a missing package costs 25 seconds before it surfaces as <code>Error in index N</code>.</p>
 <p><strong>Sweep by hand instead. Compare every <code>::</code> call in <code>R/</code> against <code>DESCRIPTION</code>:</strong></p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-rhoE</span> <span class="st">"\b[a-zA-Z][a-zA-Z0-9._]*::"</span> R/ <span class="at">--include</span><span class="op">=</span><span class="st">'*.R'</span> <span class="kw">|</span> <span class="fu">sed</span> <span class="st">'s/:://'</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span> <span class="op">&gt;</span> /tmp/used.txt</span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">sed</span> <span class="at">-n</span> <span class="st">'/^Depends:/,/^License:/p'</span> DESCRIPTION <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-oE</span> <span class="st">"^ +[a-zA-Z][a-zA-Z0-9._]*"</span> <span class="dt">\</span></span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>  <span class="kw">|</span> <span class="fu">tr</span> <span class="at">-d</span> <span class="st">' '</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span> <span class="op">&gt;</span> /tmp/decl.txt</span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="fu">comm</span> <span class="at">-23</span> /tmp/used.txt /tmp/decl.txt</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-rhoE</span> <span class="st">"\b[a-zA-Z][a-zA-Z0-9._]*::"</span> R/ <span class="at">--include</span><span class="op">=</span><span class="st">'*.R'</span> <span class="kw">|</span> <span class="fu">sed</span> <span class="st">'s/:://'</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span> <span class="op">&gt;</span> /tmp/used.txt</span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">sed</span> <span class="at">-n</span> <span class="st">'/^Depends:/,/^License:/p'</span> DESCRIPTION <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-oE</span> <span class="st">"^ +[a-zA-Z][a-zA-Z0-9._]*"</span> <span class="dt">\</span></span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>  <span class="kw">|</span> <span class="fu">tr</span> <span class="at">-d</span> <span class="st">' '</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span> <span class="op">&gt;</span> /tmp/decl.txt</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a><span class="fu">comm</span> <span class="at">-23</span> /tmp/used.txt /tmp/decl.txt</span></code></pre></div>
 <p>Read the output by hand. It reports a match inside a comment and a match inside a template string as well as a real call, so check each one before you declare it.</p>
 <p><strong>No undeclared namespace call remains</strong>, as of 26.8.19. <code>26.8.19</code> declared <code>csutil</code>, <code>pbmcapply</code> and <code>utils</code>, and removed the <code>future</code> and <code>foreach</code> calls.</p>
 <p><strong>Read every match against the source. Five of the sweep’s matches are not calls:</strong></p>
@@ -655,7 +680,7 @@ tests/testthat/                # Test suite</code></pre>
 </ul><p>The copyright holder for this package is <strong>Folkehelseinstituttet</strong>.</p>
 <p><strong>Check the year at the start of each calendar year, and whenever you edit <code>DESCRIPTION</code>.</strong> Nothing in <code>R CMD check</code> tests the copyright year, so a stale one goes unnoticed indefinitely. A fleet sweep on 2026-08-06 found years of 2021, 2023 and 2025 still in place across 15 packages, and not one package declared a <code>cph</code> role at all.</p>
 <p>Check both in one step:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="st">"LICENSE"</span><span class="op">)</span></span>
 <span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/eval.html" class="external-link">eval</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/parse.html" class="external-link">parse</a></span><span class="op">(</span>text <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/dcf.html" class="external-link">read.dcf</a></span><span class="op">(</span><span class="st">"DESCRIPTION"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Authors@R"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Filter</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="st">"cph"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">p</span><span class="op">$</span><span class="va">role</span>, <span class="va">a</span><span class="op">)</span></span></code></pre></div>
