@@ -629,15 +629,37 @@ an R6 method is invisible to it, in both directions:
 - A **declared** package still lands in `Namespaces in Imports field not imported from`, because
   the scan finds no use of it.
 
-Measured on 2026-08-15, cs9 26.8.18: that NOTE lists `callr`, `foreach`, `future`, `later` and
-`progress`. Four of the five ARE used, each by a `::` call inside an R6 method. Only `progress` is
-genuinely unused. **The NOTE is therefore mostly a false positive and does not clear by using the
-package more.** Read it as "check by hand", not as "delete these".
+Measured on 2026-08-15, cs9 26.8.18: that NOTE listed `callr`, `foreach`, `future`, `later` and
+`progress`. Four of the five WERE used, each by a `::` call inside an R6 method. Only `progress`
+was genuinely unused. **The NOTE is therefore mostly a false positive and does not clear by using
+the package more.** Read it as "check by hand", not as "delete these".
 
-The cost is not cosmetic. `Task$run()` called `future::plan()` and `foreach::registerDoSEQ()` at
-`R/r6_Task.R:262` and `:263` for years with neither package declared. `R CMD check` could not see
-the calls, and no test executed them, so both safety nets were down at once. It surfaced only when
-`26.8.17` added a test that drives the public `Task$run()` to completion.
+**Check both directions before you act on it.** `26.8.19` removed `future` and `foreach`, because
+the audit showed those two calls reset a backend cs9 never sets. That is the opposite conclusion
+from `callr` and `later`, which are live. The NOTE cannot tell you which case you have.
+
+The cost is not cosmetic, and it hit twice.
+
+`Task$run()` called `future::plan()` and `foreach::registerDoSEQ()` for years with neither package
+declared. `R CMD check` could not see the calls, and no test executed them, so both safety nets
+were down at once. It surfaced only when `26.8.17` added a test that drives the public `Task$run()`
+to completion.
+
+`Task` called `splutil::unnest_dfs_within_list_of_fully_named_lists()` at four sites, with
+`splutil` undeclared and absent from every NorSySS pod. `upsert_at_end_of_each_plan = TRUE` and
+`insert_at_end_of_each_plan = TRUE` therefore raised `there is no package called 'splutil'` on
+every pod. `26.8.19` switched them to `csutil`, which publishes the same utilities and IS
+installed, and added `tests/testthat/test-plan-end-write.R`. **Neither feature had a test at all**,
+which is the reason a broken call sat there unseen.
+
+**The four sites are in TWO methods, and that split is easy to miss.** `run_sequential()` holds
+`R/r6_Task.R:295` and `:301`. `run_parallel_plans()` holds `:351` and `:357`. A test that drives
+only the sequential branch leaves half of it uncovered, and the NEWS entry for 26.8.19 claimed
+full coverage on the strength of exactly that mistake before an adversarial review caught it.
+
+The parallel pair fails worse. The worker wraps its body in a `tryCatch` with five attempts and
+`Sys.sleep(5)` between them, so a missing package costs 25 seconds before it surfaces as
+`Error in index N`.
 
 **Sweep by hand instead. Compare every `::` call in `R/` against `DESCRIPTION`:**
 
@@ -651,16 +673,32 @@ comm -23 /tmp/used.txt /tmp/decl.txt
 Read the output by hand. It reports a match inside a comment and a match inside a template string
 as well as a real call, so check each one before you declare it.
 
-**Four undeclared calls are known and NOT fixed**, as of 26.8.18:
+**No undeclared namespace call remains**, as of 26.8.19. `26.8.19` declared `csutil`, `pbmcapply`
+and `utils`, and removed the `future` and `foreach` calls.
 
-| Package | Sites | Why it is still open |
-|---|---|---|
-| `pbmcapply` | `R/r6_Task.R:324` in `run_parallel_plans()`, `:490` in the dead `run_parallel` | belongs in `Imports`, and that makes it a hard install requirement |
-| `splutil` | `R/r6_Task.R:297`, `:303`, `:353`, `:359` | not on CRAN, so it needs a `Remotes:` entry |
-| `utils` | `R/3_onAttach.R:5`, `R/config_tasks_runtime.R:31`, `R/r6_TaskJob.R:180` | works only because R attaches `utils` by default |
-| `devtools` | `R/r6_SurveillanceSystem.R:414`, `R/r6_TaskJob.R:72` | belongs in `Suggests`, never in `Imports` |
+**Read every match against the source. Five of the sweep's matches are not calls:**
 
-Each one survives for the reason `future` did: every machine that runs cs9 happens to have it.
+| Match | What it really is |
+|---|---|
+| `PACKAGE` | the template string `"PACKAGE::TASK_NAME_action"` in `R/addins.R` |
+| `future.apply` | inside a comment, `R/r6_Task.R:454` |
+| `cs9` | the package itself |
+
+**`devtools` is NOT on that list, and the reasoning that put it there was wrong.**
+`devtools::load_all('.')` at `R/r6_SurveillanceSystem.R:414` and `R/r6_TaskJob.R:72` is generated
+text: cs9 writes it into a temporary `.R` file. But cs9 then EXECUTES that file in a child R
+process, so the feature genuinely needs `devtools` at run time. Process separation moves the
+dependency; it does not remove it. `devtools` is therefore in `Suggests`, which is the correct
+category for a package that one optional feature needs.
+
+The rule that follows: **ask what runs the text, not just who wrote it.** A string is a false
+positive only when nothing executes it. `"PACKAGE::TASK_NAME_action"` is a template a human edits.
+`devtools::load_all('.')` is a program cs9 runs.
+
+**`utils` needs declaring even though it always works.** `utils::packageDescription()` loads the
+namespace directly, so it does not depend on `utils` being attached. It works because `utils` ships
+with R and is therefore always installed. That is a property of the R distribution, not a declared
+dependency, so declare it.
 
 ## Licensing
 

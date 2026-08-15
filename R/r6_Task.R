@@ -259,8 +259,6 @@ Task <- R6::R6Class(
       b1 <- Sys.time()
       message("Task ran in ", round(as.numeric(difftime(b1, a0, units = "mins")), 1), " mins\n")
 
-      future::plan(future::sequential)
-      foreach::registerDoSEQ()
       data.table::setDTthreads()
 
       if (!is.null(self$action_after_fn)) {
@@ -294,13 +292,13 @@ Task <- R6::R6Class(
         retval <- self$plans[plans_index][[i]]$run_all_with_data(data = data, tables = tables)
 
         if(upsert_at_end_of_each_plan){
-          retval <- splutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = T, fill = T)
+          retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = T, fill = T)
           for(df_name in names(retval)){
             tables[[df_name]]$upsert_data(retval[[df_name]], verbose = verbose)
           }
         }
         if (insert_at_end_of_each_plan) {
-          retval <- splutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = T, fill = T)
+          retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = T, fill = T)
           for(df_name in names(retval)){
             tables[[df_name]]$insert_data(retval[[df_name]], verbose = verbose)
           }
@@ -350,13 +348,13 @@ Task <- R6::R6Class(
                 retval <- x$run_all_with_data(data = data, tables = tables)
 
                 if(upsert_at_end_of_each_plan){
-                  retval <- splutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = T, fill = T)
+                  retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = T, fill = T)
                   for(df_name in names(retval)){
                     tables[[df_name]]$upsert_data(retval[[df_name]], verbose = F)
                   }
                 }
                 if (insert_at_end_of_each_plan) {
-                  retval <- splutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = T, fill = T)
+                  retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = T, fill = T)
                   for(df_name in names(retval)){
                     tables[[df_name]]$insert_data(retval[[df_name]], verbose = F)
                   }

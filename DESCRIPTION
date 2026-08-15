@@ -1,6 +1,6 @@
 Package: cs9
 Title: A Framework for Real-Time Analysis and Disease Surveillance
-Version: 26.8.18
+Version: 26.8.19
 Authors@R:
     c(
       person(
@@ -24,15 +24,15 @@ Imports:
   callr,
   csdb (>= 2026.8.15),
   cstime (>= 2023.5.3),
+  csutil,
   data.table,
   dplyr,
-  foreach,
   fs,
-  future,
   glue,
   later,
   lubridate,
   magrittr,
+  pbmcapply,
   plnr (>= 2021.5.4),
   processx,
   progress,
@@ -40,9 +40,11 @@ Imports:
   R6,
   rstudioapi,
   stats,
-  stringr
+  stringr,
+  utils
 Suggests:
     DBI,
+    devtools,
     RSQLite,
     testthat,
     withr,
