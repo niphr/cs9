@@ -638,6 +638,30 @@ the package more.** Read it as "check by hand", not as "delete these".
 the audit showed those two calls reset a backend cs9 never sets. That is the opposite conclusion
 from `callr` and `later`, which are live. The NOTE cannot tell you which case you have.
 
+**The NOTE has an exact meaning, and `26.8.19` measured it.** It lists every package used ONLY
+inside an R6 method, plus every package genuinely unused. Nothing else. That release declared
+three packages and CI reported:
+
+```
+Namespaces in Imports field not imported from:
+  'callr' 'csutil' 'later' 'pbmcapply' 'progress'
+```
+
+`csutil` and `pbmcapply` joined the list. `utils` did not, although all three were declared in the
+same commit. The reason is where the calls sit:
+
+| Package | Calls | In the NOTE |
+|---|---|---|
+| `csutil`, `pbmcapply` | R6 methods only | yes |
+| `utils` | `.onAttach()` and `update_config_tasks_stats()` are plain functions, plus one R6 method | no |
+| `callr`, `later` | R6 methods only | yes |
+| `progress` | none | yes |
+
+One call in a plain top-level function is enough to clear a package from the NOTE. So a package
+listed there is either R6-only or dead, and telling those apart needs the hand sweep below.
+`csutil` and `pbmcapply` are on the NOTE and are load-bearing: `26.8.19` proves it by reverting
+`csutil` and watching four tests go red.
+
 The cost is not cosmetic, and it hit twice.
 
 `Task$run()` called `future::plan()` and `foreach::registerDoSEQ()` for years with neither package
