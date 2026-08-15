@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,35 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.18" id="version-26818">Version 26.8.18<a class="anchor" aria-label="anchor" href="#version-26818"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-26-8-18">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-26-8-18"></a></h3>
+<ul><li>
+<code>DESCRIPTION</code> declares <code>foreach</code> and <code>future</code>. <code>Task$run()</code> calls <code>future::plan(future::sequential)</code> and <code><a href="https://rdrr.io/pkg/foreach/man/registerDoSEQ.html" class="external-link">foreach::registerDoSEQ()</a></code> at <code>R/r6_Task.R:262</code> and <code>:263</code>, on the path every successful run takes. Neither package was in <code>Imports</code>, in <code>Suggests</code> or in <code>NAMESPACE</code>. A machine without them installed therefore raised <code>there is no package called 'future'</code> at the end of every task.</li>
+<li>The defect is as old as those two lines, and no test reached them. <code>26.8.17</code> added <code>tests/testthat/test-fork-ordering.R</code>, which drives the public <code>Task$run()</code> to completion, so CI ran the line for the first time and went red. The development pods carry both packages, so every local suite stayed green.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.17" id="version-26817">Version 26.8.17<a class="anchor" aria-label="anchor" href="#version-26817"></a></h2>
+<div class="section level3">
+<h3 id="development-26-8-17">Development<a class="anchor" aria-label="anchor" href="#development-26-8-17"></a></h3>
+<ul><li>
+<code>tests/testthat/test-fork-ordering.R</code> pins the order that <code>Task$run()</code> uses: it closes every database connection before it forks. Nothing asserted that order before. A refactor that moves the sweep reintroduces silent data corruption.</li>
+<li>The test mocks <code><a href="https://rdrr.io/pkg/pbmcapply/man/pbmclapply.html" class="external-link">pbmcapply::pbmclapply</a></code> and drives the public <code>Task$run()</code>. The mock reads every connection at the fork boundary and returns without forking. A test on the private <code>run_sequential()</code> proves that the helper disconnects. It does not prove that the public path calls the helper before it forks.</li>
+<li>Two mutations of <code>R/r6_Task.R</code> go red. The first deletes the disconnect sweep and fails 2 assertions. The second moves <code>run_parallel_plans()</code> in front of the sequential setup and fails 3.</li>
+<li>
+<code>test-fork-ordering.R</code> asserts the length of both connection vectors before it asserts that both are open. <code>all(logical(0))</code> is TRUE, so the open check would otherwise pass on an empty list.</li>
+<li>No executable <code>cs9</code> code changed in this release. The version moves because <code>26.8.16</code> is already published from a different tree.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-26-8-17">Documentation<a class="anchor" aria-label="anchor" href="#documentation-26-8-17"></a></h3>
+<ul><li>
+<code>DBPartitionedTableExtended_v9</code> documents its one shared connection. The object owns it, every child borrows it, and only the parent’s <code>disconnect()</code> closes it.</li>
+<li>
+<code>$nrow()</code> and <code>$info()</code> document the <code>partition</code> column that <code>26.8.16</code> added. It is character, it matches <code>names(self$tables)</code>, and it is the last column, so <code>table_name</code> stays at position 1 and <code>nrow</code> at position 2.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.16" id="version-26816">Version 26.8.16<a class="anchor" aria-label="anchor" href="#version-26816"></a></h2>
 <div class="section level3">
