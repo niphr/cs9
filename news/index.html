@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,29 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.19" id="version-26819">Version 26.8.19<a class="anchor" aria-label="anchor" href="#version-26819"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-26-8-19">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-26-8-19"></a></h3>
+<ul><li>
+<code>Task</code> calls <code><a href="https://rdrr.io/pkg/csutil/man/unnest_dfs_within_list_of_fully_named_lists.html" class="external-link">csutil::unnest_dfs_within_list_of_fully_named_lists()</a></code>. It called <code>splutil::</code>, and <code>splutil</code> was in neither <code>Imports</code> nor <code>Suggests</code>. The two packages publish the same utilities under two names, and the NorSySS pods carry <code>csutil</code> alone. So <code>upsert_at_end_of_each_plan = TRUE</code> and <code>insert_at_end_of_each_plan = TRUE</code> both raised <code>there is no package called 'splutil'</code> on every pod, and nothing installed the package that would have fixed it.</li>
+<li>There are four call sites, and they are in TWO methods. <code>run_sequential()</code> holds <code>R/r6_Task.R:295</code> and <code>:301</code>. <code>run_parallel_plans()</code> holds <code>:351</code> and <code>:357</code>. The parallel pair fails worse: the worker wraps its body in a <code>tryCatch</code> with five attempts and a five second sleep between them, so a missing package costs 25 seconds before it surfaces as <code>Error in index N</code>.</li>
+<li>
+<code>DESCRIPTION</code> declares <code>csutil</code>, <code>pbmcapply</code> and <code>utils</code>. <code><a href="https://rdrr.io/pkg/pbmcapply/man/pbmclapply.html" class="external-link">pbmcapply::pbmclapply()</a></code> at <code>R/r6_Task.R:322</code> is how every parallel task runs, so a machine without it could not run one. <code>utils</code> ships with R, so it is always installed, but the dependency was still undeclared.</li>
+<li>
+<code>tests/testthat/test-plan-end-write.R</code> covers all four sites, one test each. Neither feature had a test, which is why the <code>splutil</code> calls survived. The two parallel tests mock <code><a href="https://rdrr.io/pkg/pbmcapply/man/pbmclapply.html" class="external-link">pbmcapply::pbmclapply</a></code> to run the worker in process, so nothing forks and the write is observable. Reverting <code>csutil</code> to <code>splutil</code> fails all four. The cs9 suite holds 387 passes, up from 368.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="development-26-8-19">Development<a class="anchor" aria-label="anchor" href="#development-26-8-19"></a></h3>
+<ul><li>
+<code>Task$run()</code> no longer calls <code>future::plan(future::sequential)</code> or <code><a href="https://rdrr.io/pkg/foreach/man/registerDoSEQ.html" class="external-link">foreach::registerDoSEQ()</a></code>, and <code>DESCRIPTION</code> no longer declares <code>future</code> or <code>foreach</code>. cs9 never creates a future plan and never registers a parallel <code>foreach</code> backend, so both lines reset a state that cs9 does not set. The two <code>%dopar%</code> blocks that would have needed them are commented out, at <code>R/r6_Task.R:425</code> and <code>:523</code>. <code><a href="https://rdrr.io/pkg/data.table/man/openmp-utils.html" class="external-link">data.table::setDTthreads()</a></code> on the next line is a real reset and stays.</li>
+<li>
+<code>26.8.18</code> declared <code>future</code> and <code>foreach</code> rather than removing the calls. That release is superseded on this point.</li>
+<li>
+<code>Suggests</code> declares <code>devtools</code>. <code>devtools::load_all('.')</code> at <code>R/r6_SurveillanceSystem.R:414</code> and <code>R/r6_TaskJob.R:72</code> is generated text, inside a <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue()</a></code> string that cs9 writes to a temporary <code>.R</code> file. cs9 then runs that file in a child R process, so the feature needs <code>devtools</code> at run time. Process separation moves the dependency and does not remove it. <code>Suggests</code> is the right category, because one optional feature needs it and the package does not.</li>
+<li>No undeclared namespace call remains. See <code>CLAUDE.md</code> for the sweep, and for the three matches it reports that are text rather than calls.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.18" id="version-26818">Version 26.8.18<a class="anchor" aria-label="anchor" href="#version-26818"></a></h2>
 <div class="section level3">

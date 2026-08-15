@@ -1,5 +1,62 @@
 # Changelog
 
+## Version 26.8.19
+
+### Bug Fixes
+
+- `Task` calls
+  [`csutil::unnest_dfs_within_list_of_fully_named_lists()`](https://rdrr.io/pkg/csutil/man/unnest_dfs_within_list_of_fully_named_lists.html).
+  It called `splutil::`, and `splutil` was in neither `Imports` nor
+  `Suggests`. The two packages publish the same utilities under two
+  names, and the NorSySS pods carry `csutil` alone. So
+  `upsert_at_end_of_each_plan = TRUE` and
+  `insert_at_end_of_each_plan = TRUE` both raised
+  `there is no package called 'splutil'` on every pod, and nothing
+  installed the package that would have fixed it.
+- There are four call sites, and they are in TWO methods.
+  `run_sequential()` holds `R/r6_Task.R:295` and `:301`.
+  `run_parallel_plans()` holds `:351` and `:357`. The parallel pair
+  fails worse: the worker wraps its body in a `tryCatch` with five
+  attempts and a five second sleep between them, so a missing package
+  costs 25 seconds before it surfaces as `Error in index N`.
+- `DESCRIPTION` declares `csutil`, `pbmcapply` and `utils`.
+  [`pbmcapply::pbmclapply()`](https://rdrr.io/pkg/pbmcapply/man/pbmclapply.html)
+  at `R/r6_Task.R:322` is how every parallel task runs, so a machine
+  without it could not run one. `utils` ships with R, so it is always
+  installed, but the dependency was still undeclared.
+- `tests/testthat/test-plan-end-write.R` covers all four sites, one test
+  each. Neither feature had a test, which is why the `splutil` calls
+  survived. The two parallel tests mock
+  [`pbmcapply::pbmclapply`](https://rdrr.io/pkg/pbmcapply/man/pbmclapply.html)
+  to run the worker in process, so nothing forks and the write is
+  observable. Reverting `csutil` to `splutil` fails all four. The cs9
+  suite holds 387 passes, up from 368.
+
+### Development
+
+- `Task$run()` no longer calls `future::plan(future::sequential)` or
+  [`foreach::registerDoSEQ()`](https://rdrr.io/pkg/foreach/man/registerDoSEQ.html),
+  and `DESCRIPTION` no longer declares `future` or `foreach`. cs9 never
+  creates a future plan and never registers a parallel `foreach`
+  backend, so both lines reset a state that cs9 does not set. The two
+  `%dopar%` blocks that would have needed them are commented out, at
+  `R/r6_Task.R:425` and `:523`.
+  [`data.table::setDTthreads()`](https://rdrr.io/pkg/data.table/man/openmp-utils.html)
+  on the next line is a real reset and stays.
+- `26.8.18` declared `future` and `foreach` rather than removing the
+  calls. That release is superseded on this point.
+- `Suggests` declares `devtools`. `devtools::load_all('.')` at
+  `R/r6_SurveillanceSystem.R:414` and `R/r6_TaskJob.R:72` is generated
+  text, inside a
+  [`glue::glue()`](https://glue.tidyverse.org/reference/glue.html)
+  string that cs9 writes to a temporary `.R` file. cs9 then runs that
+  file in a child R process, so the feature needs `devtools` at run
+  time. Process separation moves the dependency and does not remove it.
+  `Suggests` is the right category, because one optional feature needs
+  it and the package does not.
+- No undeclared namespace call remains. See `CLAUDE.md` for the sweep,
+  and for the three matches it reports that are text rather than calls.
+
 ## Version 26.8.18
 
 ### Bug Fixes
