@@ -1,3 +1,9 @@
+# Version 26.8.18
+
+## Bug Fixes
+* `DESCRIPTION` declares `foreach` and `future`. `Task$run()` calls `future::plan(future::sequential)` and `foreach::registerDoSEQ()` at `R/r6_Task.R:262` and `:263`, on the path every successful run takes. Neither package was in `Imports`, in `Suggests` or in `NAMESPACE`. A machine without them installed therefore raised `there is no package called 'future'` at the end of every task.
+* The defect is as old as those two lines, and no test reached them. `26.8.17` added `tests/testthat/test-fork-ordering.R`, which drives the public `Task$run()` to completion, so CI ran the line for the first time and went red. The development pods carry both packages, so every local suite stayed green.
+
 # Version 26.8.17
 
 ## Development
