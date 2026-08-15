@@ -619,6 +619,49 @@ check_environment_setup <- function() {
 
 This approach ensures CS9 can be distributed via CRAN while maintaining its core database-driven architecture and providing clear guidance for users setting up the full surveillance infrastructure.
 
+## `R CMD check` cannot see a `::` call inside an R6 method
+
+`R6::R6Class()` takes its methods as `public = list(...)`. The dependency scan in `R CMD check`
+walks top-level function definitions, and it does not walk that list. So a `pkg::fn()` call inside
+an R6 method is invisible to it, in both directions:
+
+- An **undeclared** package raises no NOTE. Nothing warns you that `DESCRIPTION` is missing it.
+- A **declared** package still lands in `Namespaces in Imports field not imported from`, because
+  the scan finds no use of it.
+
+Measured on 2026-08-15, cs9 26.8.18: that NOTE lists `callr`, `foreach`, `future`, `later` and
+`progress`. Four of the five ARE used, each by a `::` call inside an R6 method. Only `progress` is
+genuinely unused. **The NOTE is therefore mostly a false positive and does not clear by using the
+package more.** Read it as "check by hand", not as "delete these".
+
+The cost is not cosmetic. `Task$run()` called `future::plan()` and `foreach::registerDoSEQ()` at
+`R/r6_Task.R:262` and `:263` for years with neither package declared. `R CMD check` could not see
+the calls, and no test executed them, so both safety nets were down at once. It surfaced only when
+`26.8.17` added a test that drives the public `Task$run()` to completion.
+
+**Sweep by hand instead. Compare every `::` call in `R/` against `DESCRIPTION`:**
+
+```bash
+grep -rhoE "\b[a-zA-Z][a-zA-Z0-9._]*::" R/ --include='*.R' | sed 's/:://' | sort -u > /tmp/used.txt
+sed -n '/^Depends:/,/^License:/p' DESCRIPTION | grep -oE "^ +[a-zA-Z][a-zA-Z0-9._]*" \
+  | tr -d ' ' | sort -u > /tmp/decl.txt
+comm -23 /tmp/used.txt /tmp/decl.txt
+```
+
+Read the output by hand. It reports a match inside a comment and a match inside a template string
+as well as a real call, so check each one before you declare it.
+
+**Four undeclared calls are known and NOT fixed**, as of 26.8.18:
+
+| Package | Sites | Why it is still open |
+|---|---|---|
+| `pbmcapply` | `R/r6_Task.R:324` in `run_parallel_plans()`, `:490` in the dead `run_parallel` | belongs in `Imports`, and that makes it a hard install requirement |
+| `splutil` | `R/r6_Task.R:297`, `:303`, `:353`, `:359` | not on CRAN, so it needs a `Remotes:` entry |
+| `utils` | `R/3_onAttach.R:5`, `R/config_tasks_runtime.R:31`, `R/r6_TaskJob.R:180` | works only because R attaches `utils` by default |
+| `devtools` | `R/r6_SurveillanceSystem.R:414`, `R/r6_TaskJob.R:72` | belongs in `Suggests`, never in `Imports` |
+
+Each one survives for the reason `future` did: every machine that runs cs9 happens to have it.
+
 ## Licensing
 
 This package is `MIT + file LICENSE`. Two files carry the licence and they MUST
