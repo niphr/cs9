@@ -1,6 +1,6 @@
 Package: cs9
 Title: A Framework for Real-Time Analysis and Disease Surveillance
-Version: 26.8.16
+Version: 26.8.17
 Authors@R:
     c(
       person(

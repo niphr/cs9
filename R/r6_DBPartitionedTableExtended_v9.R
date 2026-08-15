@@ -5,6 +5,19 @@
 
 #' Partitioned database table with one shared connection
 #'
+#' @description
+#' One logical table, split across one `csdb::DBTable_v9` per partition. Every
+#' write and every read routes to the child that the partition value names.
+#'
+#' @details
+#' The object owns one `csdb::DBConnection_v9` and every child borrows it. A
+#' child's `disconnect()` therefore closes nothing, and
+#' `DBPartitionedTableExtended_v9$disconnect()` closes the connection once.
+#'
+#' One connection per child would need one database backend per partition at
+#' the same time. A table with 106 partitions then exceeded the NorSySS
+#' PostgreSQL `max_connections` of 100, measured on 2026-08-13.
+#'
 #' @noRd
 DBPartitionedTableExtended_v9 <- R6::R6Class(
   "DBPartitionedTableExtended_v9",
@@ -275,13 +288,19 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     # consultations import died on `attempt to apply non-function`. Measured on
     # a NorSySS pod on 2026-08-14.
     #
-    # `partition` is character, so it matches `names(self$tables)` and indexes
-    # `self$tables[[...]]` directly.
-    #
-    # `partition` is the LAST column of the result, in both methods. `nrow()`
-    # returns `table_name`, `nrow`, `partition`. `info()` appends `partition`
-    # after the columns that csdb returns. A caller that reads column 1 or
-    # column 2 by position therefore reads what it read before.
+    #' @description
+    #' Count the rows across every partition.
+    #'
+    #' @param collapse TRUE returns one total. FALSE returns one row per
+    #'   partition, with the columns `table_name`, `nrow` and `partition`.
+    #'
+    #' @details
+    #' `partition` is a character column holding the partition tag. It matches
+    #' `names(self$tables)`, so it indexes `self$tables[[...]]` directly.
+    #'
+    #' `partition` is the LAST column. `table_name` stays at position 1 and
+    #' `nrow` at position 2, so a caller that reads either one by position
+    #' reads what it read before.
     nrow = function(collapse = TRUE) {
       table_rows <- self$tables[[
         as.character(self$partitions[1])
@@ -313,6 +332,18 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       data.table::shouldPrint(table_rows)
       return(table_rows)
     },
+    #' @description
+    #' Report the row count and the storage size of every partition.
+    #'
+    #' @param collapse FALSE returns one row per partition, with `partition`
+    #'   appended as the last column. TRUE sums every size and every row count
+    #'   into one row, and drops `partition`, because an aggregate spans every
+    #'   partition and has no single tag.
+    #'
+    #' @details
+    #' `partition` is a character column holding the partition tag, the same
+    #' one that `nrow(collapse = FALSE)` returns. The columns before it are the
+    #' ones `csdb::get_table_names_and_info()` returns, in that order.
     info = function(collapse = FALSE) {
       table_rows <- self$tables[[
         as.character(self$partitions[1])

@@ -1,3 +1,16 @@
+# Version 26.8.17
+
+## Development
+* `tests/testthat/test-fork-ordering.R` pins the order that `Task$run()` uses: it closes every database connection before it forks. Nothing asserted that order before. A refactor that moves the sweep reintroduces silent data corruption.
+* The test mocks `pbmcapply::pbmclapply` and drives the public `Task$run()`. The mock reads every connection at the fork boundary and returns without forking. A test on the private `run_sequential()` proves that the helper disconnects. It does not prove that the public path calls the helper before it forks.
+* Two mutations of `R/r6_Task.R` go red. The first deletes the disconnect sweep and fails 2 assertions. The second moves `run_parallel_plans()` in front of the sequential setup and fails 3.
+* `test-fork-ordering.R` asserts the length of both connection vectors before it asserts that both are open. `all(logical(0))` is TRUE, so the open check would otherwise pass on an empty list.
+* No executable `cs9` code changed in this release. The version moves because `26.8.16` is already published from a different tree.
+
+## Documentation
+* `DBPartitionedTableExtended_v9` documents its one shared connection. The object owns it, every child borrows it, and only the parent's `disconnect()` closes it.
+* `$nrow()` and `$info()` document the `partition` column that `26.8.16` added. It is character, it matches `names(self$tables)`, and it is the last column, so `table_name` stays at position 1 and `nrow` at position 2.
+
 # Version 26.8.16
 
 ## Bug Fixes
