@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,24 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.20" id="version-26820">Version 26.8.20<a class="anchor" aria-label="anchor" href="#version-26820"></a></h2>
+<div class="section level3">
+<h3 id="new-features-26-8-20">New Features<a class="anchor" aria-label="anchor" href="#new-features-26-8-20"></a></h3>
+<ul><li>
+<code><a href="../reference/run_task_detached.html">run_task_detached()</a></code> and <code>inst/scripts/run-task.sh</code> run one task in a process that outlives the R session which started it. This is the non-interactive counterpart to <code><a href="../reference/run_task_sequentially_as_callr_bg_using_load_all.html">run_task_sequentially_as_callr_bg_using_load_all()</a></code>. Use that one in Positron, where a person watches a live console, and this one when nobody is watching: a script, a cron entry, or an agent driving a machine over SSH. The two are not interchangeable. <code>TaskJob</code> passes <code>supervise = TRUE</code>, so <code>callr</code> kills the task when the parent R process exits, and it streams output through <code><a href="https://later.r-lib.org/reference/later.html" class="external-link">later::later()</a></code>, which needs an event loop that <code>Rscript</code> does not drive.</li>
+<li>The script writes the task’s exit code to a status file, and writes it only when the task ends. Wait on that file, never on the log. A log cannot separate “finished cleanly” from “died at line 4”, so a caller that reads the tail of a log is guessing. The absence of the file means the task is still running, never that it is done. If the process is killed hard, no status is written at all, and the lock file still holds the pid, so <code>kill -0</code> separates “running” from “died without reporting”.</li>
+<li>The script refuses to start a task that is already running from the same package, and exits 3. Two concurrent runs of one import write the same rows twice.</li>
+<li>The log opens with the task name, the implementation package and its version, the git branch and commit of the package directory when it is a repository, and whether that tree was clean. A log that reports a duration alone cannot answer which code produced it, and an implementation package copied out of its checkout has no commit to read afterwards.</li>
+<li>The script takes the package directory and the surveillance system expression as options, so it serves any cs9 implementation package. It defaults to the working directory and to <code>global$ss</code>.</li>
+</ul><p>Verified on a NorSySS prod workspace pod on 2026-08-17, all six paths: no arguments exits 2; a directory holding no <code>DESCRIPTION</code> exits 2 and names the reason; a task that does not exist writes exit code 1; <code>norsyss_data_delete</code> writes exit code 0 after 106 plans in 1.4 minutes; a second call while the first ran exited 3 and surfaced through <code><a href="../reference/run_task_detached.html">run_task_detached()</a></code> as an R error; and no lock file remained afterwards.</p>
+</div>
+<div class="section level3">
+<h3 id="development-26-8-20">Development<a class="anchor" aria-label="anchor" href="#development-26-8-20"></a></h3>
+<ul><li>
+<code>.gitattributes</code> pins <code>*.sh</code> to LF in the working copy. A checkout on Windows copied to a Linux machine otherwise carries CRLF, and bash reads the carriage return as part of the command. The failure reads <code>$'\r': command not found</code>, which does not name the cause.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.19" id="version-26819">Version 26.8.19<a class="anchor" aria-label="anchor" href="#version-26819"></a></h2>
 <div class="section level3">

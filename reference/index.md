@@ -62,6 +62,8 @@ Functions for running and managing surveillance tasks
   : Run a Task Sequentially as an RStudio Job
 - [`run_task_sequentially_as_callr_bg_using_load_all()`](https://niphr.github.io/cs9/reference/run_task_sequentially_as_callr_bg_using_load_all.md)
   : Run a cs9 task in a background process, streaming its output live
+- [`run_task_detached()`](https://niphr.github.io/cs9/reference/run_task_detached.md)
+  : Run a cs9 task in a detached process
 
 ## Imported Functions
 
