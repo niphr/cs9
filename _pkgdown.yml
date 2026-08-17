@@ -68,6 +68,7 @@ reference:
   contents:
   - run_task_sequentially_as_rstudio_job_using_load_all
   - run_task_sequentially_as_callr_bg_using_load_all
+  - run_task_detached
 
 - title: "Imported Functions"
   desc: "Re-exported functions from other packages"
