@@ -1,0 +1,5 @@
+# Shell scripts MUST keep LF endings in the working copy, on every platform.
+# A checkout on Windows that is copied to a Linux machine otherwise carries CRLF,
+# and bash reads the carriage return as part of the command. The failure reads
+# `$'\r': command not found`, which does not name the cause.
+*.sh text eol=lf

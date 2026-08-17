@@ -40,7 +40,7 @@ run_task_sequentially_as_rstudio_job_using_load_all("covid_analysis")
 
 # Use custom surveillance system prefix
 run_task_sequentially_as_rstudio_job_using_load_all(
-  "covid_analysis", 
+  "covid_analysis",
   ss_prefix = "my_ss"
 )
 }

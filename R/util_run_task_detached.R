@@ -1,0 +1,91 @@
+#' Run a cs9 task in a detached process
+#'
+#' Starts one task in a process that outlives the R session which started it,
+#' and returns at once. The task's exit code is written to a status file when it
+#' ends.
+#'
+#' This is the non-interactive counterpart to
+#' \code{\link{run_task_sequentially_as_callr_bg_using_load_all}()}. Use that one
+#' in Positron, where a person watches a live console. Use this one when nobody
+#' is watching: a script, a cron entry, or an agent driving a machine over SSH.
+#'
+#' The difference is not style. \code{\link{TaskJob}} passes
+#' \code{supervise = TRUE}, so \pkg{callr} kills the task when the parent R
+#' process exits, and it streams output through \code{later::later()}, which
+#' needs an event loop that \command{Rscript} does not drive.
+#'
+#' @section Waiting:
+#' Wait on the status file, never on the log. A log cannot separate "finished
+#' cleanly" from "died at line 4", so a caller reading the tail of a log is
+#' guessing. The status file appears only when the task ends, and holds the exit
+#' code. No file means still running, never done.
+#'
+#' @section Provenance:
+#' The log opens with the task name, the implementation package and its version,
+#' the git branch and commit of the package directory when it is a repository,
+#' and whether that tree was clean. A log that reports only a duration cannot
+#' answer "which code ran" afterwards.
+#'
+#' @param task_name Character string. Name of the task to run.
+#' @param package_dir Character string. Directory of the implementation package,
+#'   which must hold a \file{DESCRIPTION}. Defaults to \code{"."}.
+#' @param ss_prefix Character string. R expression that resolves to the
+#'   surveillance system object in the child process. Defaults to
+#'   \code{"global$ss"}.
+#' @param run_dir Character string or \code{NULL}. Where to write the log,
+#'   status and lock files. \code{NULL} uses the \env{CS9_RUN_DIR} environment
+#'   variable, and \file{~/.cs9/task-runs} when that is unset.
+#'
+#' @return Invisibly, a list with elements \code{task}, \code{log},
+#'   \code{status} and \code{pid}, all character strings.
+#'
+#' @examples
+#' \dontrun{
+#' run <- run_task_detached("my_task", package_dir = ".")
+#' # later, from anywhere:
+#' readLines(run$status)
+#' }
+#'
+#' @export
+run_task_detached <- function(
+  task_name,
+  package_dir = ".",
+  ss_prefix = "global$ss",
+  run_dir = NULL
+) {
+  script <- system.file("scripts", "run-task.sh", package = "cs9")
+  if (!nzchar(script)) {
+    stop("run-task.sh is missing from the installed cs9.")
+  }
+
+  # shQuote() puts the path in single quotes, and bash does not expand a tilde
+  # there. Expand it here, or "~/pkg" reaches the script as a literal directory
+  # that does not exist.
+  args <- c(
+    shQuote(script),
+    "--dir",
+    shQuote(path.expand(package_dir)),
+    "--ss",
+    shQuote(ss_prefix)
+  )
+  if (!is.null(run_dir)) {
+    args <- c(args, "--runs", shQuote(path.expand(run_dir)))
+  }
+  args <- c(args, shQuote(task_name))
+
+  out <- suppressWarnings(
+    system2("bash", args, stdout = TRUE, stderr = TRUE)
+  )
+  code <- attr(out, "status")
+  if (!is.null(code) && code != 0) {
+    stop(paste(c(paste0("run-task.sh exited ", code, ":"), out), collapse = "\n"))
+  }
+
+  # The script prints exactly TASK, LOG, STATUS and PID, one per line.
+  keep <- grepl("^(TASK|LOG|STATUS|PID)=", out)
+  fields <- strsplit(out[keep], "=", fixed = TRUE)
+  retval <- lapply(fields, function(x) paste(x[-1], collapse = "="))
+  names(retval) <- tolower(vapply(fields, `[`, character(1), 1L))
+  message("Task ", task_name, " started. Status file: ", retval$status)
+  invisible(retval)
+}

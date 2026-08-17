@@ -1,3 +1,18 @@
+# Version 26.8.20
+
+## New Features
+* `run_task_detached()` and `inst/scripts/run-task.sh` run one task in a process that outlives the R session which started it. This is the non-interactive counterpart to `run_task_sequentially_as_callr_bg_using_load_all()`. Use that one in Positron, where a person watches a live console, and this one when nobody is watching: a script, a cron entry, or an agent driving a machine over SSH. The two are not interchangeable. `TaskJob` passes `supervise = TRUE`, so `callr` kills the task when the parent R process exits, and it streams output through `later::later()`, which needs an event loop that `Rscript` does not drive.
+* The script writes the task's exit code to a status file, and writes it only when the task ends. Wait on that file, never on the log. A log cannot separate "finished cleanly" from "died at line 4", so a caller that reads the tail of a log is guessing. The absence of the file means the task is still running, never that it is done. If the process is killed hard, no status is written at all, and the lock file still holds the pid, so `kill -0` separates "running" from "died without reporting".
+* The script refuses to start a task that is already running from the same package, and exits 3. Two concurrent runs of one import write the same rows twice.
+* The log opens with the task name, the implementation package and its version, the git branch and commit of the package directory when it is a repository, and whether that tree was clean. A log that reports a duration alone cannot answer which code produced it, and an implementation package copied out of its checkout has no commit to read afterwards.
+* The script takes the package directory and the surveillance system expression as options, so it serves any cs9 implementation package. It defaults to the working directory and to `global$ss`.
+
+Verified on a NorSySS prod workspace pod on 2026-08-17, all six paths: no arguments exits 2; a directory holding no `DESCRIPTION` exits 2 and names the reason; a task that does not exist writes exit code 1; `norsyss_data_delete` writes exit code 0 after 106 plans in 1.4 minutes; a second call while the first ran exited 3 and surfaced through `run_task_detached()` as an R error; and no lock file remained afterwards.
+
+## Development
+
+* `.gitattributes` pins `*.sh` to LF in the working copy. A checkout on Windows copied to a Linux machine otherwise carries CRLF, and bash reads the carriage return as part of the command. The failure reads `$'\r': command not found`, which does not name the cause.
+
 # Version 26.8.19
 
 ## Bug Fixes
