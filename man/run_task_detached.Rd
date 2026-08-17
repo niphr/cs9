@@ -27,7 +27,8 @@ variable, and \file{~/.cs9/task-runs} when that is unset.}
 }
 \value{
 Invisibly, a list with elements \code{task}, \code{log},
-\code{status} and \code{pid}, all character strings.
+\code{status}, \code{errors} and \code{pid}, all character strings. The
+\code{status} and \code{errors} files do not exist until the task ends.
 }
 \description{
 Starts one task in a process that outlives the R session which started it,
@@ -51,6 +52,20 @@ Wait on the status file, never on the log. A log cannot separate "finished
 cleanly" from "died at line 4", so a caller reading the tail of a log is
 guessing. The status file appears only when the task ends, and holds the exit
 code. No file means still running, never done.
+}
+
+\section{Read the error count as well as the exit code}{
+
+Exit code 0 does not mean the work succeeded. Measured on 2026-08-17: a
+NorSySS import exited 0 with 212 rejected \command{COPY} statements in its log,
+because the PostgreSQL \code{load_data_infile} method runs \command{psql}
+through \code{system2()} without reading its exit status, so a rejected
+\command{COPY} never reaches R. A status of 0 beside a non-zero error count is
+the shape that failure takes.
+
+The count comes from a grep over the log, so it is a heuristic. A count above
+zero is worth reading. A count of zero does NOT prove the task did what it
+should: only checking the data can tell you that.
 }
 
 \section{Provenance}{

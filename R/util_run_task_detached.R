@@ -20,6 +20,18 @@
 #' guessing. The status file appears only when the task ends, and holds the exit
 #' code. No file means still running, never done.
 #'
+#' @section Read the error count as well as the exit code:
+#' Exit code 0 does not mean the work succeeded. Measured on 2026-08-17: a
+#' NorSySS import exited 0 with 212 rejected \command{COPY} statements in its log,
+#' because the PostgreSQL \code{load_data_infile} method runs \command{psql}
+#' through \code{system2()} without reading its exit status, so a rejected
+#' \command{COPY} never reaches R. A status of 0 beside a non-zero error count is
+#' the shape that failure takes.
+#'
+#' The count comes from a grep over the log, so it is a heuristic. A count above
+#' zero is worth reading. A count of zero does NOT prove the task did what it
+#' should: only checking the data can tell you that.
+#'
 #' @section Provenance:
 #' The log opens with the task name, the implementation package and its version,
 #' the git branch and commit of the package directory when it is a repository,
@@ -37,7 +49,8 @@
 #'   variable, and \file{~/.cs9/task-runs} when that is unset.
 #'
 #' @return Invisibly, a list with elements \code{task}, \code{log},
-#'   \code{status} and \code{pid}, all character strings.
+#'   \code{status}, \code{errors} and \code{pid}, all character strings. The
+#'   \code{status} and \code{errors} files do not exist until the task ends.
 #'
 #' @examples
 #' \dontrun{
@@ -81,8 +94,8 @@ run_task_detached <- function(
     stop(paste(c(paste0("run-task.sh exited ", code, ":"), out), collapse = "\n"))
   }
 
-  # The script prints exactly TASK, LOG, STATUS and PID, one per line.
-  keep <- grepl("^(TASK|LOG|STATUS|PID)=", out)
+  # The script prints exactly TASK, LOG, STATUS, ERRORS and PID, one per line.
+  keep <- grepl("^(TASK|LOG|STATUS|ERRORS|PID)=", out)
   fields <- strsplit(out[keep], "=", fixed = TRUE)
   retval <- lapply(fields, function(x) paste(x[-1], collapse = "="))
   names(retval) <- tolower(vapply(fields, `[`, character(1), 1L))

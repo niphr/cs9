@@ -24,11 +24,12 @@
 #     -h, --help           print this usage and exit.
 #
 # THE CONTRACT
-#   The script prints four lines and returns at once:
+#   The script prints five lines and returns at once:
 #
 #     TASK=<name>
 #     LOG=<path>        every line of stdout and stderr, provenance header first
 #     STATUS=<path>     written ONLY when the task ends. Holds the exit code.
+#     ERRORS=<path>     written with STATUS. Holds a count of error lines in the log.
 #     PID=<pid>
 #
 #   Wait on STATUS, never on the log. A log cannot separate "finished cleanly"
@@ -37,6 +38,16 @@
 #     until [ -f "$STATUS" ]; do sleep 30; done; cat "$STATUS"
 #
 #   It fails in the safe direction. No file means still running, never "done".
+#
+#   READ ERRORS TOO. Exit code 0 does not mean the work succeeded. Measured on
+#   2026-08-17: a NorSySS import exited 0 with 212 rejected COPY statements in its
+#   log, because load_data_infile.db_postgres runs psql through system2() without
+#   reading its exit status, so a rejected COPY is silent to R. A status of 0 with
+#   a non-zero error count is the shape that failure takes.
+#
+#   The count is a grep over the log and therefore a heuristic. A count above zero
+#   is worth reading. A count of zero is NOT proof that the task did what it
+#   should: only a check of the data can tell you that.
 #
 #   If the process is killed hard, no status is ever written. The lock still
 #   holds the pid, so `kill -0 $(cat <lock>)` separates "still running" from
@@ -107,6 +118,7 @@ TS=$(date +%Y%m%d_%H%M%S)
 BASE="$RUN_DIR/${PKG_NAME}_${TASK}_${TS}"
 LOG="$BASE.log"
 STATUS="$BASE.status"
+ERRORS="$BASE.errors"
 DRIVER="$BASE.R"
 
 # Which code ran. A log that reports only a duration cannot answer that later,
@@ -144,12 +156,17 @@ EOF
 # does not take it down. The worker writes its OWN pid into the lock: setsid can
 # fork again, so \$! in this shell is not reliably the process doing the work.
 # Positional arguments carry the paths, which keeps one level of quoting out.
+# The error count is written BEFORE the status file, so a caller that sees a
+# status can always read a count beside it. Waiting on STATUS therefore needs no
+# second wait. ERROR_PATTERN catches psql's "ERROR:" and R's "Error in ".
 setsid bash -c '
-  echo $$ > "$4"
+  echo $$ > "$5"
   Rscript "$1" >> "$2" 2>&1
-  echo $? > "$3"
-  rm -f "$4"
-' _ "$DRIVER" "$LOG" "$STATUS" "$LOCK" < /dev/null > /dev/null 2>&1 &
+  code=$?
+  grep -cE "ERROR:|Error in |FATAL:|Execution halted" "$2" > "$4" || echo 0 > "$4"
+  echo $code > "$3"
+  rm -f "$5"
+' _ "$DRIVER" "$LOG" "$STATUS" "$ERRORS" "$LOCK" < /dev/null > /dev/null 2>&1 &
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do
   [ -f "$LOCK" ] && break
@@ -159,4 +176,5 @@ done
 echo "TASK=$TASK"
 echo "LOG=$LOG"
 echo "STATUS=$STATUS"
+echo "ERRORS=$ERRORS"
 echo "PID=$(cat "$LOCK" 2>/dev/null || echo unknown)"
