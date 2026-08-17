@@ -102,7 +102,8 @@ variable, and <code class="file">~/.cs9/task-runs</code> when that is unset.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly, a list with elements <code>task</code>, <code>log</code>,
-<code>status</code> and <code>pid</code>, all character strings.</p>
+<code>status</code>, <code>errors</code> and <code>pid</code>, all character strings. The
+<code>status</code> and <code>errors</code> files do not exist until the task ends.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -123,6 +124,20 @@ needs an event loop that <code class="command">Rscript</code> does not drive.</p
 cleanly" from "died at line 4", so a caller reading the tail of a log is
 guessing. The status file appears only when the task ends, and holds the exit
 code. No file means still running, never done.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="read-the-error-count-as-well-as-the-exit-code">Read the error count as well as the exit code<a class="anchor" aria-label="anchor" href="#read-the-error-count-as-well-as-the-exit-code"></a></h2>
+
+
+<p>Exit code 0 does not mean the work succeeded. Measured on 2026-08-17: a
+NorSySS import exited 0 with 212 rejected <code class="command">COPY</code> statements in its log,
+because the PostgreSQL <code>load_data_infile</code> method runs <code class="command">psql</code>
+through <code><a href="https://rdrr.io/r/base/system2.html" class="external-link">system2()</a></code> without reading its exit status, so a rejected
+<code class="command">COPY</code> never reaches R. A status of 0 beside a non-zero error count is
+the shape that failure takes.</p>
+<p>The count comes from a grep over the log, so it is a heuristic. A count above
+zero is worth reading. A count of zero does NOT prove the task did what it
+should: only checking the data can tell you that.</p>
     </div>
     <div class="section level2">
     <h2 id="provenance">Provenance<a class="anchor" aria-label="anchor" href="#provenance"></a></h2>

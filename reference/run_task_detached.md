@@ -39,8 +39,9 @@ run_task_detached(
 
 ## Value
 
-Invisibly, a list with elements `task`, `log`, `status` and `pid`, all
-character strings.
+Invisibly, a list with elements `task`, `log`, `status`, `errors` and
+`pid`, all character strings. The `status` and `errors` files do not
+exist until the task ends.
 
 ## Details
 
@@ -63,6 +64,19 @@ Wait on the status file, never on the log. A log cannot separate
 "finished cleanly" from "died at line 4", so a caller reading the tail
 of a log is guessing. The status file appears only when the task ends,
 and holds the exit code. No file means still running, never done.
+
+## Read the error count as well as the exit code
+
+Exit code 0 does not mean the work succeeded. Measured on 2026-08-17: a
+NorSySS import exited 0 with 212 rejected `COPY` statements in its log,
+because the PostgreSQL `load_data_infile` method runs `psql` through
+[`system2()`](https://rdrr.io/r/base/system2.html) without reading its
+exit status, so a rejected `COPY` never reaches R. A status of 0 beside
+a non-zero error count is the shape that failure takes.
+
+The count comes from a grep over the log, so it is a heuristic. A count
+above zero is worth reading. A count of zero does NOT prove the task did
+what it should: only checking the data can tell you that.
 
 ## Provenance
 

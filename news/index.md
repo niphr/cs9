@@ -36,6 +36,18 @@
 - The script takes the package directory and the surveillance system
   expression as options, so it serves any cs9 implementation package. It
   defaults to the working directory and to `global$ss`.
+- The runner counts error lines in the log and writes the count beside
+  the status file, because **exit code 0 does not mean the work
+  succeeded**. Measured on 2026-08-17:
+  `norsyss_data_import_consultations` exited 0 with 212 rejected `COPY`
+  statements, one per partition for each of two weeks whose rows already
+  existed. `load_data_infile.db_postgres` runs `psql` through
+  [`system2()`](https://rdrr.io/r/base/system2.html) and never reads its
+  exit status, so a rejected `COPY` does not reach R at all. A status of
+  0 beside a non-zero error count is the shape that failure takes. The
+  count is a grep and therefore a heuristic: a count above zero is worth
+  reading, and a count of zero is not proof that a task did what it
+  should.
 
 Verified on a NorSySS prod workspace pod on 2026-08-17, all six paths:
 no arguments exits 2; a directory holding no `DESCRIPTION` exits 2 and
