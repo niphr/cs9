@@ -1,13 +1,14 @@
 # Version 26.8.21
 
-- `progress` is removed from Imports. It was declared and never called. The
-  package that is actually used is `progressr`, which is a different package
-  with a similar name and is called six times.
-- `R/zzz_imports.R` names `callr`, `csutil`, `later` and `pbmcapply` in one
-  plain function. All four are called through `::` inside R6 methods, and
-  `R CMD check` does not walk the `public = list(...)` of an `R6Class`, so it
-  reported all five as declared but unused. Four of those five were real calls.
-  The note is now gone rather than explained.
+- `R/zzz_imports.R` names `callr`, `csutil`, `later`, `pbmcapply` and
+  `progress` in one plain function, which clears the declared-but-unused note.
+  `R CMD check` does not walk the `public = list(...)` of an `R6Class`, so a
+  `pkg::fn()` call inside an R6 method is invisible to its dependency scan.
+- All five were real. `progress` looked dead, because it is never written as
+  `progress::` anywhere in this package. It is required at load time all the
+  same: `.onLoad` calls `progressr::handler_progress()`, and that function's
+  body calls `progress::progress_bar`. Removing it made the package fail to
+  install.
 - The version goes to 26.8.21 rather than reusing 26.8.20, which r-universe has
   already published from a different tree. One version number must not name two.
 

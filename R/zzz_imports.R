@@ -9,8 +9,14 @@
 # `pkg::fn` name has no effect.
 #
 # Do NOT add a package here to silence the note. A package that is genuinely
-# unused should be removed from Imports instead. `progress` was removed for
-# exactly that reason.
+# unused should be removed from Imports instead.
+#
+# `progress` is the reason that rule needs stating. It is never called as
+# `progress::` anywhere in this package, so it reads as dead. It is not:
+# `.onLoad` calls `progressr::handler_progress()`, and that function's body
+# calls `progress::progress_bar`. Removing it from Imports makes the package
+# fail to install. A dependency can be real and invisible to every grep of
+# this package's own source.
 ignore_unused_imports <- function() {
   callr::r_bg # R/r6_TaskJob.R
   csutil::unnest_dfs_within_list_of_fully_named_lists # R/r6_Task.R
@@ -18,4 +24,5 @@ ignore_unused_imports <- function() {
   later::run_now # R/r6_TaskJob.R
   pbmcapply::pbmclapply # R/r6_Task.R
   pbmcapply::pbmcmapply # R/r6_Task.R
+  progress::progress_bar # via progressr::handler_progress() in R/2_onLoad.R
 }
