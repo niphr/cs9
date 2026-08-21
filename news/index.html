@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,11 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.8.23" id="version-26823">Version 26.8.23<a class="anchor" aria-label="anchor" href="#version-26823"></a></h2>
+<ul><li>
+<code>vignettes/creating-a-task.Rmd.orig</code> no longer carries an empty <code>if (requireNamespace("magrittr", ...)) { }</code> block. Dropping <code><a href="https://magrittr.tidyverse.org" class="external-link">library(magrittr)</a></code> left the guard behind with nothing in it. The <code>.orig</code> file ships in the tarball and <code>_PRECOMPILER.R</code> regenerates the vignette from it.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.22" id="version-26822">Version 26.8.22<a class="anchor" aria-label="anchor" href="#version-26822"></a></h2>
 <ul><li><p>The package drops <code>magrittr</code>. Every <code>%&gt;%</code> is now the base pipe <code>|&gt;</code>, and <code>magrittr</code> is gone from <code>DESCRIPTION</code>.</p></li>
