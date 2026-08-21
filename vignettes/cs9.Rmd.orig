@@ -19,7 +19,6 @@ options(knitr.kable.NA = '')
 
 ```{r, include=FALSE}
 library(data.table)
-library(magrittr)
 ```
 
 ## The problem: scaling epidemiological analysis

@@ -239,7 +239,7 @@ TASK_NAME_data_selector = function(argset, schema){
   }
 
   # The database schemas can be accessed here
-  d <- schema$SCHEMA_NAME$tbl() %>%
+  d <- schema$SCHEMA_NAME$tbl() |>
     cs9::mandatory_db_filter(
       granularity_time = NULL,
       granularity_time_not = NULL,
@@ -251,7 +251,7 @@ TASK_NAME_data_selector = function(argset, schema){
       age_not = NULL,
       sex = NULL,
       sex_not = NULL
-    ) %>%
+    ) |>
     dplyr::select(
       granularity_time,
       granularity_geo,
@@ -272,7 +272,7 @@ TASK_NAME_data_selector = function(argset, schema){
       calyear,
       calmonth,
       calyearmonth
-    ) %>%
+    ) |>
     dplyr::collect()
 
   # The variable returned must be a named list

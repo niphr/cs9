@@ -192,6 +192,5 @@ example_weather_import_data_from_api_action <- function(data, argset, tables) {
 }
 
 library(data.table)
-library(magrittr)
 ss$run_task("example_weather_import_data_from_api")
-ss$tables$anon_example_weather$tbl() %>% dplyr::collect() %>% data.table()
+ss$tables$anon_example_weather$tbl() |> dplyr::collect() |> data.table()

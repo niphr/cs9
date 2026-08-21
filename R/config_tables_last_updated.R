@@ -53,13 +53,13 @@ update_config_tables_last_updated <- function(
 #' @export
 get_config_tables_last_updated <- function(table_name = NULL) {
   if (!is.null(table_name)) {
-    temp <- config$tables$config_tables_last_updated$tbl() %>%
-      dplyr::filter(table_name == !!table_name) %>%
-      dplyr::collect() %>%
+    temp <- config$tables$config_tables_last_updated$tbl() |>
+      dplyr::filter(table_name == !!table_name) |>
+      dplyr::collect() |>
       as.data.table()
   } else {
-    temp <- config$tables$config_tables_last_updated$tbl() %>%
-      dplyr::collect() %>%
+    temp <- config$tables$config_tables_last_updated$tbl() |>
+      dplyr::collect() |>
       as.data.table()
   }
   return(temp)

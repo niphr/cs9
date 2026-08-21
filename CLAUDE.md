@@ -441,9 +441,9 @@ short_term_trends_action <- function(data, argset, tables) {
 ```r
 short_term_trends_data_selector <- function(argset, tables) {
   # Extract the requested data from the database
-  data <- tables$anon_norsyss_data$tbl() %>%
-    dplyr::filter(location_code %in% argset$location_code) %>%
-    dplyr::filter(age %in% argset$age) %>%
+  data <- tables$anon_norsyss_data$tbl() |>
+    dplyr::filter(location_code %in% argset$location_code) |>
+    dplyr::filter(age %in% argset$age) |>
     dplyr::collect()
   retval <- list(
     "data" = data

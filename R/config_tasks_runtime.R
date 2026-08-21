@@ -73,13 +73,13 @@ update_config_tasks_stats <- function(
 #' @export
 get_config_tasks_stats <- function(task = NULL, last_run = FALSE) {
   if (!is.null(task)) {
-    temp <- config$tables$config_tasks_stats$tbl() %>%
-      dplyr::filter(task == !!task) %>%
-      dplyr::collect() %>%
+    temp <- config$tables$config_tasks_stats$tbl() |>
+      dplyr::filter(task == !!task) |>
+      dplyr::collect() |>
       as.data.table()
   } else {
-    temp <- config$tables$config_tasks_stats$tbl() %>%
-      dplyr::collect() %>%
+    temp <- config$tables$config_tasks_stats$tbl() |>
+      dplyr::collect() |>
       as.data.table()
   }
   return(temp)

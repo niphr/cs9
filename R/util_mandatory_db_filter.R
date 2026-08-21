@@ -60,41 +60,41 @@ mandatory_db_filter <- function(
   retval <- .data
 
   if (!is.null(granularity_time)) {
-    retval <- retval %>% dplyr::filter(granularity_time %in% !!granularity_time)
+    retval <- retval |> dplyr::filter(granularity_time %in% !!granularity_time)
   }
   if (!is.null(granularity_time_not)) {
-    retval <- retval %>%
+    retval <- retval |>
       dplyr::filter(!granularity_time %in% !!granularity_time_not)
   }
 
   if (!is.null(granularity_geo)) {
-    retval <- retval %>% dplyr::filter(granularity_geo %in% !!granularity_geo)
+    retval <- retval |> dplyr::filter(granularity_geo %in% !!granularity_geo)
   }
   if (!is.null(granularity_geo_not)) {
-    retval <- retval %>%
+    retval <- retval |>
       dplyr::filter(!granularity_geo %in% !!granularity_geo_not)
   }
 
   if (!is.null(country_iso3)) {
-    retval <- retval %>% dplyr::filter(country_iso3 %in% !!country_iso3)
+    retval <- retval |> dplyr::filter(country_iso3 %in% !!country_iso3)
   }
 
   if (!is.null(location_code)) {
-    retval <- retval %>% dplyr::filter(location_code %in% !!location_code)
+    retval <- retval |> dplyr::filter(location_code %in% !!location_code)
   }
 
   if (!is.null(age)) {
-    retval <- retval %>% dplyr::filter(age %in% !!age)
+    retval <- retval |> dplyr::filter(age %in% !!age)
   }
   if (!is.null(age_not)) {
-    retval <- retval %>% dplyr::filter(!age %in% !!age_not)
+    retval <- retval |> dplyr::filter(!age %in% !!age_not)
   }
 
   if (!is.null(sex)) {
-    retval <- retval %>% dplyr::filter(sex %in% !!sex)
+    retval <- retval |> dplyr::filter(sex %in% !!sex)
   }
   if (!is.null(sex_not)) {
-    retval <- retval %>% dplyr::filter(!sex %in% !!sex_not)
+    retval <- retval |> dplyr::filter(!sex %in% !!sex_not)
   }
 
   return(retval)

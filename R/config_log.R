@@ -86,8 +86,8 @@ get_config_log <- function(
   end_date = NULL
 ) {
   # Retrieve the entire config_log table
-  log_data <- config$tables$config_log$tbl() %>%
-    dplyr::collect() %>%
+  log_data <- config$tables$config_log$tbl() |>
+    dplyr::collect() |>
     setDT()
 
   # Apply filtering if parameters are provided

@@ -80,13 +80,13 @@ get_config_data_hash_for_each_plan <- function(
   on.exit(config$tables$config_data_hash_for_each_plan$disconnect())
 
   if (!is.null(task)) {
-    temp <- config$tables$config_data_hash_for_each_plan$tbl() %>%
-      dplyr::filter(task == !!task) %>%
-      dplyr::collect() %>%
+    temp <- config$tables$config_data_hash_for_each_plan$tbl() |>
+      dplyr::filter(task == !!task) |>
+      dplyr::collect() |>
       as.data.table()
   } else {
-    temp <- config$tables$config_data_hash_for_each_plan$tbl() %>%
-      dplyr::collect() %>%
+    temp <- config$tables$config_data_hash_for_each_plan$tbl() |>
+      dplyr::collect() |>
       as.data.table()
   }
   if (!is.null(index_plan)) {

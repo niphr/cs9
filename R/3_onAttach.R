@@ -1,5 +1,4 @@
 #' @import data.table
-#' @importFrom magrittr %>%
 .onAttach <- function(libname, pkgname) {
   version <- tryCatch(
     utils::packageDescription("cs9", fields = "Version"),

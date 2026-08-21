@@ -517,13 +517,13 @@ create_weather_data_selector <- function(date_column = "date",
                                        location_column = "location_code") {
   function(argset, tables) {
     # Common data selection logic
-    query_data <- tables[[argset$source_table]]$tbl() %>%
+    query_data <- tables[[argset$source_table]]$tbl() |>
       dplyr::filter(
         !!rlang::sym(date_column) >= argset$date_from,
         !!rlang::sym(date_column) <= argset$date_to,
         !!rlang::sym(location_column) %in% argset$location_codes
-      ) %>%
-      dplyr::collect() %>%
+      ) |>
+      dplyr::collect() |>
       data.table::as.data.table()
     
     # Apply standardization

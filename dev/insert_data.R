@@ -1,5 +1,4 @@
 library(data.table)
-library(magrittr)
 system("/bin/authenticate.sh")
 
 
@@ -40,14 +39,14 @@ b <- Sys.time()
 
 b - a
 
-cs9::config$schemas$anon_test$tbl() %>%dplyr::collect() |> setDT() -> f
+cs9::config$schemas$anon_test$tbl() |>dplyr::collect() |> setDT() -> f
 
 
 cs9::config$schemas$anon_test$tbl()
 cs9::tbl("anon_test")
 cs9::print_tables()
 
-cs9::config$schemas$anon_test$tbl() %>% dplyr::summarize(n()) %>% dplyr::collect()
+cs9::config$schemas$anon_test$tbl() |> dplyr::summarize(n()) |> dplyr::collect()
 
 
 

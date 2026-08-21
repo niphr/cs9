@@ -17,7 +17,6 @@ knitr::opts_chunk$set(
 options(knitr.kable.NA = '')
 
 library(data.table)
-library(magrittr)
 ```
 
 This vignette describes the standard file organization for CS9 surveillance systems and provides code templates for each required file in initialization order.
@@ -310,12 +309,12 @@ https://github.com/niphr/cs9example/blob/main/R/weather_clean_data.R
 #' @export
 weather_clean_data_data_selector <- function(argset, tables) {
   # Get raw weather data from database
-  raw_data <- tables$anon_weather_data_raw$tbl() %>%
+  raw_data <- tables$anon_weather_data_raw$tbl() |>
     dplyr::filter(
       date >= argset$date_from,
       date <= argset$date_to
-    ) %>%
-    dplyr::collect() %>%
+    ) |>
+    dplyr::collect() |>
     data.table::as.data.table()
   
   return(list(
@@ -367,13 +366,13 @@ https://github.com/niphr/cs9example/blob/main/R/weather_export_plots.R
 #' @export
 weather_export_plots_data_selector <- function(argset, tables) {
   # Get processed weather data
-  plot_data <- tables$anon_weather_data_raw$tbl() %>%
+  plot_data <- tables$anon_weather_data_raw$tbl() |>
     dplyr::filter(
       location_code == argset$location_code,
       date >= argset$date_from,
       date <= argset$date_to
-    ) %>%
-    dplyr::collect() %>%
+    ) |>
+    dplyr::collect() |>
     data.table::as.data.table()
   
   return(list(

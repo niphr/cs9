@@ -1,5 +1,4 @@
 library(data.table)
-library(magrittr)
 system("/bin/authenticate.sh")
 
 
@@ -112,7 +111,7 @@ cs9::fill_in_missing_v8(d)
 
 cs9::config$schemas$redirect_example$upsert_data(d)
 
-cs9::config$schemas$redirect_example$tbl() %>%
+cs9::config$schemas$redirect_example$tbl() |>
   cs9::mandatory_db_filter(
     granularity_time = NULL,
     granularity_time_not = NULL,
@@ -124,19 +123,19 @@ cs9::config$schemas$redirect_example$tbl() %>%
     age_not = NULL,
     sex = "total",
     sex_not = NULL
-  ) %>%
+  ) |>
   dplyr::select(
     granularity_time,
     location_code,
     date,
     value_n,
     value_n_censored
-  ) %>%
-  dplyr::collect() %>%
-  as.data.table() %>%
+  ) |>
+  dplyr::collect() |>
+  as.data.table() |>
   print()
 
-cs9::config$schemas$restr_example$tbl() %>%
+cs9::config$schemas$restr_example$tbl() |>
   cs9::mandatory_db_filter(
     granularity_time = NULL,
     granularity_time_not = NULL,
@@ -148,7 +147,7 @@ cs9::config$schemas$restr_example$tbl() %>%
     age_not = NULL,
     sex = "total",
     sex_not = NULL
-  ) %>%
+  ) |>
   dplyr::select(
     granularity_time,
     location_code,
@@ -159,12 +158,12 @@ cs9::config$schemas$restr_example$tbl() %>%
     value_pr100_censored,
     x_n,
     x_n_censored
-  ) %>%
-  dplyr::collect() %>%
-  as.data.table() %>%
+  ) |>
+  dplyr::collect() |>
+  as.data.table() |>
   print()
 
-cs9::config$schemas$anon_example$tbl() %>%
+cs9::config$schemas$anon_example$tbl() |>
   cs9::mandatory_db_filter(
     granularity_time = NULL,
     granularity_time_not = NULL,
@@ -176,7 +175,7 @@ cs9::config$schemas$anon_example$tbl() %>%
     age_not = NULL,
     sex = "total",
     sex_not = NULL
-  ) %>%
+  ) |>
   dplyr::select(
     granularity_time,
     location_code,
@@ -187,7 +186,7 @@ cs9::config$schemas$anon_example$tbl() %>%
     value_pr100_censored,
     x_n,
     x_n_censored
-  ) %>%
-  dplyr::collect() %>%
-  as.data.table() %>%
+  ) |>
+  dplyr::collect() |>
+  as.data.table() |>
   print()

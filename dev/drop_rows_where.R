@@ -1,5 +1,4 @@
 library(data.table)
-library(magrittr)
 system("/bin/authenticate.sh")
 
 
@@ -31,7 +30,7 @@ d$n = 1
 cs9::config$schemas$anon_test$tbl()
 cs9::config$schemas$anon_test$drop_all_rows_and_then_insert_data(d)
 
-cs9::config$schemas$anon_test$tbl() %>%
+cs9::config$schemas$anon_test$tbl() |>
   dplyr::collect()
 
 cs9::config$schemas$anon_test$drop_rows_where(condition = "uuid<=50000")

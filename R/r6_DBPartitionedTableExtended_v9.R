@@ -304,7 +304,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     nrow = function(collapse = TRUE) {
       table_rows <- self$tables[[
         as.character(self$partitions[1])
-      ]]$dbconnection$autoconnection %>%
+      ]]$dbconnection$autoconnection |>
         csdb::get_table_names_and_info()
       # This line declares `partition` beside `keep`, so the column is character
       # from the start. The declaration is not what creates the column. A `:=`
@@ -347,7 +347,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     info = function(collapse = FALSE) {
       table_rows <- self$tables[[
         as.character(self$partitions[1])
-      ]]$dbconnection$autoconnection %>%
+      ]]$dbconnection$autoconnection |>
         csdb::get_table_names_and_info()
       table_rows[, `:=`(keep = FALSE, partition = NA_character_)]
       for (i in self$partitions_randomized) {

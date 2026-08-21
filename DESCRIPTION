@@ -1,6 +1,6 @@
 Package: cs9
 Title: A Framework for Real-Time Analysis and Disease Surveillance
-Version: 26.8.21
+Version: 26.8.22
 Authors@R:
     c(
       person(
@@ -31,7 +31,6 @@ Imports:
   glue,
   later,
   lubridate,
-  magrittr,
   pbmcapply,
   plnr (>= 2021.5.4),
   processx,

@@ -7,7 +7,6 @@ options(knitr.kable.NA = '')
 unloadNamespace("scexample")
 unloadNamespace("sc")
 library(data.table)
-library(magrittr)
 library(sc)
 
 library(scexample)
