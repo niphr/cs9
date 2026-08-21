@@ -19,8 +19,6 @@ options(knitr.kable.NA = '')
 if(requireNamespace("data.table", quietly = TRUE)) {
   library(data.table)
 }
-if(requireNamespace("magrittr", quietly = TRUE)) {
-}
 ```
 
 This vignette shows how to create and configure surveillance tasks in CS9.

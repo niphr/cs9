@@ -1,3 +1,10 @@
+# Version 26.8.23
+
+- `vignettes/creating-a-task.Rmd.orig` no longer carries an empty
+  `if (requireNamespace("magrittr", ...)) { }` block. Dropping `library(magrittr)`
+  left the guard behind with nothing in it. The `.orig` file ships in the tarball
+  and `_PRECOMPILER.R` regenerates the vignette from it.
+
 # Version 26.8.22
 
 - The package drops `magrittr`. Every `%>%` is now the base pipe `|>`, and
