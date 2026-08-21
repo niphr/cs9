@@ -299,12 +299,12 @@ weather_download_and_import_rawdata_action <- function(data, argset, tables) {
 #' @export
 weather_clean_data_data_selector <- function(argset, tables) {
   # Get raw weather data from database
-  raw_data <- tables$anon_weather_data_raw$tbl() %>%
+  raw_data <- tables$anon_weather_data_raw$tbl() |>
     dplyr::filter(
       date >= argset$date_from,
       date <= argset$date_to
-    ) %>%
-    dplyr::collect() %>%
+    ) |>
+    dplyr::collect() |>
     data.table::as.data.table()
   
   return(list(
@@ -356,13 +356,13 @@ weather_clean_data_action <- function(data, argset, tables) {
 #' @export
 weather_export_plots_data_selector <- function(argset, tables) {
   # Get processed weather data
-  plot_data <- tables$anon_weather_data_raw$tbl() %>%
+  plot_data <- tables$anon_weather_data_raw$tbl() |>
     dplyr::filter(
       location_code == argset$location_code,
       date >= argset$date_from,
       date <= argset$date_to
-    ) %>%
-    dplyr::collect() %>%
+    ) |>
+    dplyr::collect() |>
     data.table::as.data.table()
   
   return(list(

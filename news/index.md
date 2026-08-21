@@ -1,5 +1,31 @@
 # Changelog
 
+## Version 26.8.22
+
+- The package drops `magrittr`. Every `%>%` is now the base pipe `|>`,
+  and `magrittr` is gone from `DESCRIPTION`.
+
+- The rewrite is a relocation, not an edit. Each `%>%` call was
+  transformed the way R’s parser transforms `|>`, and the resulting tree
+  was required to match the tree parsed from the rewritten file. A file
+  whose trees disagreed was left untouched and converted by hand
+  instead.
+
+- `%>%` is no longer exported. `R/x_rexport.R` existed only to re-export
+  it and is deleted, and the “Imported Functions” section of
+  `_pkgdown.yml` goes with it. Code that relied on
+  [`library(cs9)`](https://niphr.github.io/cs9/) for the pipe must use
+  `|>` or attach `magrittr` itself.
+
+- `vignettes/creating-a-task.Rmd.orig` and
+  `vignettes/file-layout.Rmd.orig` are converted too. `_PRECOMPILER.R`
+  regenerates the shipped `.Rmd` from them, so converting only the
+  `.Rmd` would have been undone on the next precompile.
+
+- The version runs one day ahead of the calendar on purpose. r-universe
+  already published today’s number from a different commit, and one
+  version must never name two trees.
+
 ## Version 26.8.21
 
 - `R/zzz_imports.R` names `callr`, `csutil`, `later`, `pbmcapply` and

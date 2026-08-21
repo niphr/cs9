@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -609,13 +609,13 @@ reused across tasks:</p>
 <span>                                       <span class="va">location_column</span> <span class="op">=</span> <span class="st">"location_code"</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="co"># Common data selection logic</span></span>
-<span>    <span class="va">query_data</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">[[</span><span class="va">argset</span><span class="op">$</span><span class="va">source_table</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="va">query_data</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">[[</span><span class="va">argset</span><span class="op">$</span><span class="va">source_table</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
 <span>        <span class="op">!</span><span class="op">!</span><span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/sym.html" class="external-link">sym</a></span><span class="op">(</span><span class="va">date_column</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="va">argset</span><span class="op">$</span><span class="va">date_from</span>,</span>
 <span>        <span class="op">!</span><span class="op">!</span><span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/sym.html" class="external-link">sym</a></span><span class="op">(</span><span class="va">date_column</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="va">argset</span><span class="op">$</span><span class="va">date_to</span>,</span>
 <span>        <span class="op">!</span><span class="op">!</span><span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/sym.html" class="external-link">sym</a></span><span class="op">(</span><span class="va">location_column</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">argset</span><span class="op">$</span><span class="va">location_codes</span></span>
-<span>      <span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>      <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>    </span>
 <span>    <span class="co"># Apply standardization</span></span>

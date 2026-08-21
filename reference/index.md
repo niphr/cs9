@@ -64,11 +64,3 @@ Functions for running and managing surveillance tasks
   : Run a cs9 task in a background process, streaming its output live
 - [`run_task_detached()`](https://niphr.github.io/cs9/reference/run_task_detached.md)
   : Run a cs9 task in a detached process
-
-## Imported Functions
-
-Re-exported functions from other packages
-
-- [`reexports`](https://niphr.github.io/cs9/reference/reexports.md)
-  [`%>%`](https://niphr.github.io/cs9/reference/reexports.md) : Objects
-  exported from other packages

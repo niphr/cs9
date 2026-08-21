@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -370,12 +370,12 @@ order.</p>
 <span><span class="co">#' @export</span></span>
 <span><span class="va">weather_clean_data_data_selector</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># Get raw weather data from database</span></span>
-<span>  <span class="va">raw_data</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_data_raw</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="va">raw_data</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_data_raw</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
 <span>      <span class="va">date</span> <span class="op">&gt;=</span> <span class="va">argset</span><span class="op">$</span><span class="va">date_from</span>,</span>
 <span>      <span class="va">date</span> <span class="op">&lt;=</span> <span class="va">argset</span><span class="op">$</span><span class="va">date_to</span></span>
-<span>    <span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -426,13 +426,13 @@ order.</p>
 <span><span class="co">#' @export</span></span>
 <span><span class="va">weather_export_plots_data_selector</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># Get processed weather data</span></span>
-<span>  <span class="va">plot_data</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_data_raw</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="va">plot_data</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_data_raw</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
 <span>      <span class="va">location_code</span> <span class="op">==</span> <span class="va">argset</span><span class="op">$</span><span class="va">location_code</span>,</span>
 <span>      <span class="va">date</span> <span class="op">&gt;=</span> <span class="va">argset</span><span class="op">$</span><span class="va">date_from</span>,</span>
 <span>      <span class="va">date</span> <span class="op">&lt;=</span> <span class="va">argset</span><span class="op">$</span><span class="va">date_to</span></span>
-<span>    <span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
