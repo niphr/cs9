@@ -13,6 +13,10 @@
 #' session state, task description, and a user-provided message in the configuration log.
 #' It throws an error if the `message` argument is `NULL`.
 #'
+#' The `datetime` column holds milliseconds. Each call in one R process
+#' writes a `datetime` at least 4 milliseconds after the previous call.
+#' This keeps two calls for the same task apart in the key of `config_log`.
+#'
 #' @return No return value; this function is called for its side effect of inserting
 #' a log entry into the `config_log` table.
 #'
@@ -33,7 +37,7 @@ update_config_log <- function(
   # Check that message is not null
   stopifnot(!is.null(msg))
 
-  datetime <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  datetime <- config_log_datetime(Sys.time())
   date <- stringr::str_sub(datetime, 1, 10)
 
   # Output the message to the console using message()
@@ -48,6 +52,34 @@ update_config_log <- function(
     message = msg
   )
   config$tables$config_log$insert_data(to_upload)
+}
+
+# The key of config_log is auto_interactive, ss, task and datetime. A datetime
+# in whole seconds made a second run of a task in the same second fail on
+# SQLite with "UNIQUE constraint failed". The bulk loads on PostgreSQL and SQL
+# Server ignore the exit status of psql and bcp, so there the row was lost
+# without an R error.
+#
+# The fix changes the value and leaves the table alone. csdb drops and
+# recreates a table whose field names change, and it never changes the keys of
+# a table that exists. So a new key column would delete the production log.
+#
+# Three decimals fit all three backends. SQLite stores the text. PostgreSQL
+# TIMESTAMP keeps microseconds. SQL Server DATETIME accepts three decimals and
+# rounds them to steps of 1/300 second, and one rounding step covers at most 4
+# consecutive milliseconds. The clock on Windows can return the same time for
+# about 10 ms. So each value is at least 4 ms after the previous one.
+config_log_state <- new.env(parent = emptyenv())
+config_log_state$last_ms <- -Inf
+
+config_log_datetime <- function(now) {
+  ms <- floor(as.numeric(now) * 1000)
+  ms <- max(ms, config_log_state$last_ms + 4)
+  config_log_state$last_ms <- ms
+  return(paste0(
+    format(.POSIXct(ms %/% 1000), "%Y-%m-%d %H:%M:%S"),
+    sprintf(".%03d", as.integer(ms %% 1000))
+  ))
 }
 
 #' Get Configuration Log

@@ -300,10 +300,15 @@ SurveillanceSystem_v9 <- R6::R6Class(
     },
     #' @description
     #' Execute a surveillance task by name.
+    #' A task with a plan analysis builds its plans again on every call.
     #' @param task_name Character string specifying the task name to run.
     #' @return No return value. This method is called for its side effect of executing the task.
     run_task = function(task_name) {
-      task <- self$get_task(task_name)
+      # Not get_task(). get_task() builds the plans only when the task has
+      # none, so a second run in one session reused the plans of the first.
+      # A call to get_task() here would build the plans twice in the first run.
+      task <- self$tasks[[task_name]]
+      task$update_plans(replan = TRUE)
       task$run()
     },
     #' @description

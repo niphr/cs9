@@ -99,11 +99,16 @@ Task <- R6::R6Class(
         }
       }
     },
-    update_plans = function() {
-      if (!is.null(self$update_plans_fn)) {
+    # A task with a plan analysis builds its plans with update_plans_fn.
+    # get_task() and the shortcut_get_*() methods build them once and then
+    # reuse them, so the plan indexes stay the same between interactive calls.
+    # SurveillanceSystem_v9$run_task() passes replan = TRUE, because the data
+    # that the plan analysis reads can change between two runs in one session.
+    update_plans = function(replan = FALSE) {
+      if (!is.null(self$update_plans_fn) && (replan || !private$plans_built)) {
         message(glue::glue("Updating plans..."))
         self$plans <- self$update_plans_fn()
-        self$update_plans_fn <- NULL
+        private$plans_built <- TRUE
       }
       self$insert_first_last_analysis()
     },
@@ -271,6 +276,7 @@ Task <- R6::R6Class(
     }
   ),
   private = list(
+    plans_built = FALSE,
     run_sequential = function(plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, pb = NULL, cores) {
       # for (s in tables) s$connect()
       for (i in seq_along(self$plans[plans_index])) {

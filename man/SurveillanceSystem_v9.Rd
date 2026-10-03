@@ -358,6 +358,7 @@ global$ss$add_table(
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-run_task}{}}}
 \subsection{\code{SurveillanceSystem_v9$run_task()}}{
   Execute a surveillance task by name.
+A task with a plan analysis builds its plans again on every call.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$run_task(task_name)}

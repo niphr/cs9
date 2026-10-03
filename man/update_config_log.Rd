@@ -26,6 +26,10 @@ the log entry into the \code{config_log} table in the current configuration.
 The function records the type of interaction (automatic or interactive),
 session state, task description, and a user-provided message in the configuration log.
 It throws an error if the \code{message} argument is \code{NULL}.
+
+The \code{datetime} column holds milliseconds. Each call in one R process
+writes a \code{datetime} at least 4 milliseconds after the previous call.
+This keeps two calls for the same task apart in the key of \code{config_log}.
 }
 \examples{
 \dontrun{

@@ -1,3 +1,17 @@
+# Version 26.10.3
+
+- `update_config_log()` writes `datetime` in milliseconds, at least 4 ms after
+  its previous row in the R process. Two runs of one task in the same second
+  failed on SQLite with `UNIQUE constraint failed`. The table schema does not
+  change.
+  Two separate R processes can still collide in the same millisecond, and the
+  local time repeats at the autumn daylight-saving change, as it did before.
+  Verified on PostgreSQL 16 and SQL Server 2022, where `datetime` rounds to
+  1/300 s and the 4 ms step keeps rows distinct.
+- `run_task()` builds the plans of a task with a plan analysis on every call. A
+  second `run_task()` in one session reused the plans of the first. The
+  `shortcut_get_*()` methods still reuse the plans of the last build.
+
 # Version 26.8.23
 
 - `vignettes/creating-a-task.Rmd.orig` no longer carries an empty
