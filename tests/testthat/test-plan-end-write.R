@@ -166,7 +166,7 @@ test_that("csutil provides the flattening that both features depend on", {
 })
 
 # The parallel branch has its own copy of the two write blocks, at
-# `R/r6_Task.R:351` and `:357`. The tests above drive `run_sequential()` and
+# `R/r6_Task.R:359` and `:365`. The tests above drive `run_sequential()` and
 # reach neither.
 #
 # That copy fails worse than the sequential one. The worker wraps its body in a
@@ -225,7 +225,7 @@ new_parallel_task <- function(table, upsert, insert) {
 }
 
 # The two sites are separate blocks, so one test cannot cover both. Setting only
-# `upsert` leaves `R/r6_Task.R:357` unreached.
+# `upsert` leaves `R/r6_Task.R:365` unreached.
 test_that("the parallel branch upserts at the end of each plan", {
   dbconfig <- local_sqlite_dbconfig()
   table <- new_output_table(dbconfig)

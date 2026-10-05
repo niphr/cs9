@@ -291,7 +291,7 @@ Task <- R6::R6Class(
 
         data <- self$plans[plans_index][[i]]$get_data()
         hashes <- data$hash
-        last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(task = self$name, index_plan = i, expected_element_tags = names(data$hash$current_elements))
+        last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(task = self$name, index_plan = plans_index[i], expected_element_tags = names(data$hash$current_elements))
         data$hash$last_run <- last_run_hashes$last_run
         data$hash$last_run_elements <- last_run_hashes$last_run_elements
 
@@ -314,7 +314,7 @@ Task <- R6::R6Class(
 
         update_config_data_hash_for_each_plan(
           task = self$name,
-          index_plan = i,
+          index_plan = plans_index[i],
           element_tag = names(hashes$current_elements),
           element_hash = unlist(hashes$current_elements),
           all_hash = hashes$current

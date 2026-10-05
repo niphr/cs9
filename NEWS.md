@@ -1,3 +1,14 @@
+# Version 26.10.4
+
+- `Task$run()` reads and stores the data hash of the last plan under its own
+  `index_plan`. With 4 or more plans, `cores > 1` and a non-interactive session,
+  it used `index_plan` 1, the index of the first plan.
+- The four load methods of `DBTableExtended_v9` accept `load_timeout` and pass
+  it to csdb. csdb 2026.10.4 calls `insert_data()` and `upsert_data()` with this
+  argument, which stopped with `unused argument`. cs9 now needs csdb >= 2026.10.4.
+- `vignette("task-shapes")` shows two task shapes that publish a run only when
+  the whole run succeeds. Both shapes run against SQLite when the vignette builds.
+
 # Version 26.10.3
 
 - `update_config_log()` writes `datetime` in milliseconds, at least 4 ms after
