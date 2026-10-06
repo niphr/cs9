@@ -11,7 +11,7 @@ epidemiological monitoring and public health surveillance."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,6 +27,7 @@ epidemiological monitoring and public health surveillance."><meta property="og:i
     <li><a class="dropdown-item" href="../articles/backends.html">Database backends</a></li>
     <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
+    <li><a class="dropdown-item" href="../articles/task-shapes.html">Task shapes</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item dropdown">
@@ -383,7 +384,8 @@ epidemiological monitoring and public health surveillance.</p>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-run_task"></a><div class="section">
 <h3 id="surveillancesystem-v-run-task-"><code>SurveillanceSystem_v9$run_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-run-task-"></a></h3>
-<p>Execute a surveillance task by name.</p><div class="section">
+<p>Execute a surveillance task by name.
+A task with a plan analysis builds its plans again on every call.</p><div class="section">
 <h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">

@@ -38,6 +38,10 @@ session state, task description, and a user-provided message in the
 configuration log. It throws an error if the `message` argument is
 `NULL`.
 
+The `datetime` column holds milliseconds. Each call in one R process
+writes a `datetime` at least 4 milliseconds after the previous call.
+This keeps two calls for the same task apart in the key of `config_log`.
+
 ## Examples
 
 ``` r

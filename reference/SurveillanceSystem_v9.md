@@ -396,7 +396,8 @@ A Task R6 object representing the surveillance task.
 
 ### `SurveillanceSystem_v9$run_task()`
 
-Execute a surveillance task by name.
+Execute a surveillance task by name. A task with a plan analysis builds
+its plans again on every call.
 
 #### Usage
 

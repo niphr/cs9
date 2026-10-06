@@ -7,7 +7,8 @@ articles:
   cs9: cs9.html
   file-layout: file-layout.html
   installation: installation.html
-last_built: 2026-08-22T02:21Z
+  task-shapes: task-shapes.html
+last_built: 2026-10-06T05:36Z
 urls:
   reference: https://niphr.github.io/cs9/reference
   article: https://niphr.github.io/cs9/articles

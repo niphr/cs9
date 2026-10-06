@@ -8,3 +8,4 @@
 - [File Layout](https://niphr.github.io/cs9/articles/file-layout.md):
 - [Creating a
   task](https://niphr.github.io/cs9/articles/creating-a-task.md):
+- [Task shapes](https://niphr.github.io/cs9/articles/task-shapes.md):

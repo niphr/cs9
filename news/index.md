@@ -1,5 +1,62 @@
 # Changelog
 
+## Version 26.10.5
+
+- [`get_config_log()`](https://niphr.github.io/cs9/reference/get_config_log.md)
+  filters by `ss` and by `task`. Before, both filters stopped with
+  `first argument has length > 1`.
+- `update_config_tasks_stats()` stores the start and stop datetimes with
+  milliseconds. `update_config_data_hash_for_each_plan()` stores its
+  datetime with milliseconds. So two runs in one second keep two rows.
+  The table schema does not change.
+- Two rows in the same millisecond still collide. SQL Server `DATETIME`
+  rounds to about 3 ms.
+- The partitioned `drop_all_rows()`, `drop_rows_where()` and
+  `keep_rows_where()` write their `config_tables_last_updated` rows in
+  one upsert. After an error, that upsert includes the partitions that
+  completed before the error.
+- The partitioned insert and upsert methods still write one
+  `config_tables_last_updated` row per partition, in separate writes.
+- The lint gate passes. The allowlist exempts 4 files from
+  `cyclocomp_linter`: `R/2_onLoad.R`,
+  `R/r6_DBPartitionedTableExtended_v9.R`, `R/r6_Task.R` and
+  `R/r6_TaskJob.R`. The complexity check skips all code in those files,
+  which includes the whole R6 classes `DBPartitionedTableExtended_v9`,
+  `Task` and `TaskJob`.
+- Still open from 26.10.3: the local time repeats at the autumn
+  daylight-saving change, and two R processes can collide in the same
+  millisecond.
+
+## Version 26.10.4
+
+- `Task$run()` reads and stores the data hash of the last plan under its
+  own `index_plan`. With 4 or more plans, `cores > 1` and a
+  non-interactive session, it used `index_plan` 1, the index of the
+  first plan.
+- The four load methods of `DBTableExtended_v9` accept `load_timeout`
+  and pass it to csdb. csdb 2026.10.4 calls `insert_data()` and
+  `upsert_data()` with this argument, which stopped with
+  `unused argument`. cs9 now needs csdb \>= 2026.10.4.
+- [`vignette("task-shapes")`](https://niphr.github.io/cs9/articles/task-shapes.md)
+  shows two task shapes that publish a run only when the whole run
+  succeeds. Both shapes run against SQLite when the vignette builds.
+
+## Version 26.10.3
+
+- [`update_config_log()`](https://niphr.github.io/cs9/reference/update_config_log.md)
+  writes `datetime` in milliseconds, at least 4 ms after its previous
+  row in the R process. Two runs of one task in the same second failed
+  on SQLite with `UNIQUE constraint failed`. The table schema does not
+  change. Two separate R processes can still collide in the same
+  millisecond, and the local time repeats at the autumn daylight-saving
+  change, as it did before. Verified on PostgreSQL 16 and SQL Server
+  2022, where `datetime` rounds to 1/300 s and the 4 ms step keeps rows
+  distinct.
+- `run_task()` builds the plans of a task with a plan analysis on every
+  call. A second `run_task()` in one session reused the plans of the
+  first. The `shortcut_get_*()` methods still reuse the plans of the
+  last build.
+
 ## Version 26.8.23
 
 - `vignettes/creating-a-task.Rmd.orig` no longer carries an empty

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.8.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,6 +23,7 @@
     <li><a class="dropdown-item" href="../articles/backends.html">Database backends</a></li>
     <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
+    <li><a class="dropdown-item" href="../articles/task-shapes.html">Task shapes</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item dropdown">
@@ -53,6 +54,33 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.5" id="version-26105">Version 26.10.5<a class="anchor" aria-label="anchor" href="#version-26105"></a></h2>
+<ul><li>
+<code><a href="../reference/get_config_log.html">get_config_log()</a></code> filters by <code>ss</code> and by <code>task</code>. Before, both filters stopped with <code>first argument has length &gt; 1</code>.</li>
+<li>
+<code>update_config_tasks_stats()</code> stores the start and stop datetimes with milliseconds. <code>update_config_data_hash_for_each_plan()</code> stores its datetime with milliseconds. So two runs in one second keep two rows. The table schema does not change.</li>
+<li>Two rows in the same millisecond still collide. SQL Server <code>DATETIME</code> rounds to about 3 ms.</li>
+<li>The partitioned <code>drop_all_rows()</code>, <code>drop_rows_where()</code> and <code>keep_rows_where()</code> write their <code>config_tables_last_updated</code> rows in one upsert. After an error, that upsert includes the partitions that completed before the error.</li>
+<li>The partitioned insert and upsert methods still write one <code>config_tables_last_updated</code> row per partition, in separate writes.</li>
+<li>The lint gate passes. The allowlist exempts 4 files from <code>cyclocomp_linter</code>: <code>R/2_onLoad.R</code>, <code>R/r6_DBPartitionedTableExtended_v9.R</code>, <code>R/r6_Task.R</code> and <code>R/r6_TaskJob.R</code>. The complexity check skips all code in those files, which includes the whole R6 classes <code>DBPartitionedTableExtended_v9</code>, <code>Task</code> and <code>TaskJob</code>.</li>
+<li>Still open from 26.10.3: the local time repeats at the autumn daylight-saving change, and two R processes can collide in the same millisecond.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.4" id="version-26104">Version 26.10.4<a class="anchor" aria-label="anchor" href="#version-26104"></a></h2>
+<ul><li>
+<code>Task$run()</code> reads and stores the data hash of the last plan under its own <code>index_plan</code>. With 4 or more plans, <code>cores &gt; 1</code> and a non-interactive session, it used <code>index_plan</code> 1, the index of the first plan.</li>
+<li>The four load methods of <code>DBTableExtended_v9</code> accept <code>load_timeout</code> and pass it to csdb. csdb 2026.10.4 calls <code>insert_data()</code> and <code>upsert_data()</code> with this argument, which stopped with <code>unused argument</code>. cs9 now needs csdb &gt;= 2026.10.4.</li>
+<li>
+<code><a href="../articles/task-shapes.html">vignette("task-shapes")</a></code> shows two task shapes that publish a run only when the whole run succeeds. Both shapes run against SQLite when the vignette builds.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.3" id="version-26103">Version 26.10.3<a class="anchor" aria-label="anchor" href="#version-26103"></a></h2>
+<ul><li>
+<code><a href="../reference/update_config_log.html">update_config_log()</a></code> writes <code>datetime</code> in milliseconds, at least 4 ms after its previous row in the R process. Two runs of one task in the same second failed on SQLite with <code>UNIQUE constraint failed</code>. The table schema does not change. Two separate R processes can still collide in the same millisecond, and the local time repeats at the autumn daylight-saving change, as it did before. Verified on PostgreSQL 16 and SQL Server 2022, where <code>datetime</code> rounds to 1/300 s and the 4 ms step keeps rows distinct.</li>
+<li>
+<code>run_task()</code> builds the plans of a task with a plan analysis on every call. A second <code>run_task()</code> in one session reused the plans of the first. The <code>shortcut_get_*()</code> methods still reuse the plans of the last build.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.8.23" id="version-26823">Version 26.8.23<a class="anchor" aria-label="anchor" href="#version-26823"></a></h2>
 <ul><li>
