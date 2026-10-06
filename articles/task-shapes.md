@@ -1,10 +1,22 @@
 # Task shapes
 
-This vignette shows two task shapes that publish the result of a run
-only when the whole run succeeds. Both shapes run against SQLite when
-the vignette builds. A chunk calls
-[`stop()`](https://rdrr.io/r/base/stop.html) if a shape does not keep
-its promise, so the build fails.
+A task shape is a plan design that recurs across tasks. It fixes how the
+plans split the work, what the first and the last plan do, and how the
+task writes. This vignette and
+[`vignette("more-task-shapes")`](https://niphr.github.io/cs9/articles/more-task-shapes.md)
+describe five shapes. Each shape runs against SQLite when the vignette
+builds. A chunk calls [`stop()`](https://rdrr.io/r/base/stop.html) if a
+shape does not keep its promise, so the build fails.
+[`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
+states the execution rules that every shape follows.
+
+| Shape                                                                                                                  | Use it when                                                                                          | Vignette           |
+|------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|--------------------|
+| [Per-unit rebuild](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-per-unit-rebuild)                  | the rows of each unit depend only on its own data pull, and no reader needs the table during the run | `more-task-shapes` |
+| [Staged import](#shape-staged-import)                                                                                  | an import replaces the weeks of a run, and the live table MUST change only when every week arrived   | `task-shapes`      |
+| [Staging as a checkpoint](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-staging-checkpoint)         | an import is long, and a failed run MUST NOT lose the weeks that it already pulled                   | `more-task-shapes` |
+| [Fit then fill](#shape-fit-then-fill)                                                                                  | a fit can fail for one unit, and the fallback needs the results of all units                         | `task-shapes`      |
+| [Export from a finished table](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-export-finished-table) | the output is files, made from tables that an earlier task finished                                  | `more-task-shapes` |
 
 ## Setup
 
@@ -39,13 +51,26 @@ read_rows <- function(table, by) {
 }
 ```
 
-## Shape 1: staged import with check and swap
+## Staged import
 
 The import task has one plan per week. Each argset copies its week from
 the source into a staging table. The argset with `first_analysis = TRUE`
 empties the staging table first. The argset with `last_analysis = TRUE`
 checks the staged rows. It then swaps them into the live table in one
 transaction.
+
+- **Use it when** a run replaces a set of weeks. A reader of the live
+  table then sees either the old weeks or the new weeks, never a mix.
+- **Do not use it when** a run is long enough that a failure near the
+  end costs a night of pulls. The first plan empties staging, so the
+  next run pulls every week again. Use [staging as a
+  checkpoint](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-staging-checkpoint).
+- **Failure modes.** Only the last plan MAY check and swap, because the
+  middle plans MAY run in parallel, in any order
+  ([rule](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-first-last)).
+  A partitioned staging table MUST hold a week in every declared
+  partition before the week counts as staged
+  ([rule](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-partitions)).
 
 ``` r
 weeks <- c("2026-01", "2026-02", "2026-03", "2026-04")
@@ -130,14 +155,14 @@ ss$run_task("import_weekly")
 live <- read_rows(ss$tables$anon_import_live, c("isoyearweek", "location_code"))
 staged <- read_rows(ss$tables$anon_import_staging, c("isoyearweek", "location_code"))
 stopifnot(identical(live, staged), !"2026-03" %in% live$isoyearweek)
-live
-#>   isoyearweek location_code n auto_last_updated_datetime
-#> 1     2026-01     county_03 1        2026-10-06 06:10:59
-#> 2     2026-01     county_11 2        2026-10-06 06:10:59
-#> 3     2026-02     county_03 3        2026-10-06 06:10:59
-#> 4     2026-02     county_11 4        2026-10-06 06:10:59
-#> 5     2026-04     county_03 7        2026-10-06 06:10:59
-#> 6     2026-04     county_11 8        2026-10-06 06:10:59
+live[names(import_fields)]
+#>   isoyearweek location_code n
+#> 1     2026-01     county_03 1
+#> 2     2026-01     county_11 2
+#> 3     2026-02     county_03 3
+#> 4     2026-02     county_11 4
+#> 5     2026-04     county_03 7
+#> 6     2026-04     county_11 8
 ```
 
 The second run reads new counts, and week 2026-02 fails. The task MUST
@@ -157,17 +182,30 @@ stopifnot(
 )
 conditionMessage(run)
 #> [1] "the source failed for 2026-02"
-cat("SHAPE 1 CHECKS PASSED\n")
-#> SHAPE 1 CHECKS PASSED
+cat("STAGED IMPORT CHECKS PASSED\n")
+#> STAGED IMPORT CHECKS PASSED
 ```
 
-## Shape 2: fit then fill
+## Fit then fill
 
 The fit task fits a threshold for each stratum in its own argset. It
 writes `NA` for a stratum with fewer than 4 weeks of history. The fill
 task has one plan. It fills each `NA` row from the national row, records
 the `source` of each threshold, and publishes the whole result with
 `csdb::DBTable_v9$replace_all_rows()`.
+
+- **Use it when** a fit can fail for one unit, and its fallback needs
+  the result of another unit, here the national row.
+- **Do not use it when** every unit has a valid result of its own. A
+  [per-unit
+  rebuild](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-per-unit-rebuild)
+  is then enough.
+- **Failure modes.** A middle plan of the fit task MUST NOT fill,
+  because the national row MAY not exist yet
+  ([rule](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-first-last)).
+  The fill reads the whole fitted table in one pull, so the fitted table
+  MUST stay small. The published table changes in one transaction, so a
+  failed fill leaves the previous thresholds.
 
 ``` r
 ss$add_table(
@@ -235,37 +273,6 @@ ss$add_task(
   action_fn_name = "fit_action",
   tables = list(fitted = ss$tables$anon_threshold_fitted)
 )
-#> <Task>
-#>   Public:
-#>     action_after_fn: NULL
-#>     action_before_fn: NULL
-#>     clone: function (deep = FALSE) 
-#>     cores: 1
-#>     implementation_version: unspecified
-#>     initialize: function (name_grouping = NULL, name_action = NULL, name_variant = NULL, 
-#>     insert_at_end_of_each_plan: FALSE
-#>     insert_first_last_analysis: function () 
-#>     name: threshold_fit
-#>     name_action: fit
-#>     name_grouping: threshold
-#>     name_variant: NULL
-#>     num_analyses: function () 
-#>     num_plans: function () 
-#>     permission: NULL
-#>     plans: list
-#>     private: environment
-#>     run: function (cores = self$cores) 
-#>     self: Task, R6
-#>     ss: shapes
-#>     tables: list
-#>     update_plans: function (replan = FALSE) 
-#>     update_plans_fn: NULL
-#>     upsert_at_end_of_each_plan: FALSE
-#>   Private:
-#>     plans_built: FALSE
-#>     run_parallel: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, 
-#>     run_parallel_plans: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, 
-#>     run_sequential: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan,
 ss$add_task(
   name_grouping = "threshold",
   name_action = "fill",
@@ -277,37 +284,6 @@ ss$add_task(
     published = ss$tables$anon_threshold_published
   )
 )
-#> <Task>
-#>   Public:
-#>     action_after_fn: NULL
-#>     action_before_fn: NULL
-#>     clone: function (deep = FALSE) 
-#>     cores: 1
-#>     implementation_version: unspecified
-#>     initialize: function (name_grouping = NULL, name_action = NULL, name_variant = NULL, 
-#>     insert_at_end_of_each_plan: FALSE
-#>     insert_first_last_analysis: function () 
-#>     name: threshold_fill
-#>     name_action: fill
-#>     name_grouping: threshold
-#>     name_variant: NULL
-#>     num_analyses: function () 
-#>     num_plans: function () 
-#>     permission: NULL
-#>     plans: list
-#>     private: environment
-#>     run: function (cores = self$cores) 
-#>     self: Task, R6
-#>     ss: shapes
-#>     tables: list
-#>     update_plans: function (replan = FALSE) 
-#>     update_plans_fn: NULL
-#>     upsert_at_end_of_each_plan: FALSE
-#>   Private:
-#>     plans_built: FALSE
-#>     run_parallel: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, 
-#>     run_parallel_plans: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, 
-#>     run_sequential: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan,
 ```
 
 After both tasks run, every published row MUST have a threshold and a
@@ -322,12 +298,12 @@ stopifnot(
   !anyNA(published$source),
   published$source[published$location_code == "county_46"] == "national"
 )
-published
-#>   location_code threshold   source auto_last_updated_datetime
-#> 1     county_03  15.35575   fitted        2026-10-06 06:11:01
-#> 2     county_11  26.77914   fitted        2026-10-06 06:11:01
-#> 3     county_46  48.76123 national        2026-10-06 06:11:01
-#> 4         norge  48.76123   fitted        2026-10-06 06:11:01
+published[c("location_code", "threshold", "source")]
+#>   location_code threshold   source
+#> 1     county_03  15.35575   fitted
+#> 2     county_11  26.77914   fitted
+#> 3     county_46  48.76123 national
+#> 4         norge  48.76123   fitted
 ```
 
 The history then doubles, and the fit runs again. The publish of the
@@ -344,8 +320,8 @@ stopifnot(
 )
 conditionMessage(run)
 #> [1] "UNIQUE constraint failed: anon_threshold_published.location_code"
-cat("SHAPE 2 CHECKS PASSED\n")
-#> SHAPE 2 CHECKS PASSED
+cat("FIT THEN FILL CHECKS PASSED\n")
+#> FIT THEN FILL CHECKS PASSED
 ```
 
 ## Three rules
@@ -353,17 +329,17 @@ cat("SHAPE 2 CHECKS PASSED\n")
 **Publish in one transaction.** A task once emptied its MEM table in
 `first_analysis` and refilled it argset by argset. Between those two
 points, and after any failed argset, readers saw an empty or partial
-table. Shape 2 writes the published table in one call to
+table. Fit then fill writes the published table in one call to
 `replace_all_rows()`.
 
 **Replace the whole scope of the run.** A swap once deleted from the
 live table only the weeks that each staging partition held. A week with
-no staged rows therefore kept its stale rows. Shape 1 deletes every week
-of the run, so a withdrawn week leaves the live table.
+no staged rows therefore kept its stale rows. The staged import deletes
+every week of the run, so a withdrawn week leaves the live table.
 
 **Record where each value came from.** A national threshold copied into
-a county row looks the same as a threshold fitted for that county. Shape
-2 writes `source` next to each threshold.
+a county row looks the same as a threshold fitted for that county. Fit
+then fill writes `source` next to each threshold.
 
 Both shapes need cs9 to run the argset with `last_analysis = TRUE` after
 every other argset of the task.

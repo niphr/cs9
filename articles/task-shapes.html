@@ -41,7 +41,9 @@
     <li><a class="dropdown-item" href="../articles/backends.html">Database backends</a></li>
     <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
+    <li><a class="dropdown-item" href="../articles/how-a-task-runs.html">How a task runs</a></li>
     <li><a class="dropdown-item" href="../articles/task-shapes.html">Task shapes</a></li>
+    <li><a class="dropdown-item" href="../articles/more-task-shapes.html">More task shapes</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -88,10 +90,61 @@
 
     
     
-<p>This vignette shows two task shapes that publish the result of a run
-only when the whole run succeeds. Both shapes run against SQLite when
-the vignette builds. A chunk calls <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> if a shape does
-not keep its promise, so the build fails.</p>
+<p>A task shape is a plan design that recurs across tasks. It fixes how
+the plans split the work, what the first and the last plan do, and how
+the task writes. This vignette and
+<code><a href="../articles/more-task-shapes.html">vignette("more-task-shapes")</a></code> describe five shapes. Each
+shape runs against SQLite when the vignette builds. A chunk calls
+<code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> if a shape does not keep its promise, so the build
+fails. <code><a href="../articles/how-a-task-runs.html">vignette("how-a-task-runs")</a></code> states the execution
+rules that every shape follows.</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Shape</th>
+<th>Use it when</th>
+<th>Vignette</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><a href="more-task-shapes.html#shape-per-unit-rebuild">Per-unit
+rebuild</a></td>
+<td>the rows of each unit depend only on its own data pull, and no
+reader needs the table during the run</td>
+<td><code>more-task-shapes</code></td>
+</tr>
+<tr class="even">
+<td><a href="#shape-staged-import">Staged import</a></td>
+<td>an import replaces the weeks of a run, and the live table MUST
+change only when every week arrived</td>
+<td><code>task-shapes</code></td>
+</tr>
+<tr class="odd">
+<td><a href="more-task-shapes.html#shape-staging-checkpoint">Staging as
+a checkpoint</a></td>
+<td>an import is long, and a failed run MUST NOT lose the weeks that it
+already pulled</td>
+<td><code>more-task-shapes</code></td>
+</tr>
+<tr class="even">
+<td><a href="#shape-fit-then-fill">Fit then fill</a></td>
+<td>a fit can fail for one unit, and the fallback needs the results of
+all units</td>
+<td><code>task-shapes</code></td>
+</tr>
+<tr class="odd">
+<td><a href="more-task-shapes.html#shape-export-finished-table">Export
+from a finished table</a></td>
+<td>the output is files, made from tables that an earlier task
+finished</td>
+<td><code>more-task-shapes</code></td>
+</tr>
+</tbody>
+</table>
 <div class="section level2">
 <h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
 </h2>
@@ -125,13 +178,29 @@ at two SQLite files under <code><a href="https://rdrr.io/r/base/tempfile.html" c
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="shape-1-staged-import-with-check-and-swap">Shape 1: staged import with check and swap<a class="anchor" aria-label="anchor" href="#shape-1-staged-import-with-check-and-swap"></a>
+<h2 id="shape-staged-import">Staged import<a class="anchor" aria-label="anchor" href="#shape-staged-import"></a>
 </h2>
 <p>The import task has one plan per week. Each argset copies its week
 from the source into a staging table. The argset with
 <code>first_analysis = TRUE</code> empties the staging table first. The
 argset with <code>last_analysis = TRUE</code> checks the staged rows. It
 then swaps them into the live table in one transaction.</p>
+<ul>
+<li>
+<strong>Use it when</strong> a run replaces a set of weeks. A reader
+of the live table then sees either the old weeks or the new weeks, never
+a mix.</li>
+<li>
+<strong>Do not use it when</strong> a run is long enough that a
+failure near the end costs a night of pulls. The first plan empties
+staging, so the next run pulls every week again. Use <a href="more-task-shapes.html#shape-staging-checkpoint">staging as a
+checkpoint</a>.</li>
+<li>
+<strong>Failure modes.</strong> Only the last plan MAY check and
+swap, because the middle plans MAY run in parallel, in any order (<a href="how-a-task-runs.html#rule-first-last">rule</a>). A partitioned
+staging table MUST hold a week in every declared partition before the
+week counts as staged (<a href="how-a-task-runs.html#rule-partitions">rule</a>).</li>
+</ul>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">weeks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2026-01"</span>, <span class="st">"2026-02"</span>, <span class="st">"2026-03"</span>, <span class="st">"2026-04"</span><span class="op">)</span></span>
 <span><span class="va">import_fields</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="st">"TEXT"</span>, location_code <span class="op">=</span> <span class="st">"TEXT"</span>, n <span class="op">=</span> <span class="st">"INTEGER"</span><span class="op">)</span></span>
@@ -212,14 +281,14 @@ for 2026-03.</p>
 <span><span class="va">live</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_import_live</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"isoyearweek"</span>, <span class="st">"location_code"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">staged</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_import_staging</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"isoyearweek"</span>, <span class="st">"location_code"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">live</span>, <span class="va">staged</span><span class="op">)</span>, <span class="op">!</span><span class="st">"2026-03"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">live</span><span class="op">$</span><span class="va">isoyearweek</span><span class="op">)</span></span>
-<span><span class="va">live</span></span>
-<span><span class="co">#&gt;   isoyearweek location_code n auto_last_updated_datetime</span></span>
-<span><span class="co">#&gt; 1     2026-01     county_03 1        2026-10-06 06:10:59</span></span>
-<span><span class="co">#&gt; 2     2026-01     county_11 2        2026-10-06 06:10:59</span></span>
-<span><span class="co">#&gt; 3     2026-02     county_03 3        2026-10-06 06:10:59</span></span>
-<span><span class="co">#&gt; 4     2026-02     county_11 4        2026-10-06 06:10:59</span></span>
-<span><span class="co">#&gt; 5     2026-04     county_03 7        2026-10-06 06:10:59</span></span>
-<span><span class="co">#&gt; 6     2026-04     county_11 8        2026-10-06 06:10:59</span></span></code></pre></div>
+<span><span class="va">live</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">import_fields</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   isoyearweek location_code n</span></span>
+<span><span class="co">#&gt; 1     2026-01     county_03 1</span></span>
+<span><span class="co">#&gt; 2     2026-01     county_11 2</span></span>
+<span><span class="co">#&gt; 3     2026-02     county_03 3</span></span>
+<span><span class="co">#&gt; 4     2026-02     county_11 4</span></span>
+<span><span class="co">#&gt; 5     2026-04     county_03 7</span></span>
+<span><span class="co">#&gt; 6     2026-04     county_11 8</span></span></code></pre></div>
 <p>The second run reads new counts, and week 2026-02 fails. The task
 MUST stop with an error, and the live table MUST keep the rows of the
 first run.</p>
@@ -236,11 +305,11 @@ first run.</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">run</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "the source failed for 2026-02"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"SHAPE 1 CHECKS PASSED\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; SHAPE 1 CHECKS PASSED</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"STAGED IMPORT CHECKS PASSED\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; STAGED IMPORT CHECKS PASSED</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="shape-2-fit-then-fill">Shape 2: fit then fill<a class="anchor" aria-label="anchor" href="#shape-2-fit-then-fill"></a>
+<h2 id="shape-fit-then-fill">Fit then fill<a class="anchor" aria-label="anchor" href="#shape-fit-then-fill"></a>
 </h2>
 <p>The fit task fits a threshold for each stratum in its own argset. It
 writes <code>NA</code> for a stratum with fewer than 4 weeks of history.
@@ -248,6 +317,21 @@ The fill task has one plan. It fills each <code>NA</code> row from the
 national row, records the <code>source</code> of each threshold, and
 publishes the whole result with
 <code>csdb::DBTable_v9$replace_all_rows()</code>.</p>
+<ul>
+<li>
+<strong>Use it when</strong> a fit can fail for one unit, and its
+fallback needs the result of another unit, here the national row.</li>
+<li>
+<strong>Do not use it when</strong> every unit has a valid result of
+its own. A <a href="more-task-shapes.html#shape-per-unit-rebuild">per-unit rebuild</a>
+is then enough.</li>
+<li>
+<strong>Failure modes.</strong> A middle plan of the fit task MUST
+NOT fill, because the national row MAY not exist yet (<a href="how-a-task-runs.html#rule-first-last">rule</a>). The fill reads
+the whole fitted table in one pull, so the fitted table MUST stay small.
+The published table changes in one transaction, so a failed fill leaves
+the previous thresholds.</li>
+</ul>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
 <span>  name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>
@@ -314,37 +398,6 @@ publishes the whole result with
 <span>  action_fn_name <span class="op">=</span> <span class="st">"fit_action"</span>,</span>
 <span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>fitted <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_threshold_fitted</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;Task&gt;</span></span>
-<span><span class="co">#&gt;   Public:</span></span>
-<span><span class="co">#&gt;     action_after_fn: NULL</span></span>
-<span><span class="co">#&gt;     action_before_fn: NULL</span></span>
-<span><span class="co">#&gt;     clone: function (deep = FALSE) </span></span>
-<span><span class="co">#&gt;     cores: 1</span></span>
-<span><span class="co">#&gt;     implementation_version: unspecified</span></span>
-<span><span class="co">#&gt;     initialize: function (name_grouping = NULL, name_action = NULL, name_variant = NULL, </span></span>
-<span><span class="co">#&gt;     insert_at_end_of_each_plan: FALSE</span></span>
-<span><span class="co">#&gt;     insert_first_last_analysis: function () </span></span>
-<span><span class="co">#&gt;     name: threshold_fit</span></span>
-<span><span class="co">#&gt;     name_action: fit</span></span>
-<span><span class="co">#&gt;     name_grouping: threshold</span></span>
-<span><span class="co">#&gt;     name_variant: NULL</span></span>
-<span><span class="co">#&gt;     num_analyses: function () </span></span>
-<span><span class="co">#&gt;     num_plans: function () </span></span>
-<span><span class="co">#&gt;     permission: NULL</span></span>
-<span><span class="co">#&gt;     plans: list</span></span>
-<span><span class="co">#&gt;     private: environment</span></span>
-<span><span class="co">#&gt;     run: function (cores = self$cores) </span></span>
-<span><span class="co">#&gt;     self: Task, R6</span></span>
-<span><span class="co">#&gt;     ss: shapes</span></span>
-<span><span class="co">#&gt;     tables: list</span></span>
-<span><span class="co">#&gt;     update_plans: function (replan = FALSE) </span></span>
-<span><span class="co">#&gt;     update_plans_fn: NULL</span></span>
-<span><span class="co">#&gt;     upsert_at_end_of_each_plan: FALSE</span></span>
-<span><span class="co">#&gt;   Private:</span></span>
-<span><span class="co">#&gt;     plans_built: FALSE</span></span>
-<span><span class="co">#&gt;     run_parallel: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, </span></span>
-<span><span class="co">#&gt;     run_parallel_plans: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, </span></span>
-<span><span class="co">#&gt;     run_sequential: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan,</span></span>
 <span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"threshold"</span>,</span>
 <span>  name_action <span class="op">=</span> <span class="st">"fill"</span>,</span>
@@ -355,38 +408,7 @@ publishes the whole result with
 <span>    fitted <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_threshold_fitted</span>,</span>
 <span>    published <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_threshold_published</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;Task&gt;</span></span>
-<span><span class="co">#&gt;   Public:</span></span>
-<span><span class="co">#&gt;     action_after_fn: NULL</span></span>
-<span><span class="co">#&gt;     action_before_fn: NULL</span></span>
-<span><span class="co">#&gt;     clone: function (deep = FALSE) </span></span>
-<span><span class="co">#&gt;     cores: 1</span></span>
-<span><span class="co">#&gt;     implementation_version: unspecified</span></span>
-<span><span class="co">#&gt;     initialize: function (name_grouping = NULL, name_action = NULL, name_variant = NULL, </span></span>
-<span><span class="co">#&gt;     insert_at_end_of_each_plan: FALSE</span></span>
-<span><span class="co">#&gt;     insert_first_last_analysis: function () </span></span>
-<span><span class="co">#&gt;     name: threshold_fill</span></span>
-<span><span class="co">#&gt;     name_action: fill</span></span>
-<span><span class="co">#&gt;     name_grouping: threshold</span></span>
-<span><span class="co">#&gt;     name_variant: NULL</span></span>
-<span><span class="co">#&gt;     num_analyses: function () </span></span>
-<span><span class="co">#&gt;     num_plans: function () </span></span>
-<span><span class="co">#&gt;     permission: NULL</span></span>
-<span><span class="co">#&gt;     plans: list</span></span>
-<span><span class="co">#&gt;     private: environment</span></span>
-<span><span class="co">#&gt;     run: function (cores = self$cores) </span></span>
-<span><span class="co">#&gt;     self: Task, R6</span></span>
-<span><span class="co">#&gt;     ss: shapes</span></span>
-<span><span class="co">#&gt;     tables: list</span></span>
-<span><span class="co">#&gt;     update_plans: function (replan = FALSE) </span></span>
-<span><span class="co">#&gt;     update_plans_fn: NULL</span></span>
-<span><span class="co">#&gt;     upsert_at_end_of_each_plan: FALSE</span></span>
-<span><span class="co">#&gt;   Private:</span></span>
-<span><span class="co">#&gt;     plans_built: FALSE</span></span>
-<span><span class="co">#&gt;     run_parallel: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, </span></span>
-<span><span class="co">#&gt;     run_parallel_plans: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, </span></span>
-<span><span class="co">#&gt;     run_sequential: function (plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan,</span></span></code></pre></div>
+<span><span class="op">)</span></span></code></pre></div>
 <p>After both tasks run, every published row MUST have a threshold and a
 source. County 46 MUST carry the national threshold.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -398,12 +420,12 @@ source. County 46 MUST carry the national threshold.</p>
 <span>  <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">published</span><span class="op">$</span><span class="va">source</span><span class="op">)</span>,</span>
 <span>  <span class="va">published</span><span class="op">$</span><span class="va">source</span><span class="op">[</span><span class="va">published</span><span class="op">$</span><span class="va">location_code</span> <span class="op">==</span> <span class="st">"county_46"</span><span class="op">]</span> <span class="op">==</span> <span class="st">"national"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">published</span></span>
-<span><span class="co">#&gt;   location_code threshold   source auto_last_updated_datetime</span></span>
-<span><span class="co">#&gt; 1     county_03  15.35575   fitted        2026-10-06 06:11:01</span></span>
-<span><span class="co">#&gt; 2     county_11  26.77914   fitted        2026-10-06 06:11:01</span></span>
-<span><span class="co">#&gt; 3     county_46  48.76123 national        2026-10-06 06:11:01</span></span>
-<span><span class="co">#&gt; 4         norge  48.76123   fitted        2026-10-06 06:11:01</span></span></code></pre></div>
+<span><span class="va">published</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"location_code"</span>, <span class="st">"threshold"</span>, <span class="st">"source"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   location_code threshold   source</span></span>
+<span><span class="co">#&gt; 1     county_03  15.35575   fitted</span></span>
+<span><span class="co">#&gt; 2     county_11  26.77914   fitted</span></span>
+<span><span class="co">#&gt; 3     county_46  48.76123 national</span></span>
+<span><span class="co">#&gt; 4         norge  48.76123   fitted</span></span></code></pre></div>
 <p>The history then doubles, and the fit runs again. The publish of the
 fill task fails. The published table MUST keep its previous
 contents.</p>
@@ -418,8 +440,8 @@ contents.</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">run</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "UNIQUE constraint failed: anon_threshold_published.location_code"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"SHAPE 2 CHECKS PASSED\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; SHAPE 2 CHECKS PASSED</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"FIT THEN FILL CHECKS PASSED\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; FIT THEN FILL CHECKS PASSED</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="three-rules">Three rules<a class="anchor" aria-label="anchor" href="#three-rules"></a>
@@ -427,16 +449,16 @@ contents.</p>
 <p><strong>Publish in one transaction.</strong> A task once emptied its
 MEM table in <code>first_analysis</code> and refilled it argset by
 argset. Between those two points, and after any failed argset, readers
-saw an empty or partial table. Shape 2 writes the published table in one
-call to <code>replace_all_rows()</code>.</p>
+saw an empty or partial table. Fit then fill writes the published table
+in one call to <code>replace_all_rows()</code>.</p>
 <p><strong>Replace the whole scope of the run.</strong> A swap once
 deleted from the live table only the weeks that each staging partition
-held. A week with no staged rows therefore kept its stale rows. Shape 1
-deletes every week of the run, so a withdrawn week leaves the live
-table.</p>
+held. A week with no staged rows therefore kept its stale rows. The
+staged import deletes every week of the run, so a withdrawn week leaves
+the live table.</p>
 <p><strong>Record where each value came from.</strong> A national
 threshold copied into a county row looks the same as a threshold fitted
-for that county. Shape 2 writes <code>source</code> next to each
+for that county. Fit then fill writes <code>source</code> next to each
 threshold.</p>
 <p>Both shapes need cs9 to run the argset with
 <code>last_analysis = TRUE</code> after every other argset of the task.

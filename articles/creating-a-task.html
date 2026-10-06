@@ -41,7 +41,9 @@
     <li><a class="dropdown-item" href="../articles/backends.html">Database backends</a></li>
     <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
+    <li><a class="dropdown-item" href="../articles/how-a-task-runs.html">How a task runs</a></li>
     <li><a class="dropdown-item" href="../articles/task-shapes.html">Task shapes</a></li>
+    <li><a class="dropdown-item" href="../articles/more-task-shapes.html">More task shapes</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -286,7 +288,7 @@ combination:</p>
 <span>  </span>
 <span>  <span class="co"># Insert results into database table</span></span>
 <span>  <span class="co"># In a real implementation, this would use:</span></span>
-<span>  <span class="co"># tables$anon_weather_weekly_summary$upsert_data(weekly_summary)</span></span>
+<span>  <span class="co"># tables$weather_weekly$upsert_data(weekly_summary)</span></span>
 <span>  </span>
 <span>  <span class="co"># For demonstration, just print results</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Processed weekly weather summary:\n"</span><span class="op">)</span></span>
@@ -314,11 +316,12 @@ combination:</p>
 <span>  cores <span class="op">=</span> <span class="fl">1</span>,                              <span class="co"># Single core execution</span></span>
 <span>  permission <span class="op">=</span> <span class="cn">NULL</span>,                      <span class="co"># No special permissions needed</span></span>
 <span>  </span>
-<span>  <span class="co"># Task structure - one plan per location per month</span></span>
+<span>  <span class="co"># Task structure: one plan per location and month pair. Each element of</span></span>
+<span>  <span class="co"># for_each_plan is the argset of one plan.</span></span>
 <span>  for_each_plan <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    location_code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"LOC001"</span>, <span class="st">"LOC002"</span>, <span class="st">"LOC003"</span><span class="op">)</span>,</span>
-<span>    date_from <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-01-01"</span>, <span class="st">"2024-02-01"</span>, <span class="st">"2024-03-01"</span><span class="op">)</span>,  </span>
-<span>    date_to <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-01-31"</span>, <span class="st">"2024-02-28"</span>, <span class="st">"2024-03-31"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="st">"LOC001"</span>, date_from <span class="op">=</span> <span class="st">"2024-01-01"</span>, date_to <span class="op">=</span> <span class="st">"2024-01-31"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="st">"LOC002"</span>, date_from <span class="op">=</span> <span class="st">"2024-02-01"</span>, date_to <span class="op">=</span> <span class="st">"2024-02-28"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="st">"LOC003"</span>, date_from <span class="op">=</span> <span class="st">"2024-03-01"</span>, date_to <span class="op">=</span> <span class="st">"2024-03-31"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  </span>
 <span>  <span class="co"># No analysis-level iteration needed</span></span>
@@ -338,10 +341,10 @@ combination:</p>
 <span>  action_fn_name <span class="op">=</span> <span class="st">"weather_action"</span>,</span>
 <span>  data_selector_fn_name <span class="op">=</span> <span class="st">"weather_data_selector"</span>,</span>
 <span>  </span>
-<span>  <span class="co"># Table mapping</span></span>
+<span>  <span class="co"># Table objects. Task$run() calls $disconnect() on each one.</span></span>
 <span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    weather_daily <span class="op">=</span> <span class="st">"anon_weather_daily_data"</span>, </span>
-<span>    weather_weekly <span class="op">=</span> <span class="st">"anon_weather_weekly_summary"</span></span>
+<span>    weather_daily <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_daily_data</span>,</span>
+<span>    weather_weekly <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_weekly_summary</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -432,10 +435,11 @@ tasks:</p>
 <span>  name_variant <span class="op">=</span> <span class="st">"trends"</span>, </span>
 <span>  cores <span class="op">=</span> <span class="fl">4</span>,  <span class="co"># Use 4 CPU cores</span></span>
 <span>  </span>
-<span>  <span class="co"># Large number of plans that can benefit from parallelization</span></span>
-<span>  for_each_plan <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    location_code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"LOC%03d"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">100</span><span class="op">)</span>,  <span class="co"># 100 locations</span></span>
-<span>    analysis_year <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">2020</span><span class="op">:</span><span class="fl">2024</span>, length.out <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>  <span class="co"># 5 years</span></span>
+<span>  <span class="co"># 20 locations and 5 years: plnr::expand_list() makes one plan per</span></span>
+<span>  <span class="co"># combination, so 100 plans that can run in parallel</span></span>
+<span>  for_each_plan <span class="op">=</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span></span>
+<span>    location_code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"LOC%03d"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">20</span><span class="op">)</span>,</span>
+<span>    analysis_year <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2024</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  </span>
 <span>  universal_argset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -446,9 +450,10 @@ tasks:</p>
 <span>  action_fn_name <span class="op">=</span> <span class="st">"weather_trend_action"</span>,</span>
 <span>  data_selector_fn_name <span class="op">=</span> <span class="st">"weather_trend_data_selector"</span>,</span>
 <span>  </span>
+<span>  <span class="co"># anon_weather_trends MUST exist: add it with ss$add_table() first</span></span>
 <span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    input_data <span class="op">=</span> <span class="st">"anon_weather_daily_data"</span>,</span>
-<span>    trend_results <span class="op">=</span> <span class="st">"anon_weather_trends"</span></span>
+<span>    input_data <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_daily_data</span>,</span>
+<span>    trend_results <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_trends</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -503,9 +508,10 @@ tasks:</p>
 <span>  action_fn_name <span class="op">=</span> <span class="st">"weather_validation_action"</span>,</span>
 <span>  data_selector_fn_name <span class="op">=</span> <span class="st">"weather_validation_data_selector"</span>, </span>
 <span>  </span>
+<span>  <span class="co"># anon_weather_validation MUST exist: add it with ss$add_table() first</span></span>
 <span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    source_data <span class="op">=</span> <span class="st">"anon_weather_daily_data"</span>,</span>
-<span>    validation_results <span class="op">=</span> <span class="st">"anon_weather_validation"</span></span>
+<span>    source_data <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_daily_data</span>,</span>
+<span>    validation_results <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_weather_validation</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
