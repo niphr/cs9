@@ -1,5 +1,23 @@
 # Changelog
 
+## Version 26.10.6
+
+- The partitioned `insert_data()`, `upsert_data()`,
+  `drop_all_rows_and_then_insert_data()` and
+  `drop_all_rows_and_then_upsert_data()` write their
+  `config_tables_last_updated` rows in one upsert. The rows are the
+  same: one per completed partition.
+- After an error in one partition, that upsert includes the partitions
+  that completed before the error. The error still reaches the caller.
+- Each `DBTableExtended_v9` method writes at most one
+  `config_tables_last_updated` row. Before,
+  `drop_all_rows_and_then_upsert_data()` wrote up to 3 rows for one
+  table, and an `insert_data()` that fell back to an upsert wrote 2.
+- The
+  [`get_config_log()`](https://niphr.github.io/cs9/reference/get_config_log.md)
+  help page says that `start_date` and `end_date` filter the `date`
+  column. It named a `timestamp` field that does not exist.
+
 ## Version 26.10.5
 
 - [`get_config_log()`](https://niphr.github.io/cs9/reference/get_config_log.md)

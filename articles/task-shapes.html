@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -214,12 +214,12 @@ for 2026-03.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">live</span>, <span class="va">staged</span><span class="op">)</span>, <span class="op">!</span><span class="st">"2026-03"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">live</span><span class="op">$</span><span class="va">isoyearweek</span><span class="op">)</span></span>
 <span><span class="va">live</span></span>
 <span><span class="co">#&gt;   isoyearweek location_code n auto_last_updated_datetime</span></span>
-<span><span class="co">#&gt; 1     2026-01     county_03 1        2026-10-06 05:36:23</span></span>
-<span><span class="co">#&gt; 2     2026-01     county_11 2        2026-10-06 05:36:23</span></span>
-<span><span class="co">#&gt; 3     2026-02     county_03 3        2026-10-06 05:36:23</span></span>
-<span><span class="co">#&gt; 4     2026-02     county_11 4        2026-10-06 05:36:23</span></span>
-<span><span class="co">#&gt; 5     2026-04     county_03 7        2026-10-06 05:36:23</span></span>
-<span><span class="co">#&gt; 6     2026-04     county_11 8        2026-10-06 05:36:23</span></span></code></pre></div>
+<span><span class="co">#&gt; 1     2026-01     county_03 1        2026-10-06 06:10:59</span></span>
+<span><span class="co">#&gt; 2     2026-01     county_11 2        2026-10-06 06:10:59</span></span>
+<span><span class="co">#&gt; 3     2026-02     county_03 3        2026-10-06 06:10:59</span></span>
+<span><span class="co">#&gt; 4     2026-02     county_11 4        2026-10-06 06:10:59</span></span>
+<span><span class="co">#&gt; 5     2026-04     county_03 7        2026-10-06 06:10:59</span></span>
+<span><span class="co">#&gt; 6     2026-04     county_11 8        2026-10-06 06:10:59</span></span></code></pre></div>
 <p>The second run reads new counts, and week 2026-02 fails. The task
 MUST stop with an error, and the live table MUST keep the rows of the
 first run.</p>
@@ -400,10 +400,10 @@ source. County 46 MUST carry the national threshold.</p>
 <span><span class="op">)</span></span>
 <span><span class="va">published</span></span>
 <span><span class="co">#&gt;   location_code threshold   source auto_last_updated_datetime</span></span>
-<span><span class="co">#&gt; 1     county_03  15.35575   fitted        2026-10-06 05:36:24</span></span>
-<span><span class="co">#&gt; 2     county_11  26.77914   fitted        2026-10-06 05:36:24</span></span>
-<span><span class="co">#&gt; 3     county_46  48.76123 national        2026-10-06 05:36:24</span></span>
-<span><span class="co">#&gt; 4         norge  48.76123   fitted        2026-10-06 05:36:24</span></span></code></pre></div>
+<span><span class="co">#&gt; 1     county_03  15.35575   fitted        2026-10-06 06:11:01</span></span>
+<span><span class="co">#&gt; 2     county_11  26.77914   fitted        2026-10-06 06:11:01</span></span>
+<span><span class="co">#&gt; 3     county_46  48.76123 national        2026-10-06 06:11:01</span></span>
+<span><span class="co">#&gt; 4         norge  48.76123   fitted        2026-10-06 06:11:01</span></span></code></pre></div>
 <p>The history then doubles, and the fit runs again. The publish of the
 fill task fails. The published table MUST keep its previous
 contents.</p>

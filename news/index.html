@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -54,6 +54,13 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.6" id="version-26106">Version 26.10.6<a class="anchor" aria-label="anchor" href="#version-26106"></a></h2>
+<ul><li>The partitioned <code>insert_data()</code>, <code>upsert_data()</code>, <code>drop_all_rows_and_then_insert_data()</code> and <code>drop_all_rows_and_then_upsert_data()</code> write their <code>config_tables_last_updated</code> rows in one upsert. The rows are the same: one per completed partition.</li>
+<li>After an error in one partition, that upsert includes the partitions that completed before the error. The error still reaches the caller.</li>
+<li>Each <code>DBTableExtended_v9</code> method writes at most one <code>config_tables_last_updated</code> row. Before, <code>drop_all_rows_and_then_upsert_data()</code> wrote up to 3 rows for one table, and an <code>insert_data()</code> that fell back to an upsert wrote 2.</li>
+<li>The <code><a href="../reference/get_config_log.html">get_config_log()</a></code> help page says that <code>start_date</code> and <code>end_date</code> filter the <code>date</code> column. It named a <code>timestamp</code> field that does not exist.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.10.5" id="version-26105">Version 26.10.5<a class="anchor" aria-label="anchor" href="#version-26105"></a></h2>
 <ul><li>

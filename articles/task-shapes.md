@@ -132,12 +132,12 @@ staged <- read_rows(ss$tables$anon_import_staging, c("isoyearweek", "location_co
 stopifnot(identical(live, staged), !"2026-03" %in% live$isoyearweek)
 live
 #>   isoyearweek location_code n auto_last_updated_datetime
-#> 1     2026-01     county_03 1        2026-10-06 05:36:23
-#> 2     2026-01     county_11 2        2026-10-06 05:36:23
-#> 3     2026-02     county_03 3        2026-10-06 05:36:23
-#> 4     2026-02     county_11 4        2026-10-06 05:36:23
-#> 5     2026-04     county_03 7        2026-10-06 05:36:23
-#> 6     2026-04     county_11 8        2026-10-06 05:36:23
+#> 1     2026-01     county_03 1        2026-10-06 06:10:59
+#> 2     2026-01     county_11 2        2026-10-06 06:10:59
+#> 3     2026-02     county_03 3        2026-10-06 06:10:59
+#> 4     2026-02     county_11 4        2026-10-06 06:10:59
+#> 5     2026-04     county_03 7        2026-10-06 06:10:59
+#> 6     2026-04     county_11 8        2026-10-06 06:10:59
 ```
 
 The second run reads new counts, and week 2026-02 fails. The task MUST
@@ -324,10 +324,10 @@ stopifnot(
 )
 published
 #>   location_code threshold   source auto_last_updated_datetime
-#> 1     county_03  15.35575   fitted        2026-10-06 05:36:24
-#> 2     county_11  26.77914   fitted        2026-10-06 05:36:24
-#> 3     county_46  48.76123 national        2026-10-06 05:36:24
-#> 4         norge  48.76123   fitted        2026-10-06 05:36:24
+#> 1     county_03  15.35575   fitted        2026-10-06 06:11:01
+#> 2     county_11  26.77914   fitted        2026-10-06 06:11:01
+#> 3     county_46  48.76123 national        2026-10-06 06:11:01
+#> 4         norge  48.76123   fitted        2026-10-06 06:11:01
 ```
 
 The history then doubles, and the fit runs again. The publish of the
