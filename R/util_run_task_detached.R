@@ -68,7 +68,7 @@ run_task_detached <- function(
 ) {
   script <- system.file("scripts", "run-task.sh", package = "cs9")
   if (!nzchar(script)) {
-    stop("run-task.sh is missing from the installed cs9.")
+    stop("run-task.sh is missing from the installed cs9.", call. = FALSE)
   }
 
   # shQuote() puts the path in single quotes, and bash does not expand a tilde
@@ -91,7 +91,7 @@ run_task_detached <- function(
   )
   code <- attr(out, "status")
   if (!is.null(code) && code != 0) {
-    stop(paste(c(paste0("run-task.sh exited ", code, ":"), out), collapse = "\n"))
+    stop(paste(c(paste0("run-task.sh exited ", code, ":"), out), collapse = "\n"), call. = FALSE)
   }
 
   # The script prints exactly TASK, LOG, STATUS, ERRORS and PID, one per line.
@@ -100,5 +100,5 @@ run_task_detached <- function(
   retval <- lapply(fields, function(x) paste(x[-1], collapse = "="))
   names(retval) <- tolower(vapply(fields, `[`, character(1), 1L))
   message("Task ", task_name, " started. Status file: ", retval$status)
-  invisible(retval)
+  return(invisible(retval))
 }

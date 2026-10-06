@@ -137,7 +137,7 @@ setup_database_tables <- function() {
   # all four constructors succeeded, so the swap is safe
   config$tables <- tables
 
-  invisible(NULL)
+  return(invisible(NULL))
 }
 
 # Environmental variables ----
@@ -185,13 +185,13 @@ set_env_vars <- function() {
     {
       access_list <- get_db_acess_from_env()
       if (length(access_list) == 0) {
-        stop("No CS9_DBCONFIG_ACCESS environment variable found")
+        stop("No CS9_DBCONFIG_ACCESS environment variable found", call. = FALSE)
       }
       access_list
     },
     error = function(e) {
       # Provide fallback for missing access configuration
-      character(0)
+      return(character(0))
     }
   )
 
@@ -203,7 +203,7 @@ set_env_vars <- function() {
   config$is_auto <- isTRUE(Sys.getenv("CS9_AUTO") == "1")
 
   # Set path with fallback to empty string
-  config$path <- Sys.getenv("CS9_PATH", unset = "")
+  return(config$path <- Sys.getenv("CS9_PATH", unset = ""))
 }
 
 #' Reload the database configuration from the environment
@@ -264,21 +264,21 @@ reload_db_config <- function() {
   set_env_vars()
   setup_database_tables()
 
-  invisible(NULL)
+  return(invisible(NULL))
 }
 
 set_progressr <- function() {
   options("progressr.enable" = TRUE)
-  progressr::handlers(
+  return(progressr::handlers(
     progressr::handler_progress(
       format = "[:bar] :current/:total (:percent) in :elapsedfull, eta: :eta\n",
       clear = FALSE
     )
-  )
+  ))
 }
 
 set_plnr <- function() {
-  plnr::set_opts(force_verbose = TRUE)
+  return(plnr::set_opts(force_verbose = TRUE))
 }
 
 # Internal helper function for environment validation
@@ -543,5 +543,5 @@ check_environment_setup <- function(
     }
   }
 
-  invisible(result)
+  return(invisible(result))
 }

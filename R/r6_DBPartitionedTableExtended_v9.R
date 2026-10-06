@@ -123,6 +123,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         )
         self$tables[[as.character(i)]] <- dbtable
       }
+      return(invisible(NULL))
     },
     #' @description
     #' Close the shared connection.
@@ -139,7 +140,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     #' NOT use a child after they disconnect the parent. A caller that does MUST
     #' disconnect the parent again.
     disconnect = function() {
-      self$dbconnection$disconnect()
+      return(self$dbconnection$disconnect())
     },
     insert_data = function(
       newdata,
@@ -166,6 +167,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           verbose
         )
       }
+      return(invisible(NULL))
     },
     upsert_data = function(
       newdata,
@@ -188,13 +190,25 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           verbose
         )
       }
+      return(invisible(NULL))
     },
+    # The three methods below write config_tables_last_updated in ONE upsert,
+    # with one row per completed child. A child call therefore passes
+    # update_last_updated = FALSE. on.exit() records the completed children
+    # when a later child fails too, and the error still propagates.
     drop_all_rows = function() {
+      completed <- character(0)
+      on.exit(private$record_last_updated(completed), add = TRUE)
       for (i in self$partitions_randomized) {
-        self$tables[[as.character(i)]]$drop_all_rows()
+        child <- self$tables[[as.character(i)]]
+        child$drop_all_rows(update_last_updated = FALSE)
+        completed <- c(completed, child$table_name)
       }
+      return(invisible(NULL))
     },
     drop_rows_where = function(condition, verbose = FALSE) {
+      completed <- character(0)
+      on.exit(private$record_last_updated(completed), add = TRUE)
       partition <- 0
       for (i in self$partitions_randomized) {
         partition <- partition + 1
@@ -206,13 +220,21 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
             length(self$partitions)
           )
         }
-        self$tables[[as.character(i)]]$drop_rows_where(condition)
+        child <- self$tables[[as.character(i)]]
+        child$drop_rows_where(condition, update_last_updated = FALSE)
+        completed <- c(completed, child$table_name)
       }
+      return(invisible(NULL))
     },
     keep_rows_where = function(condition, verbose = FALSE) {
+      completed <- character(0)
+      on.exit(private$record_last_updated(completed), add = TRUE)
       for (i in self$partitions_randomized) {
-        self$tables[[as.character(i)]]$keep_rows_where(condition)
+        child <- self$tables[[as.character(i)]]
+        child$keep_rows_where(condition, update_last_updated = FALSE)
+        completed <- c(completed, child$table_name)
       }
+      return(invisible(NULL))
     },
     drop_all_rows_and_then_upsert_data = function(
       newdata,
@@ -234,6 +256,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           verbose
         )
       }
+      return(invisible(NULL))
     },
     drop_all_rows_and_then_insert_data = function(
       newdata,
@@ -255,26 +278,31 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           verbose
         )
       }
+      return(invisible(NULL))
     },
     remove_table = function() {
       for (i in self$partitions_randomized) {
         self$tables[[as.character(i)]]$remove_table()
       }
+      return(invisible(NULL))
     },
     drop_indexes = function() {
       for (i in self$partitions_randomized) {
         self$tables[[as.character(i)]]$drop_indexes()
       }
+      return(invisible(NULL))
     },
     add_indexes = function() {
       for (i in self$partitions_randomized) {
         self$tables[[as.character(i)]]$add_indexes()
       }
+      return(invisible(NULL))
     },
     confirm_indexes = function() {
       for (i in self$partitions_randomized) {
         self$tables[[as.character(i)]]$confirm_indexes()
       }
+      return(invisible(NULL))
     },
     # The loop below already knows the partition tag. `i` IS that tag, and the
     # row it marks is the row of that partition's table. The tag therefore
@@ -318,7 +346,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         ]
       }
       table_rows <- table_rows[
-        keep == T,
+        keep == TRUE,
         .(
           table_name,
           nrow,
@@ -356,7 +384,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           `:=`(keep = TRUE, partition = as.character(i))
         ]
       }
-      table_rows <- table_rows[keep == T]
+      table_rows <- table_rows[keep == TRUE]
       # A `:=` appends, so the columns run: the columns csdb returns, then
       # `keep`, then `partition`. Dropping `keep` leaves `partition` last.
       table_rows[, keep := NULL]
@@ -384,10 +412,17 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     # One partition numbered 9 then becomes a draw from 1 to 9. Indexing by a
     # permutation has no such special case, and it is a no-op below length 2.
     partitions_randomized = function() {
-      self$partitions[sample.int(length(self$partitions))]
+      return(self$partitions[sample.int(length(self$partitions))])
     }
   ),
   private = list(
+    # One upsert for every child that completed. Nothing is written when no
+    # child completed.
+    record_last_updated = function(table_names) {
+      if (length(table_names) > 0L) {
+        return(update_config_tables_last_updated(table_name = table_names))
+      }
+    },
     # Reject a partition set that the class cannot use. `initialize()` runs this
     # before it opens the connection, so a rejected construction leaves no
     # database connection open.
@@ -408,25 +443,27 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       if (length(table_name_partitions) == 0) {
         stop(
           "table_name_partitions is empty. ",
-          "A partitioned table needs at least one partition."
+          "A partitioned table needs at least one partition.",
+          call. = FALSE
         )
       }
       if (any(is.na(table_name_partitions))) {
-        stop("table_name_partitions holds NA.")
+        stop("table_name_partitions holds NA.", call. = FALSE)
       }
       partition_names <- as.character(table_name_partitions)
       if (any(partition_names == "")) {
-        stop("table_name_partitions holds an empty string.")
+        stop("table_name_partitions holds an empty string.", call. = FALSE)
       }
       duplicates <- unique(partition_names[duplicated(partition_names)])
       if (length(duplicates) > 0) {
         stop(
           "table_name_partitions holds duplicate values: ",
           paste0(duplicates, collapse = ", "),
-          "."
+          ".",
+          call. = FALSE
         )
       }
-      invisible(partition_names)
+      return(invisible(partition_names))
     },
     # Reject data that the four write methods cannot route, and RETURN the route
     # vector they route with, before any of them destroys a row.
@@ -466,14 +503,16 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         stop(
           "newdata must be a data.frame. Cannot route a ",
           class(newdata)[1],
-          "."
+          ".",
+          call. = FALSE
         )
       }
       if (!self$column_name_partition %in% names(newdata)) {
         stop(
           "newdata has no partition column. Expected a column named '",
           self$column_name_partition,
-          "'."
+          "'.",
+          call. = FALSE
         )
       }
       values <- newdata[[self$column_name_partition]]
@@ -485,7 +524,8 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           self$column_name_partition,
           "' must be atomic. Cannot route a ",
           class(values)[1],
-          " column."
+          " column.",
+          call. = FALSE
         )
       }
       route <- as.character(values)
@@ -493,7 +533,8 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         stop(
           "The partition column '",
           self$column_name_partition,
-          "' holds NA."
+          "' holds NA.",
+          call. = FALSE
         )
       }
       unknown <- setdiff(route, as.character(self$partitions))
@@ -503,10 +544,11 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           self$column_name_partition,
           "' holds values that no partition covers: ",
           paste0(unknown, collapse = ", "),
-          "."
+          ".",
+          call. = FALSE
         )
       }
-      invisible(route)
+      return(invisible(route))
     }
   )
 )

@@ -71,7 +71,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
       implementation_version = "unspecified"
     ) {
       self$name <- name
-      self$implementation_version <- implementation_version
+      return(self$implementation_version <- implementation_version)
     },
     #' @description
     #' Add a table.
@@ -160,7 +160,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
         validator_field_contents = validator_field_contents
       )
 
-      self$tables[[table_name]] <- dbtable
+      return(self$tables[[table_name]] <- dbtable)
     },
     #' @description
     #' Add a partitioned table to the surveillance system.
@@ -219,7 +219,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
         validator_field_contents = validator_field_contents
       )
 
-      self$partitionedtables[[table_name_base]] <- dbtable
+      return(self$partitionedtables[[table_name_base]] <- dbtable)
     },
     #' @description
     #' Add a surveillance task to the system.
@@ -287,7 +287,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
       )
       task$ss <- self$name
       task$implementation_version <- self$implementation_version
-      self$tasks[[task$name]] <- task
+      return(self$tasks[[task$name]] <- task)
     },
     #' @description
     #' Get a surveillance task by name.
@@ -296,7 +296,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     get_task = function(task_name) {
       retval <- self$tasks[[task_name]]
       retval$update_plans()
-      retval
+      return(retval)
     },
     #' @description
     #' Execute a surveillance task by name.
@@ -309,14 +309,14 @@ SurveillanceSystem_v9 <- R6::R6Class(
       # A call to get_task() here would build the plans twice in the first run.
       task <- self$tasks[[task_name]]
       task$update_plans(replan = TRUE)
-      task$run()
+      return(task$run())
     },
     #' @description
     #' Get database tables associated with a task.
     #' @param task_name Character string specifying the task name.
     #' @return A named list of database table objects used by the task.
     shortcut_get_tables = function(task_name) {
-      self$get_task(task_name)$tables
+      return(self$get_task(task_name)$tables)
     },
     #' @description
     #' Get argument set for a specific plan and analysis.
@@ -329,7 +329,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
       index_plan = 1,
       index_analysis = 1
     ) {
-      self$get_task(task_name)$plans[[index_plan]]$get_argset(index_analysis)
+      return(self$get_task(task_name)$plans[[index_plan]]$get_argset(index_analysis))
     },
     #' @description
     #' Get data for a specific plan.
@@ -337,7 +337,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param index_plan Integer specifying which plan to access.
     #' @return A named list containing the data extracted for the specified plan.
     shortcut_get_data = function(task_name, index_plan = 1) {
-      self$get_task(task_name)$plans[[index_plan]]$get_data()
+      return(self$get_task(task_name)$plans[[index_plan]]$get_data())
     },
     #' @description
     #' Get plans and argsets as a data.table.
@@ -349,21 +349,21 @@ SurveillanceSystem_v9 <- R6::R6Class(
       retval <- lapply(plans, function(x) analyses_to_dt(x$analyses))
       retval <- rbindlist(retval)
       setcolorder(retval, c("index_plan", "index_analysis"))
-      retval
+      return(retval)
     },
     #' @description
     #' Get the total number of analyses for a task.
     #' @param task_name Character string specifying the task name.
     #' @return Integer value representing the total number of analyses across all plans for the task.
     shortcut_get_num_analyses = function(task_name) {
-      self$get_task(task_name)$num_analyses()
+      return(self$get_task(task_name)$num_analyses())
     }
   )
 )
 
 analyses_to_dt <- function(analyses) {
   retval <- lapply(analyses, function(x) {
-    data.table(t(x$argset))
+    return(data.table(t(x$argset)))
   })
   retval <- rbindlist(retval)
   # retval[, index_analysis := 1:.N]
@@ -410,7 +410,7 @@ run_task_sequentially_as_rstudio_job_using_load_all <- function(
   task_name,
   ss_prefix = "global$ss"
 ) {
-  tempfile <- fs::path(tempdir(check = T), paste0(task_name, ".R"))
+  tempfile <- fs::path(tempdir(check = TRUE), paste0(task_name, ".R"))
 
   cat(
     glue::glue(
@@ -424,23 +424,23 @@ run_task_sequentially_as_rstudio_job_using_load_all <- function(
     ),
     file = tempfile
   )
-  rstudioapi::jobRunScript(
+  return(rstudioapi::jobRunScript(
     path = tempfile,
     name = task_name,
     workingDir = getwd(),
-  )
+  ))
 }
 
 generic_data_function_factory_v9 <- function(tables, argset, fn_name) {
   force(tables)
   force(argset)
   force(fn_name)
-  function() {
+  return(function() {
     # for (i in tables) i$connect()
     # on.exit(for (i in tables) i$disconnect())
     fn <- plnr::get_anything(fn_name)
-    fn(argset, tables)
-  }
+    return(fn(argset, tables))
+  })
 }
 
 generic_list_plan_function_factory_v9 <- function(
@@ -456,7 +456,7 @@ generic_list_plan_function_factory_v9 <- function(
   force(action_fn_name)
   force(data_selector_fn_name)
 
-  function() {
+  return(function() {
     # for (i in tables) i$connect()
     # on.exit(for (i in tables) i$disconnect())
 
@@ -471,7 +471,7 @@ generic_list_plan_function_factory_v9 <- function(
       tables = tables
     )
     return(list_plan)
-  }
+  })
 }
 
 task_from_config_v9_list_plan <- function(
@@ -559,9 +559,10 @@ task_from_config_v9 <- function(
   data_selector_fn_name = NULL,
   tables = NULL
 ) {
-  if (is.null(for_each_plan) & is.null(plan_analysis_fn_name)) {
+  if (is.null(for_each_plan) && is.null(plan_analysis_fn_name)) {
     stop(
-      "You must provide at least one of for_each_plan or plan_analysis_fn_name"
+      "You must provide at least one of for_each_plan or plan_analysis_fn_name",
+      call. = FALSE
     )
   }
 

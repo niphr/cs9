@@ -67,7 +67,7 @@ TaskJob <- R6::R6Class(
       self$script_path <- file.path(log_dir, paste0(task_name, "_", ts, ".R"))
       self$log_path <- file.path(log_dir, paste0(task_name, "_", ts, ".log"))
 
-      cat(
+      return(cat(
         glue::glue(
           "cat('\n**devtools::load_all**\n\n'); flush.console()
 devtools::load_all('.')
@@ -77,7 +77,7 @@ cat('\n**run_task**\n\n'); flush.console()
 "
         ),
         file = self$script_path
-      )
+      ))
     },
 
     #' @description
@@ -85,7 +85,7 @@ cat('\n**run_task**\n\n'); flush.console()
     #' @return Invisibly returns the \code{TaskJob} object.
     start = function() {
       if (!is.null(private$.process) && private$.process$is_alive()) {
-        stop("Task is already running. Use $kill() first.")
+        stop("Task is already running. Use $kill() first.", call. = FALSE)
       }
       self$started_at <- Sys.time()
       private$.log_con <- file(self$log_path, open = "w")
@@ -94,7 +94,7 @@ cat('\n**run_task**\n\n'); flush.console()
 
       private$.process <- callr::r_bg(
         function(script_path) {
-          source(script_path, echo = FALSE)
+          return(source(script_path, echo = FALSE))
         },
         args = list(script_path = self$script_path),
         stdout = "|",
@@ -110,14 +110,14 @@ cat('\n**run_task**\n\n'); flush.console()
         private$.process$get_pid(),
         self$log_path
       ))
-      invisible(self)
+      return(invisible(self))
     },
 
     #' @description
     #' Check whether the background process is still running.
     #' @return Logical. \code{TRUE} while the background process is alive.
     is_alive = function() {
-      if (is.null(private$.process)) FALSE else private$.process$is_alive()
+      if (is.null(private$.process)) return(FALSE) else return(private$.process$is_alive())
     },
 
     #' @description
@@ -135,7 +135,7 @@ cat('\n**run_task**\n\n'); flush.console()
       ))
       cat(sprintf("Alive:   %s\n", self$is_alive()))
       cat(sprintf("Log:     %s\n", self$log_path))
-      invisible(self)
+      return(invisible(self))
     },
 
     #' @description
@@ -154,7 +154,7 @@ cat('\n**run_task**\n\n'); flush.console()
         later::run_now(timeoutSecs = 0.5)
       }
       later::run_now(timeoutSecs = 0.1)
-      invisible(self)
+      return(invisible(self))
     },
 
     #' @description
@@ -164,7 +164,7 @@ cat('\n**run_task**\n\n'); flush.console()
       if (!is.null(private$.process)) {
         try(private$.process$kill(), silent = TRUE)
       }
-      invisible(self)
+      return(invisible(self))
     },
 
     #' @description
@@ -179,7 +179,7 @@ cat('\n**run_task**\n\n'); flush.console()
       lines <- readLines(self$log_path, warn = FALSE)
       cat(utils::tail(lines, n), sep = "\n")
       cat("\n")
-      invisible(self)
+      return(invisible(self))
     }
   ),
   private = list(
@@ -191,7 +191,7 @@ cat('\n**run_task**\n\n'); flush.console()
 
     .schedule_poll = function() {
       poller <- function() private$.poll_once()
-      later::later(poller, delay = private$.poll_interval)
+      return(later::later(poller, delay = private$.poll_interval))
     },
 
     .drain = function() {
@@ -211,14 +211,14 @@ cat('\n**run_task**\n\n'); flush.console()
       }
       prefixed <- gsub("\n(?=.)", paste0("\n", prefix), prefixed, perl = TRUE)
       cat(prefixed)
-      private$.last_ended_with_newline <- substr(out, nchar(out), nchar(out)) ==
-        "\n"
+      return(private$.last_ended_with_newline <- substr(out, nchar(out), nchar(out)) ==
+        "\n")
     },
 
     .poll_once = function() {
       private$.drain()
       if (self$is_alive()) {
-        private$.schedule_poll()
+        return(private$.schedule_poll())
       } else if (!isTRUE(private$.drained_after_exit)) {
         private$.drain()
         try(close(private$.log_con), silent = TRUE)
@@ -241,7 +241,7 @@ cat('\n**run_task**\n\n'); flush.console()
           )),
           exit
         ))
-        private$.drained_after_exit <- TRUE
+        return(private$.drained_after_exit <- TRUE)
       }
     }
   )
@@ -270,5 +270,5 @@ run_task_sequentially_as_callr_bg_using_load_all <- function(
   task_name,
   ss_prefix = "global$ss"
 ) {
-  TaskJob$new(task_name, ss_prefix)$start()
+  return(TaskJob$new(task_name, ss_prefix)$start())
 }

@@ -13,14 +13,15 @@ update_config_data_hash_for_each_plan <- function(
     datetime <- as.character(datetime)
   }
 
-  if (is.null(date) & is.null(datetime)) {
+  if (is.null(date) && is.null(datetime)) {
     date <- lubridate::today()
-    datetime <- cstime::now_c()
+    # datetime is in the key, so it holds milliseconds.
+    datetime <- datetime_ms(config_now())
   }
-  if (is.null(date) & !is.null(datetime)) {
+  if (is.null(date) && !is.null(datetime)) {
     date <- stringr::str_sub(datetime, 1, 10)
   }
-  if (!is.null(date) & is.null(datetime)) {
+  if (!is.null(date) && is.null(datetime)) {
     datetime <- paste0(date, " 00:01:00")
   }
 
@@ -43,7 +44,12 @@ update_config_data_hash_for_each_plan <- function(
     "element_hash" = element_hash,
     "all_hash" = all_hash
   )
-  config$tables$config_data_hash_for_each_plan$upsert_data(to_upload)
+  return(config$tables$config_data_hash_for_each_plan$upsert_data(to_upload))
+}
+
+# The clock of update_config_data_hash_for_each_plan(). A test replaces it.
+config_now <- function() {
+  return(Sys.time())
 }
 
 #' Get Configuration Data Hash for Each Plan

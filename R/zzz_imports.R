@@ -24,5 +24,5 @@ ignore_unused_imports <- function() {
   later::run_now # R/r6_TaskJob.R
   pbmcapply::pbmclapply # R/r6_Task.R
   pbmcapply::pbmcmapply # R/r6_Task.R
-  progress::progress_bar # via progressr::handler_progress() in R/2_onLoad.R
+  return(progress::progress_bar) # via progressr::handler_progress() in R/2_onLoad.R
 }

@@ -51,7 +51,7 @@ update_config_log <- function(
     datetime,
     message = msg
   )
-  config$tables$config_log$insert_data(to_upload)
+  return(config$tables$config_log$insert_data(to_upload))
 }
 
 # The key of config_log is auto_interactive, ss, task and datetime. A datetime
@@ -78,6 +78,19 @@ config_log_datetime <- function(now) {
   config_log_state$last_ms <- ms
   return(paste0(
     format(.POSIXct(ms %/% 1000), "%Y-%m-%d %H:%M:%S"),
+    sprintf(".%03d", as.integer(ms %% 1000))
+  ))
+}
+
+# Formats an instant with milliseconds, in the time zone of the instant. The
+# key of config_tasks_stats and config_data_hash_for_each_plan holds a
+# datetime. In whole seconds, a second write in the same second replaced the
+# first row. This helper keeps no state, unlike config_log_datetime(). It
+# rounds, because format(x, "%OS3") truncates and can print .123 as .122.
+datetime_ms <- function(x) {
+  ms <- round(as.numeric(x) * 1000)
+  return(paste0(
+    format(.POSIXct(ms %/% 1000, tz = attr(x, "tzone")), "%Y-%m-%d %H:%M:%S"),
     sprintf(".%03d", as.integer(ms %% 1000))
   ))
 }
@@ -122,13 +135,16 @@ get_config_log <- function(
     dplyr::collect() |>
     setDT()
 
-  # Apply filtering if parameters are provided
-  if (!is.null(ss)) {
-    log_data <- log_data[ss == get(ss)]
+  # Inside `[.data.table`, `ss` and `task` name the columns. So the
+  # arguments are copied to names that no column has.
+  x_ss <- ss
+  x_task <- task
+  if (!is.null(x_ss)) {
+    log_data <- log_data[ss == x_ss]
   }
 
-  if (!is.null(task)) {
-    log_data <- log_data[task == get(task)]
+  if (!is.null(x_task)) {
+    log_data <- log_data[task == x_task]
   }
 
   if (!is.null(start_date)) {

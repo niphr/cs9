@@ -1,11 +1,11 @@
 addin_load_production <- function() {
-  rstudioapi::insertText(
+  return(rstudioapi::insertText(
     'rstudioapi::restartSession("Sys.setenv(SYKDOMSPULSEN_PRODUCTION=1);devtools::load_all(\\\".\\\");Sys.setenv(SYKDOMSPULSEN_PRODUCTION=0)")'
-  )
+  ))
 }
 
 addin_task_inline_v1_copy_to_db <- function() {
-  rstudioapi::insertText(
+  return(rstudioapi::insertText(
     '
 # TASK_NAME ----
 cs9::add_task(
@@ -21,11 +21,11 @@ cs9::add_task(
   )
 )
 '
-  )
+  ))
 }
 
 addin_add_task_from_config_v8_basic <- function() {
-  rstudioapi::insertText(
+  return(rstudioapi::insertText(
     '
 # TASK_NAME ----
 # cs9::tm_run_task("TASK_NAME", run_as_rstudio_job_loading_from_devtools = TRUE)
@@ -55,11 +55,11 @@ cs9::add_task_from_config_v8(
   info = "This task does..."
 )
 '
-  )
+  ))
 }
 
 addin_db_schema_v8_anon <- function() {
-  rstudioapi::insertText(
+  return(rstudioapi::insertText(
     '
 # anon_GROUPING_VARIANT ----
 cs9::add_schema_v8(
@@ -112,11 +112,11 @@ cs9::add_schema_v8(
   info = "This db table is used for..."
 )
 '
-  )
+  ))
 }
 
 addin_db_schema_v8_restr_anon <- function() {
-  rstudioapi::insertText(
+  return(rstudioapi::insertText(
     '
 # redirect_GROUPING_VARIANT ----
 # restr_GROUPING_VARIANT ----
@@ -175,11 +175,11 @@ cs9::add_schema_v8(
   info = "This db table is used for..."
 )
 '
-  )
+  ))
 }
 
 addin_action_and_data_selector <- function() {
-  rstudioapi::insertText(
+  return(rstudioapi::insertText(
     '
 # **** action **** ----
 #\' TASK_NAME (action)
@@ -308,5 +308,5 @@ TASK_NAME_plan_analysis <- function(argset, schema) {
 
 # **** functions **** ----
 '
-  )
+  ))
 }

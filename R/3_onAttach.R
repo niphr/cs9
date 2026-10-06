@@ -3,7 +3,7 @@
   version <- tryCatch(
     utils::packageDescription("cs9", fields = "Version"),
     warning = function(w){
-      1
+      return(1)
     }
   )
 

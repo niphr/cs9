@@ -1,3 +1,5 @@
+# `table_name` is a character vector. The function writes one row per name in
+# one upsert. A partitioned table records every child in one call this way.
 update_config_tables_last_updated <- function(
   table_name,
   date = NULL,
@@ -7,26 +9,30 @@ update_config_tables_last_updated <- function(
     datetime <- as.character(datetime)
   }
 
-  if (is.null(date) & is.null(datetime)) {
+  if (is.null(date) && is.null(datetime)) {
     date <- lubridate::today()
     datetime <- cstime::now_c()
   }
-  if (is.null(date) & !is.null(datetime)) {
+  if (is.null(date) && !is.null(datetime)) {
     date <- stringr::str_sub(datetime, 1, 10)
   }
-  if (!is.null(date) & is.null(datetime)) {
+  if (!is.null(date) && is.null(datetime)) {
     datetime <- paste0(date, " 00:01:00")
   }
 
-  table_cleaned <- stringr::str_split(table_name, "].\\[")[[1]]
-  table_cleaned <- table_cleaned[length(table_cleaned)]
+  # Each name keeps only the part after its last "].[".
+  table_cleaned <- vapply(
+    stringr::str_split(table_name, "].\\["),
+    function(x) x[length(x)],
+    character(1)
+  )
 
   to_upload <- data.table(
     table_name = table_cleaned,
     date = date,
     datetime = datetime
   )
-  config$tables$config_tables_last_updated$upsert_data(to_upload)
+  return(config$tables$config_tables_last_updated$upsert_data(to_upload))
 }
 
 

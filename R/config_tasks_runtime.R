@@ -18,10 +18,11 @@ update_config_tasks_stats <- function(
     2
   )
 
-  start_datetime <- format(start_datetime, "%Y-%m-%d %H:%M:%S")
+  # start_datetime is in the key, so it holds milliseconds.
+  start_datetime <- datetime_ms(start_datetime)
   start_date <- stringr::str_sub(start_datetime, 1, 10)
 
-  stop_datetime <- format(stop_datetime, "%Y-%m-%d %H:%M:%S")
+  stop_datetime <- datetime_ms(stop_datetime)
   stop_date <- stringr::str_sub(stop_datetime, 1, 10)
 
   to_upload <- data.table(
@@ -42,7 +43,7 @@ update_config_tasks_stats <- function(
     ram_per_core_mb = ram_per_core_mb,
     status = status
   )
-  config$tables$config_tasks_stats$upsert_data(to_upload)
+  return(config$tables$config_tasks_stats$upsert_data(to_upload))
 }
 
 #' Get Configuration Tasks Statistics

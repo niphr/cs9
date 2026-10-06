@@ -5,7 +5,7 @@ progressr_handler <- function(interval = 10, clear = FALSE, ...) {
       initiate = function(config, state, ...) {
         if (!state$enabled || config$times <= 2L) return()
         start_time <<- Sys.time()
-        cat("\n")
+        return(cat("\n"))
       },
 
       update = function(config, state, progression, ...) {
@@ -20,7 +20,7 @@ progressr_handler <- function(interval = 10, clear = FALSE, ...) {
 
         f_current_step <- formatC(state$step, width = log10(config$max_steps)+1, digits = 0, format="f")
 
-        cat(glue::glue("{f_current_step} / {config$max_steps} = {f_perc}%     {f_remaining_time}m -> {f_time_so_far}m = {f_total_time}m"), "\n")
+        return(cat(glue::glue("{f_current_step} / {config$max_steps} = {f_perc}%     {f_remaining_time}m -> {f_time_so_far}m = {f_total_time}m"), "\n"))
       },
 
       finish = function(...) {
@@ -29,5 +29,5 @@ progressr_handler <- function(interval = 10, clear = FALSE, ...) {
     )
   })
 
-  progressr::make_progression_handler("cs9", reporter, intrusiveness = 1, target = "terminal", interval = interval, clear = clear, ...)
+  return(progressr::make_progression_handler("cs9", reporter, intrusiveness = 1, target = "terminal", interval = interval, clear = clear, ...))
 }

@@ -111,5 +111,5 @@ create_folder_if_doesnt_exist <- function(path) {
 create_latest_folder <- function(results_folder_name, date) {
   from_folder <- path("output", results_folder_name, date)
   to_folder <- path("output", results_folder_name, "latest")
-  processx::run("cp", c("-rT", from_folder, to_folder))
+  return(processx::run("cp", c("-rT", from_folder, to_folder)))
 }

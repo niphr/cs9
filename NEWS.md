@@ -1,3 +1,13 @@
+# Version 26.10.5
+
+- `get_config_log()` filters by `ss` and by `task`. Before, both filters stopped with `first argument has length > 1`.
+- `update_config_tasks_stats()` stores the start and stop datetimes with milliseconds. `update_config_data_hash_for_each_plan()` stores its datetime with milliseconds. So two runs in one second keep two rows. The table schema does not change.
+- Two rows in the same millisecond still collide. SQL Server `DATETIME` rounds to about 3 ms.
+- The partitioned `drop_all_rows()`, `drop_rows_where()` and `keep_rows_where()` write their `config_tables_last_updated` rows in one upsert. After an error, that upsert includes the partitions that completed before the error.
+- The partitioned insert and upsert methods still write one `config_tables_last_updated` row per partition, in separate writes.
+- The lint gate passes. The allowlist exempts 4 files from `cyclocomp_linter`: `R/2_onLoad.R`, `R/r6_DBPartitionedTableExtended_v9.R`, `R/r6_Task.R` and `R/r6_TaskJob.R`. The complexity check skips all code in those files, which includes the whole R6 classes `DBPartitionedTableExtended_v9`, `Task` and `TaskJob`.
+- Still open from 26.10.3: the local time repeats at the autumn daylight-saving change, and two R processes can collide in the same millisecond.
+
 # Version 26.10.4
 
 - `Task$run()` reads and stores the data hash of the last plan under its own
