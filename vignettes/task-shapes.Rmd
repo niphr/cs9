@@ -8,12 +8,28 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE)
+# add_task() returns the task visibly. The render function prints every other
+# value, and no R6 object.
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  render = function(x, ...) {
+    if (inherits(x, "R6")) return(invisible(NULL))
+    knitr::knit_print(x, ...)
+  }
+)
 ```
 
-This vignette shows two task shapes that publish the result of a run only when the whole run
-succeeds. Both shapes run against SQLite when the vignette builds. A chunk calls `stop()` if a
-shape does not keep its promise, so the build fails.
+A task shape is a plan design that recurs across tasks. It fixes how the plans split the work, what the first and the last plan do, and how the task writes. This vignette and `vignette("more-task-shapes")` describe five shapes. Each shape runs against SQLite when the vignette builds. A chunk calls `stop()` if a shape does not keep its promise, so the build fails. `vignette("how-a-task-runs")` states the execution rules that every shape follows.
+
+| Shape | Use it when | Vignette |
+|---|---|---|
+| [Per-unit rebuild](more-task-shapes.html#shape-per-unit-rebuild) | the rows of each unit depend only on its own data pull, and no reader needs the table during the run | `more-task-shapes` |
+| [Staged import](#shape-staged-import) | an import replaces the weeks of a run, and the live table MUST change only when every week arrived | `task-shapes` |
+| [Staging as a checkpoint](more-task-shapes.html#shape-staging-checkpoint) | an import is long, and a failed run MUST NOT lose the weeks that it already pulled | `more-task-shapes` |
+| [Fit then fill](#shape-fit-then-fill) | a fit can fail for one unit, and the fallback needs the results of all units | `task-shapes` |
+| [Export from a finished table](more-task-shapes.html#shape-export-finished-table) | the output is files, made from tables that an earlier task finished | `more-task-shapes` |
 
 ## Setup
 
@@ -47,12 +63,16 @@ read_rows <- function(table, by) {
 }
 ```
 
-## Shape 1: staged import with check and swap
+## Staged import {#shape-staged-import}
 
 The import task has one plan per week. Each argset copies its week from the source into a staging
 table. The argset with `first_analysis = TRUE` empties the staging table first. The argset with
 `last_analysis = TRUE` checks the staged rows. It then swaps them into the live table in one
 transaction.
+
+- **Use it when** a run replaces a set of weeks. A reader of the live table then sees either the old weeks or the new weeks, never a mix.
+- **Do not use it when** a run is long enough that a failure near the end costs a night of pulls. The first plan empties staging, so the next run pulls every week again. Use [staging as a checkpoint](more-task-shapes.html#shape-staging-checkpoint).
+- **Failure modes.** Only the last plan MAY check and swap, because the middle plans MAY run in parallel, in any order ([rule](how-a-task-runs.html#rule-first-last)). A partitioned staging table MUST hold a week in every declared partition before the week counts as staged ([rule](how-a-task-runs.html#rule-partitions)).
 
 ```{r shape1-define}
 weeks <- c("2026-01", "2026-02", "2026-03", "2026-04")
@@ -136,7 +156,7 @@ ss$run_task("import_weekly")
 live <- read_rows(ss$tables$anon_import_live, c("isoyearweek", "location_code"))
 staged <- read_rows(ss$tables$anon_import_staging, c("isoyearweek", "location_code"))
 stopifnot(identical(live, staged), !"2026-03" %in% live$isoyearweek)
-live
+live[names(import_fields)]
 ```
 
 The second run reads new counts, and week 2026-02 fails. The task MUST stop with an error, and
@@ -154,15 +174,19 @@ stopifnot(
   )
 )
 conditionMessage(run)
-cat("SHAPE 1 CHECKS PASSED\n")
+cat("STAGED IMPORT CHECKS PASSED\n")
 ```
 
-## Shape 2: fit then fill
+## Fit then fill {#shape-fit-then-fill}
 
 The fit task fits a threshold for each stratum in its own argset. It writes `NA` for a stratum
 with fewer than 4 weeks of history. The fill task has one plan. It fills each `NA` row from the
 national row, records the `source` of each threshold, and publishes the whole result with
 `csdb::DBTable_v9$replace_all_rows()`.
+
+- **Use it when** a fit can fail for one unit, and its fallback needs the result of another unit, here the national row.
+- **Do not use it when** every unit has a valid result of its own. A [per-unit rebuild](more-task-shapes.html#shape-per-unit-rebuild) is then enough.
+- **Failure modes.** A middle plan of the fit task MUST NOT fill, because the national row MAY not exist yet ([rule](how-a-task-runs.html#rule-first-last)). The fill reads the whole fitted table in one pull, so the fitted table MUST stay small. The published table changes in one transaction, so a failed fill leaves the previous thresholds.
 
 ```{r shape2-define}
 ss$add_table(
@@ -255,7 +279,7 @@ stopifnot(
   !anyNA(published$source),
   published$source[published$location_code == "county_46"] == "national"
 )
-published
+published[c("location_code", "threshold", "source")]
 ```
 
 The history then doubles, and the fit runs again. The publish of the fill task fails. The
@@ -271,21 +295,21 @@ stopifnot(
   identical(read_rows(ss$tables$anon_threshold_published, "location_code"), published)
 )
 conditionMessage(run)
-cat("SHAPE 2 CHECKS PASSED\n")
+cat("FIT THEN FILL CHECKS PASSED\n")
 ```
 
-## Three rules
+## Three rules {#three-rules}
 
 **Publish in one transaction.** A task once emptied its MEM table in `first_analysis` and refilled
 it argset by argset. Between those two points, and after any failed argset, readers saw an empty or
-partial table. Shape 2 writes the published table in one call to `replace_all_rows()`.
+partial table. Fit then fill writes the published table in one call to `replace_all_rows()`.
 
 **Replace the whole scope of the run.** A swap once deleted from the live table only the weeks that
-each staging partition held. A week with no staged rows therefore kept its stale rows. Shape 1
-deletes every week of the run, so a withdrawn week leaves the live table.
+each staging partition held. A week with no staged rows therefore kept its stale rows. The staged
+import deletes every week of the run, so a withdrawn week leaves the live table.
 
 **Record where each value came from.** A national threshold copied into a county row looks the same
-as a threshold fitted for that county. Shape 2 writes `source` next to each threshold.
+as a threshold fitted for that county. Fit then fill writes `source` next to each threshold.
 
 Both shapes need cs9 to run the argset with `last_analysis = TRUE` after every other argset of the
 task. `tests/testthat/test-first-last-analysis.R` pins that order.

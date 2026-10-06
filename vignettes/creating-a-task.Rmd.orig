@@ -193,7 +193,7 @@ weather_action <- function(data, argset, tables) {
   
   # Insert results into database table
   # In a real implementation, this would use:
-  # tables$anon_weather_weekly_summary$upsert_data(weekly_summary)
+  # tables$weather_weekly$upsert_data(weekly_summary)
   
   # For demonstration, just print results
   cat("Processed weekly weather summary:\n")
@@ -221,11 +221,12 @@ ss$add_task(
   cores = 1,                              # Single core execution
   permission = NULL,                      # No special permissions needed
   
-  # Task structure - one plan per location per month
+  # Task structure: one plan per location and month pair. Each element of
+  # for_each_plan is the argset of one plan.
   for_each_plan = list(
-    location_code = c("LOC001", "LOC002", "LOC003"),
-    date_from = c("2024-01-01", "2024-02-01", "2024-03-01"),  
-    date_to = c("2024-01-31", "2024-02-28", "2024-03-31")
+    list(location_code = "LOC001", date_from = "2024-01-01", date_to = "2024-01-31"),
+    list(location_code = "LOC002", date_from = "2024-02-01", date_to = "2024-02-28"),
+    list(location_code = "LOC003", date_from = "2024-03-01", date_to = "2024-03-31")
   ),
   
   # No analysis-level iteration needed
@@ -245,10 +246,10 @@ ss$add_task(
   action_fn_name = "weather_action",
   data_selector_fn_name = "weather_data_selector",
   
-  # Table mapping
+  # Table objects. Task$run() calls $disconnect() on each one.
   tables = list(
-    weather_daily = "anon_weather_daily_data", 
-    weather_weekly = "anon_weather_weekly_summary"
+    weather_daily = ss$tables$anon_weather_daily_data,
+    weather_weekly = ss$tables$anon_weather_weekly_summary
   )
 )
 
@@ -340,10 +341,11 @@ ss$add_task(
   name_variant = "trends", 
   cores = 4,  # Use 4 CPU cores
   
-  # Large number of plans that can benefit from parallelization
-  for_each_plan = list(
-    location_code = sprintf("LOC%03d", 1:100),  # 100 locations
-    analysis_year = rep(2020:2024, length.out = 100)  # 5 years
+  # 20 locations and 5 years: plnr::expand_list() makes one plan per
+  # combination, so 100 plans that can run in parallel
+  for_each_plan = plnr::expand_list(
+    location_code = sprintf("LOC%03d", 1:20),
+    analysis_year = 2020:2024
   ),
   
   universal_argset = list(
@@ -354,9 +356,10 @@ ss$add_task(
   action_fn_name = "weather_trend_action",
   data_selector_fn_name = "weather_trend_data_selector",
   
+  # anon_weather_trends MUST exist: add it with ss$add_table() first
   tables = list(
-    input_data = "anon_weather_daily_data",
-    trend_results = "anon_weather_trends"
+    input_data = ss$tables$anon_weather_daily_data,
+    trend_results = ss$tables$anon_weather_trends
   )
 )
 ```
@@ -411,9 +414,10 @@ ss$add_task(
   action_fn_name = "weather_validation_action",
   data_selector_fn_name = "weather_validation_data_selector", 
   
+  # anon_weather_validation MUST exist: add it with ss$add_table() first
   tables = list(
-    source_data = "anon_weather_daily_data",
-    validation_results = "anon_weather_validation"
+    source_data = ss$tables$anon_weather_daily_data,
+    validation_results = ss$tables$anon_weather_validation
   )
 )
 ```

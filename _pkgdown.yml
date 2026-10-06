@@ -27,7 +27,9 @@ articles:
   - backends
   - file-layout
   - creating-a-task
+  - how-a-task-runs
   - task-shapes
+  - more-task-shapes
 
 reference:
 - title: "Core Classes"

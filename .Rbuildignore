@@ -12,6 +12,7 @@ vignettes/resources
 ^pkgdown$
 ^Rplots\.pdf$
 ^CLAUDE\.md$
+^AGENTS\.md$
 ^\.claude$
 ^\.github$
 ^.*\.docx$

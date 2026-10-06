@@ -1,0 +1,389 @@
+---
+title: "How a task runs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{How a task runs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+# add_task() returns the task visibly. The render function prints every other
+# value, and no R6 object.
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  render = function(x, ...) {
+    if (inherits(x, "R6")) return(invisible(NULL))
+    knitr::knit_print(x, ...)
+  }
+)
+```
+
+This vignette states the seven rules that `Task$run()` imposes on a task. Each section runs a small task against SQLite. A chunk calls `stopifnot()` on the rule, so the vignette fails to build when cs9 stops keeping it.
+
+## Setup
+
+This chunk points the `config` and `anon` access levels at two SQLite files under `tempdir()`. `vignette("installation")` describes the environment variables.
+
+```{r setup}
+library(data.table)
+
+db_dir <- file.path(tempdir(), "cs9-how-a-task-runs")
+unlink(db_dir, recursive = TRUE)
+dir.create(db_dir)
+Sys.setenv(
+  CS9_AUTO = "0",
+  CS9_PATH = db_dir,
+  CS9_DBCONFIG_ACCESS = "config/anon",
+  CS9_DBCONFIG_DRIVER = "SQLite",
+  CS9_DBCONFIG_DB_CONFIG = file.path(db_dir, "config.sqlite"),
+  CS9_DBCONFIG_DB_ANON = file.path(db_dir, "anon.sqlite")
+)
+cs9::reload_db_config()
+
+ss <- cs9::SurveillanceSystem_v9$new(name = "rules")
+```
+
+## A plan is one data pull {#rule-one-pull}
+
+cs9 calls the data selector once per plan. Every analysis of that plan then gets the same `data`. This task has 3 plans, one per location, and 3 analyses per plan, one per age group. A counter records each call to the data selector.
+
+```{r one-pull}
+locations <- c("oslo", "bergen", "tromso")
+ages <- c("000_014", "015_064", "065p")
+counter <- new.env()
+counter$pulls <- 0L
+counter$seen <- list()
+
+pull_data <- function(argset, tables) {
+  counter$pulls <- counter$pulls + 1L
+  list(pull = counter$pulls, location_code = argset$location_code)
+}
+
+record_analysis <- function(data, argset, tables) {
+  counter$seen[[length(counter$seen) + 1L]] <- data.table(
+    location_code = argset$location_code,
+    age = argset$age,
+    pull = data$pull
+  )
+}
+
+ss$add_task(
+  name_grouping = "rules",
+  name_action = "pull",
+  for_each_plan = plnr::expand_list(location_code = locations),
+  for_each_analysis = plnr::expand_list(age = ages),
+  data_selector_fn_name = "pull_data",
+  action_fn_name = "record_analysis"
+)
+ss$run_task("rules_pull")
+
+n_plans <- length(locations)
+n_analyses <- length(locations) * length(ages)
+stopifnot(counter$pulls == n_plans)
+c(pulls = counter$pulls, plans = n_plans, analyses = n_analyses)
+```
+
+## Analyses iterate within a plan {#rule-analyses}
+
+An analysis is one argset and one call to the action function. The analyses of a plan iterate over its argsets, and all of them read the data of that one pull. Put the variation that needs no new data in `for_each_analysis`.
+
+```{r analyses}
+seen <- rbindlist(counter$seen)
+stopifnot(
+  nrow(seen) == n_analyses,
+  seen[, uniqueN(pull), by = location_code]$V1 == 1L,
+  seen[, setequal(age, ages), by = location_code]$V1
+)
+seen
+```
+
+## Only the first and the last plan run in a fixed order {#rule-first-last}
+
+`Task$run()` runs the plans in parallel when `cores` is above 1, the task has at least 4 plans, and the session is not interactive. It then runs plan 1 first and the last plan last, in the main process. The plans between them run in forked workers, in any order. `R/r6_Task.R` holds this branch.
+
+A middle plan MUST NOT decide that the work of the other middle plans is complete. Put any step that needs all the work done in the last plan.
+
+This task has 6 plans and runs on 2 cores. Each plan records its process, when it started and when it ended. Each middle plan also counts the middle plans that finished before it. The last plan counts them too.
+
+The next two chunks fork, so they run only on Linux and macOS, and only when the session is not interactive. `R CMD check` and pkgdown both build vignettes that way.
+
+```{r first-last-define, eval = .Platform$OS.type == "unix" && !interactive()}
+ss$add_table(
+  name_access = "anon",
+  name_grouping = "rules",
+  name_variant = "fork",
+  field_types = c(plan = "INTEGER", pid = "INTEGER"),
+  keys = "plan"
+)
+log_dir <- file.path(db_dir, "plan-log")
+dir.create(log_dir)
+n_fork_plans <- 6L
+middle <- 2:(n_fork_plans - 1L)
+
+fork_data <- function(argset, tables) {
+  # TRUE when the table holds an open connection. This reads the private
+  # handle, because every public method of csdb::DBConnection_v9 first drops
+  # a handle that another process opened. disconnect() closes the handle and
+  # keeps the closed object, so an open handle is one that DBI calls valid.
+  held_open <- function(table) {
+    con <- table$dbconnection$.__enclos_env__$private$pconnection
+    !is.null(con) && DBI::dbIsValid(con)
+  }
+  list(
+    start = Sys.time(),
+    inherited = c(
+      task = held_open(tables$fork),
+      vapply(cs9::config$tables, held_open, logical(1))
+    )
+  )
+}
+
+fork_action <- function(data, argset, tables) {
+  plan <- argset$index_plan
+  open_after_write <- NA
+  if (argset$first_analysis) {
+    tables$fork$insert_data(data.table(plan = plan, pid = Sys.getpid()))
+    open_after_write <- tables$fork$dbconnection$is_connected()
+  }
+  own <- sprintf("done-%02d", plan)
+  others <- setdiff(list.files(log_dir, pattern = "^done-"), own)
+  if (plan %in% middle) file.create(file.path(log_dir, own))
+  saveRDS(
+    data.table(
+      plan = plan,
+      pid = Sys.getpid(),
+      start = data$start,
+      end = Sys.time(),
+      finished_before = length(others),
+      open_at_start = any(data$inherited),
+      open_after_write = open_after_write
+    ),
+    file.path(log_dir, sprintf("plan-%02d.rds", plan))
+  )
+}
+
+ss$add_task(
+  name_grouping = "rules",
+  name_action = "fork",
+  cores = 2,
+  for_each_plan = plnr::expand_list(plan = seq_len(n_fork_plans)),
+  data_selector_fn_name = "fork_data",
+  action_fn_name = "fork_action",
+  tables = list(fork = ss$tables$anon_rules_fork)
+)
+```
+
+```{r first-last-run, eval = .Platform$OS.type == "unix" && !interactive(), results = "hide"}
+ss$run_task("rules_fork")
+```
+
+The two plans in the main process have its process ID. The middle plans ran in forked workers. Plan 1 ended before any middle plan started, and the last plan started after every middle plan ended. A middle plan saw fewer than 4 finished middle plans, so it could not know that the work was complete. The last plan saw all 4.
+
+```{r first-last-check, eval = .Platform$OS.type == "unix" && !interactive()}
+runs <- rbindlist(lapply(
+  sort(list.files(log_dir, pattern = "^plan-", full.names = TRUE)),
+  readRDS
+))
+first <- runs[plan == 1L]
+last <- runs[plan == n_fork_plans]
+mid <- runs[plan %in% middle]
+stopifnot(
+  nrow(runs) == n_fork_plans,
+  first$pid == Sys.getpid(),
+  last$pid == Sys.getpid(),
+  all(mid$pid != Sys.getpid()),
+  first$end < min(mid$start),
+  last$start > max(mid$end),
+  all(mid$finished_before < length(middle)),
+  last$finished_before == length(middle)
+)
+runs[, .(plan, worker = fifelse(pid == Sys.getpid(), "main", "forked"), finished_before)]
+```
+
+## A forked worker MUST NOT inherit an open connection {#rule-forked-workers}
+
+A fork copies the open database connections of the main process. The worker and the main process then share one socket. An inherited PostgreSQL connection returned wrong results without an error, measured against the NorSySS server on 2026-08-14. `DBI::dbIsValid()` reported TRUE on that connection, so nothing detected it.
+
+Two protections exist:
+
+- `Task$run()` closes the connections of every table in the task's `tables` list, and of every table in `cs9::config$tables`, at the end of `run_sequential()`. That sweep runs after plan 1 and before the fork. `tests/testthat/test-fork-ordering.R` pins the order.
+- `csdb::DBConnection_v9` records the process that opened a connection, and drops a connection that another process opened. csdb added this in 2026.8.15.
+
+A connection that you open yourself with `DBI::dbConnect()` has neither protection. Open it inside the action, and close it there.
+
+Plan 1 of the task above wrote to its table, so its connection was open after the write. The sweep then closed it. No middle plan received an open connection. The data selector of `rules_fork` reads the private handle, because a public method of the connection drops an inherited handle before it reports.
+
+```{r forked-workers, eval = .Platform$OS.type == "unix" && !interactive()}
+stopifnot(
+  isTRUE(first$open_after_write),
+  !any(mid$open_at_start)
+)
+first$open_after_write
+mid[, .(plan, open_at_start)]
+```
+
+## A completeness check covers every declared partition {#rule-partitions}
+
+A partitioned table is one database table per partition. `names(pt$tables)` lists the declared partitions. A check that a week is complete MUST cover every declared partition, and never only the partitions that hold rows.
+
+This table declares 3 partitions. The import wrote rows for `flu` and `covid` only.
+
+```{r partitions-define}
+ss$add_partitionedtable(
+  name_access = "anon",
+  name_grouping = "rules",
+  name_variant = "cases",
+  name_partitions = c("flu", "covid", "rsv"),
+  column_name_partition = "disease",
+  field_types = c(isoyearweek = "TEXT", n = "INTEGER"),
+  keys = c("isoyearweek", "disease")
+)
+pt <- ss$partitionedtables$anon_rules_cases
+pt$insert_data(data.table(
+  isoyearweek = rep(c("2026-01", "2026-02"), times = 2),
+  disease = rep(c("flu", "covid"), each = 2),
+  n = 1:4
+))
+partition_rows <- pt$nrow(collapse = FALSE)
+partition_rows
+```
+
+`nrow(collapse = FALSE)` has one row for each partition whose table exists. csdb creates the table of a partition at its first use, so `rsv` has no row here. Use `names(pt$tables)` for the declared partitions.
+
+The `partition` column holds the partition tag. Never parse the tag from `table_name`. The separator in the name depends on the database driver.
+
+```{r partitions-check}
+# The weeks that every partition in `partitions` holds.
+complete_weeks <- function(pt, partitions) {
+  held <- lapply(partitions, function(p) {
+    dplyr::pull(dplyr::distinct(pt$tables[[p]]$tbl(), isoyearweek))
+  })
+  sort(Reduce(intersect, held))
+}
+
+declared <- names(pt$tables)
+holding_rows <- partition_rows$partition[partition_rows$nrow > 0]
+complete <- complete_weeks(pt, declared)
+stopifnot(
+  setequal(declared, c("flu", "covid", "rsv")),
+  !"rsv" %in% partition_rows$partition,
+  length(complete) == 0
+)
+list(
+  declared = declared,
+  holding_rows = holding_rows,
+  complete = complete,
+  complete_if_you_read_rows = complete_weeks(pt, holding_rows)
+)
+```
+
+## `plnr::expand_list()` makes one argset per element {#rule-expand-list}
+
+`plnr::expand_list()` returns one argset for each combination of its arguments. A vector of 3 weeks therefore gives 3 argsets. To give each argset all 3 weeks, pass them as one text value and split it in the action. A vector inside `list()` also gives one argset.
+
+```{r expand-list}
+weeks <- c("2026-01", "2026-02", "2026-03")
+one_per_week <- plnr::expand_list(isoyearweek = weeks)
+one_text <- plnr::expand_list(run_weeks = paste(weeks, collapse = ","))
+one_list <- plnr::expand_list(run_weeks = list(weeks))
+stopifnot(
+  length(one_per_week) == 3,
+  length(one_text) == 1,
+  identical(strsplit(one_text[[1]]$run_weeks, ",")[[1]], weeks),
+  length(one_list) == 1,
+  identical(one_list[[1]]$run_weeks, weeks)
+)
+c(one_per_week = length(one_per_week), one_text = length(one_text), one_list = length(one_list))
+```
+
+`universal_argset` is not expanded. Every argset of the task gets each of its values unchanged.
+
+## Size a plan by its data pull {#rule-plan-size}
+
+A plan holds one pull in memory, so its data pull sets the size of a plan. The unit of work that you commit is a different choice. Do not make a plan per committed unit when one pull serves several units. Group the commits in the last plan.
+
+Both tasks below read the same 6 rows, for 2 weeks and 3 locations. The source returns one week for all locations. `per_week_location` makes a plan per week and location, so it pulls each week 3 times. `per_week` makes a plan per week and an analysis per location, so it pulls each week once. Its analyses write to a staging table. The last analysis moves the staged rows into the live table in one transaction.
+
+```{r plan-size}
+for (variant in c("staging", "live")) {
+  ss$add_table(
+    name_access = "anon",
+    name_grouping = "rules_size",
+    name_variant = variant,
+    field_types = c(isoyearweek = "TEXT", location_code = "TEXT", n = "INTEGER"),
+    keys = c("isoyearweek", "location_code")
+  )
+}
+size_weeks <- c("2026-01", "2026-02")
+size <- new.env()
+size$pulls <- c(per_week_location = 0L, per_week = 0L)
+size$commits <- 0L
+
+week_data <- function(argset, tables) {
+  size$pulls[argset$design] <- size$pulls[argset$design] + 1L
+  list(week = data.table(
+    isoyearweek = argset$isoyearweek,
+    location_code = locations,
+    n = seq_along(locations)
+  ))
+}
+
+week_action <- function(data, argset, tables) {
+  rows <- data$week[location_code == argset$location_code]
+  if (argset$design == "per_week") tables$staging$insert_data(rows)
+  if (argset$design == "per_week" && argset$last_analysis) {
+    staged <- dplyr::collect(tables$staging$tbl())
+    # connect() creates the live table if this is its first use.
+    tables$live$connect()
+    con <- tables$live$dbconnection$autoconnection
+    DBI::dbWithTransaction(con, {
+      DBI::dbExecute(con, paste0("DELETE FROM ", tables$live$table_name_fully_specified_text))
+      DBI::dbAppendTable(con, tables$live$table_name_short_for_mssql_fully_specified_for_postgres, staged)
+    })
+    tables$staging$drop_all_rows()
+    size$commits <- size$commits + 1L
+  }
+}
+
+size_tables <- list(
+  staging = ss$tables$anon_rules_size_staging,
+  live = ss$tables$anon_rules_size_live
+)
+ss$add_task(
+  name_grouping = "rules_size",
+  name_action = "per_week_location",
+  for_each_plan = plnr::expand_list(isoyearweek = size_weeks, location_code = locations),
+  universal_argset = list(design = "per_week_location"),
+  data_selector_fn_name = "week_data",
+  action_fn_name = "week_action",
+  tables = size_tables
+)
+ss$add_task(
+  name_grouping = "rules_size",
+  name_action = "per_week",
+  for_each_plan = plnr::expand_list(isoyearweek = size_weeks),
+  for_each_analysis = plnr::expand_list(location_code = locations),
+  universal_argset = list(design = "per_week"),
+  data_selector_fn_name = "week_data",
+  action_fn_name = "week_action",
+  tables = size_tables
+)
+ss$run_task("rules_size_per_week_location")
+ss$run_task("rules_size_per_week")
+
+live_n <- nrow(dplyr::collect(ss$tables$anon_rules_size_live$tbl()))
+staged_n <- nrow(dplyr::collect(ss$tables$anon_rules_size_staging$tbl()))
+stopifnot(
+  size$pulls[["per_week_location"]] == length(size_weeks) * length(locations),
+  size$pulls[["per_week"]] == length(size_weeks),
+  size$commits == 1L,
+  live_n == length(size_weeks) * length(locations),
+  staged_n == 0L
+)
+c(size$pulls, commits = size$commits, live_rows = live_n)
+```
+
+`vignette("more-task-shapes")` shows staging as a checkpoint, which commits each complete unit in the last plan.
