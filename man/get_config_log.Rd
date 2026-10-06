@@ -24,7 +24,7 @@ by surveillance system identifier, task name, and date range.
 }
 \details{
 The function retrieves entries from the \code{config_log} table in the current configuration.
-The function applies any date filters to the \code{timestamp} field of the log entries.
+The function applies \code{start_date} and \code{end_date} to the \code{date} column of the log entries. Both bounds are inclusive.
 }
 \examples{
 \dontrun{

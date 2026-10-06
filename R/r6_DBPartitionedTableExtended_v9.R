@@ -159,13 +159,18 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       partitions_in_use <- partitions_in_use[sample.int(length(
         partitions_in_use
       ))]
+      completed <- character(0)
+      on.exit(private$record_last_updated(completed), add = TRUE)
       for (i in partitions_in_use) {
         index <- route == as.character(i)
-        self$tables[[as.character(i)]]$insert_data(
+        child <- self$tables[[as.character(i)]]
+        child$insert_data(
           newdata[index, ],
           confirm_insert_via_nrow,
-          verbose
+          verbose,
+          update_last_updated = FALSE
         )
+        completed <- c(completed, child$table_name)
       }
       return(invisible(NULL))
     },
@@ -182,18 +187,23 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       route <- private$check_for_correct_partitions_in_data(newdata)
 
       partitions_in_use <- unique(route)
+      completed <- character(0)
+      on.exit(private$record_last_updated(completed), add = TRUE)
       for (i in partitions_in_use) {
         index <- route == as.character(i)
-        self$tables[[as.character(i)]]$upsert_data(
+        child <- self$tables[[as.character(i)]]
+        child$upsert_data(
           newdata[index, ],
           drop_indexes,
-          verbose
+          verbose,
+          update_last_updated = FALSE
         )
+        completed <- c(completed, child$table_name)
       }
       return(invisible(NULL))
     },
-    # The three methods below write config_tables_last_updated in ONE upsert,
-    # with one row per completed child. A child call therefore passes
+    # Every method that changes rows writes config_tables_last_updated in
+    # ONE upsert, with one row per completed child. A child call therefore passes
     # update_last_updated = FALSE. on.exit() records the completed children
     # when a later child fails too, and the error still propagates.
     drop_all_rows = function() {
@@ -248,13 +258,19 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       }
       route <- private$check_for_correct_partitions_in_data(newdata)
 
+      # A child with no rows in newdata is emptied, so it counts as completed.
+      completed <- character(0)
+      on.exit(private$record_last_updated(completed), add = TRUE)
       for (i in self$partitions_randomized) {
         index <- route == as.character(i)
-        self$tables[[as.character(i)]]$drop_all_rows_and_then_upsert_data(
+        child <- self$tables[[as.character(i)]]
+        child$drop_all_rows_and_then_upsert_data(
           newdata[index, ],
           drop_indexes,
-          verbose
+          verbose,
+          update_last_updated = FALSE
         )
+        completed <- c(completed, child$table_name)
       }
       return(invisible(NULL))
     },
@@ -270,13 +286,19 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       }
       route <- private$check_for_correct_partitions_in_data(newdata)
 
+      # A child with no rows in newdata is emptied, so it counts as completed.
+      completed <- character(0)
+      on.exit(private$record_last_updated(completed), add = TRUE)
       for (i in self$partitions_randomized) {
         index <- route == as.character(i)
-        self$tables[[as.character(i)]]$drop_all_rows_and_then_insert_data(
+        child <- self$tables[[as.character(i)]]
+        child$drop_all_rows_and_then_insert_data(
           newdata[index, ],
           confirm_insert_via_nrow,
-          verbose
+          verbose,
+          update_last_updated = FALSE
         )
+        completed <- c(completed, child$table_name)
       }
       return(invisible(NULL))
     },
