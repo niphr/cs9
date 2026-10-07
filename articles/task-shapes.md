@@ -4,7 +4,7 @@ A task shape is a plan design that recurs across tasks. It fixes how the
 plans split the work, what the first and the last plan do, and how the
 task writes. This vignette and
 [`vignette("more-task-shapes")`](https://niphr.github.io/cs9/articles/more-task-shapes.md)
-describe five shapes. Each shape runs against SQLite when the vignette
+describe seven shapes. Each shape runs against SQLite when the vignette
 builds. A chunk calls [`stop()`](https://rdrr.io/r/base/stop.html) if a
 shape does not keep its promise, so the build fails.
 [`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
@@ -15,8 +15,10 @@ states the execution rules that every shape follows.
 | [Per-unit rebuild](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-per-unit-rebuild)                  | the rows of each unit depend only on its own data pull, and no reader needs the table during the run | `more-task-shapes` |
 | [Staged import](#shape-staged-import)                                                                                  | an import replaces the weeks of a run, and the live table MUST change only when every week arrived   | `task-shapes`      |
 | [Staging as a checkpoint](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-staging-checkpoint)         | an import is long, and a failed run MUST NOT lose the weeks that it already pulled                   | `more-task-shapes` |
+| [Per-plan staged swap](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-per-plan-staged-swap)          | each plan pulls one unit, and a reader MAY see units from different runs                             | `more-task-shapes` |
 | [Fit then fill](#shape-fit-then-fill)                                                                                  | a fit can fail for one unit, and the fallback needs the results of all units                         | `task-shapes`      |
 | [Export from a finished table](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-export-finished-table) | the output is files, made from tables that an earlier task finished                                  | `more-task-shapes` |
+| [Notify after export](https://niphr.github.io/cs9/articles/more-task-shapes.html#shape-notify-after-export)            | a finished export wrote the output, and a task sends it on without computing anything                | `more-task-shapes` |
 
 ## Setup
 

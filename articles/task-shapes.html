@@ -93,7 +93,7 @@
 <p>A task shape is a plan design that recurs across tasks. It fixes how
 the plans split the work, what the first and the last plan do, and how
 the task writes. This vignette and
-<code><a href="../articles/more-task-shapes.html">vignette("more-task-shapes")</a></code> describe five shapes. Each
+<code><a href="../articles/more-task-shapes.html">vignette("more-task-shapes")</a></code> describe seven shapes. Each
 shape runs against SQLite when the vignette builds. A chunk calls
 <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> if a shape does not keep its promise, so the build
 fails. <code><a href="../articles/how-a-task-runs.html">vignette("how-a-task-runs")</a></code> states the execution
@@ -131,16 +131,30 @@ already pulled</td>
 <td><code>more-task-shapes</code></td>
 </tr>
 <tr class="even">
+<td><a href="more-task-shapes.html#shape-per-plan-staged-swap">Per-plan
+staged swap</a></td>
+<td>each plan pulls one unit, and a reader MAY see units from different
+runs</td>
+<td><code>more-task-shapes</code></td>
+</tr>
+<tr class="odd">
 <td><a href="#shape-fit-then-fill">Fit then fill</a></td>
 <td>a fit can fail for one unit, and the fallback needs the results of
 all units</td>
 <td><code>task-shapes</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="more-task-shapes.html#shape-export-finished-table">Export
 from a finished table</a></td>
 <td>the output is files, made from tables that an earlier task
 finished</td>
+<td><code>more-task-shapes</code></td>
+</tr>
+<tr class="odd">
+<td><a href="more-task-shapes.html#shape-notify-after-export">Notify
+after export</a></td>
+<td>a finished export wrote the output, and a task sends it on without
+computing anything</td>
 <td><code>more-task-shapes</code></td>
 </tr>
 </tbody>
