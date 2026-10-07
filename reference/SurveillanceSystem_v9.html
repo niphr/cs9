@@ -11,7 +11,7 @@ epidemiological monitoring and public health surveillance."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -294,7 +294,8 @@ epidemiological monitoring and public health surveillance.</p>
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-add_task"></a><div class="section">
 <h3 id="surveillancesystem-v-add-task-"><code>SurveillanceSystem_v9$add_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-add-task-"></a></h3>
-<p>Add a surveillance task to the system.</p><div class="section">
+<p>Add a surveillance task to the system.
+<code>run_task()</code> builds the plans again on every call, so <code>argset$today</code> and <code>argset$yesterday</code> hold the date of the run.</p><div class="section">
 <h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
 <span>  name_grouping <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -324,7 +325,9 @@ epidemiological monitoring and public health surveillance.</p>
 <dd><p>Name of the task (variant).</p></dd>
 
       <dt><code>cores</code></dt>
-<dd><p>Number of CPU cores.</p></dd>
+<dd><p>The number of CPU cores, or a function with no arguments that returns it.
+The task calls the function each time it runs, so the function MAY read an environment variable that changes after <code>add_task()</code>.
+A runner that sets <code>cores</code> to 1, such as <code>TaskJob</code>, replaces the function.</p></dd>
 
       <dt><code>permission</code></dt>
 <dd><p>A permission R6 instance.</p></dd>
@@ -387,7 +390,7 @@ epidemiological monitoring and public health surveillance.</p>
 <p></p><hr><a id="method-SurveillanceSystem_v9-run_task"></a><div class="section">
 <h3 id="surveillancesystem-v-run-task-"><code>SurveillanceSystem_v9$run_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-run-task-"></a></h3>
 <p>Execute a surveillance task by name.
-A task with a plan analysis builds its plans again on every call.</p><div class="section">
+The task builds its plans again on every call, so <code>argset$today</code> is the date of the run.</p><div class="section">
 <h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">

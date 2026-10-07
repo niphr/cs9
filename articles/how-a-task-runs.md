@@ -1,6 +1,6 @@
 # How a task runs
 
-This vignette states the seven rules that `Task$run()` imposes on a
+This vignette states the eight rules that `Task$run()` imposes on a
 task. Each section runs a small task against SQLite. A chunk calls
 [`stopifnot()`](https://rdrr.io/r/base/stopifnot.html) on the rule, so
 the vignette fails to build when cs9 stops keeping it.
@@ -271,6 +271,46 @@ mid[, .(plan, open_at_start)]
 #> 2:     3         FALSE
 #> 3:     4         FALSE
 #> 4:     5         FALSE
+```
+
+## A task reads `cores` and the date when it runs
+
+`cores` MAY be a function with no arguments. `Task$run()` calls the
+function each time the task runs, so the function reads its settings at
+that time. A number works as before. `TaskJob` sets `cores` to 1 before
+it runs a task, and this replaces the function.
+
+`run_task()` also builds the plans of the task again on every call.
+`argset$today` and `argset$yesterday` are therefore the date of the run,
+not the date when the package loaded.
+
+This task reads its cores from the environment variable
+`RULES_CORES_MAX`, which changes after `add_task()`. The task has 4
+plans, the smallest count that runs in parallel.
+[`get_config_tasks_stats()`](https://niphr.github.io/cs9/reference/get_config_tasks_stats.md)
+shows the cores of each run. The run forks, so the next two chunks run
+only on Linux and macOS, in a session that is not interactive.
+
+``` r
+noop_action <- function(data, argset, tables) invisible(NULL)
+
+Sys.setenv(RULES_CORES_MAX = "1")
+ss$add_task(
+  name_grouping = "rules",
+  name_action = "cores",
+  cores = function() as.integer(Sys.getenv("RULES_CORES_MAX")),
+  for_each_plan = plnr::expand_list(plan = 1:4),
+  action_fn_name = "noop_action"
+)
+Sys.setenv(RULES_CORES_MAX = "2")
+ss$run_task("rules_cores")
+```
+
+``` r
+cores_used <- cs9::get_config_tasks_stats(task = "rules_cores")$cores_n
+stopifnot(cores_used == 2)
+cores_used
+#> [1] 2
 ```
 
 ## A completeness check covers every declared partition

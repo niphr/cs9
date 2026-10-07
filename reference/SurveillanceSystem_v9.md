@@ -279,7 +279,9 @@ partitioned table to the surveillance system.
 
 ### `SurveillanceSystem_v9$add_task()`
 
-Add a surveillance task to the system.
+Add a surveillance task to the system. `run_task()` builds the plans
+again on every call, so `argset$today` and `argset$yesterday` hold the
+date of the run.
 
 #### Usage
 
@@ -316,7 +318,10 @@ Add a surveillance task to the system.
 
 - `cores`:
 
-  Number of CPU cores.
+  The number of CPU cores, or a function with no arguments that returns
+  it. The task calls the function each time it runs, so the function MAY
+  read an environment variable that changes after `add_task()`. A runner
+  that sets `cores` to 1, such as `TaskJob`, replaces the function.
 
 - `permission`:
 
@@ -396,8 +401,8 @@ A Task R6 object representing the surveillance task.
 
 ### `SurveillanceSystem_v9$run_task()`
 
-Execute a surveillance task by name. A task with a plan analysis builds
-its plans again on every call.
+Execute a surveillance task by name. The task builds its plans again on
+every call, so `argset$today` is the date of the run.
 
 #### Usage
 

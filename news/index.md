@@ -1,5 +1,23 @@
 # Changelog
 
+## Version 26.10.7
+
+- `add_task()` accepts `cores` as a function with no arguments.
+  `Task$run()` calls it each time the task runs, so a cap that an
+  environment variable sets after the package loads takes effect. A
+  number works as before.
+- `TaskJob` and
+  [`run_task_sequentially_as_rstudio_job_using_load_all()`](https://niphr.github.io/cs9/reference/run_task_sequentially_as_rstudio_job_using_load_all.md)
+  still run a task on 1 core when its `cores` is a function.
+- `run_task()` builds the plans of a `for_each_plan` task again on every
+  call, so `argset$today` and `argset$yesterday` are the date of the
+  run. Before, they were the date when the package loaded.
+- `get_task()` and the `shortcut_get_*()` methods still show the plans
+  of the last build, with the date of that build.
+- [`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
+  shows a task that reads its cores from an environment variable that
+  changes after `add_task()`.
+
 ## Version 26.10.6
 
 - The partitioned `insert_data()`, `upsert_data()`,

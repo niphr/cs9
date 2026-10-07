@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,6 +56,19 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.7" id="version-26107">Version 26.10.7<a class="anchor" aria-label="anchor" href="#version-26107"></a></h2>
+<ul><li>
+<code>add_task()</code> accepts <code>cores</code> as a function with no arguments. <code>Task$run()</code> calls it each time the task runs, so a cap that an environment variable sets after the package loads takes effect. A number works as before.</li>
+<li>
+<code>TaskJob</code> and <code><a href="../reference/run_task_sequentially_as_rstudio_job_using_load_all.html">run_task_sequentially_as_rstudio_job_using_load_all()</a></code> still run a task on 1 core when its <code>cores</code> is a function.</li>
+<li>
+<code>run_task()</code> builds the plans of a <code>for_each_plan</code> task again on every call, so <code>argset$today</code> and <code>argset$yesterday</code> are the date of the run. Before, they were the date when the package loaded.</li>
+<li>
+<code>get_task()</code> and the <code>shortcut_get_*()</code> methods still show the plans of the last build, with the date of that build.</li>
+<li>
+<code><a href="../articles/how-a-task-runs.html">vignette("how-a-task-runs")</a></code> shows a task that reads its cores from an environment variable that changes after <code>add_task()</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.10.6" id="version-26106">Version 26.10.6<a class="anchor" aria-label="anchor" href="#version-26106"></a></h2>
 <ul><li>The partitioned <code>insert_data()</code>, <code>upsert_data()</code>, <code>drop_all_rows_and_then_insert_data()</code> and <code>drop_all_rows_and_then_upsert_data()</code> write their <code>config_tables_last_updated</code> rows in one upsert. The rows are the same: one per completed partition.</li>
