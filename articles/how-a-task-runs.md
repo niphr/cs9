@@ -31,6 +31,27 @@ cs9::reload_db_config()
 ss <- cs9::SurveillanceSystem_v9$new(name = "rules")
 ```
 
+## A run in one diagram
+
+The diagram shows one run of a task with 4 plans, 2 analyses per plan
+and 2 cores. In each plan, `pull` is the call to the data selector. `A1`
+and `A2` are the calls to the action for analysis 1 and 2. The sections
+below state each rule that the diagram shows.
+
+The vignette records this run when it builds, and draws the diagram from
+that record. A hidden chunk stops the build when the record breaks a
+rule that the diagram shows. The run forks, so the diagram appears only
+on Linux and macOS, in a session that is not interactive.
+
+![Diagram of one run of a task with 4 plans and 2 analyses per plan on 2
+cores. It has one row for the main process and one row for each of 2
+forked workers. In the main process, run_task() builds the plans, and
+plan 1 then pulls its data and runs analyses 1 and 2. The main process
+then forks, and each worker runs one middle plan, plan 2 or plan 3,
+while the main process waits. After both workers end, plan 4, the last
+plan, runs in the main
+process.](how-a-task-runs_files/figure-html/overview-diagram-1.png)
+
 ## A plan is one data pull
 
 cs9 calls the data selector once per plan. Every analysis of that plan
@@ -221,10 +242,10 @@ runs[, .(plan, worker = fifelse(pid == Sys.getpid(), "main", "forked"), finished
 #>     plan worker finished_before
 #>    <int> <char>           <int>
 #> 1:     1   main               0
-#> 2:     2 forked               0
-#> 3:     3 forked               1
-#> 4:     4 forked               2
-#> 5:     5 forked               3
+#> 2:     2 forked               2
+#> 3:     3 forked               0
+#> 4:     4 forked               3
+#> 5:     5 forked               2
 #> 6:     6   main               4
 ```
 
@@ -619,6 +640,7 @@ c(size$pulls, commits = size$commits, live_rows = live_n)
 #>                 6                 2                 1                 6
 ```
 
-[`vignette("more-task-shapes")`](https://niphr.github.io/cs9/articles/more-task-shapes.md)
-shows staging as a checkpoint, which commits each complete unit in the
-last plan.
+[`vignette("task-shapes")`](https://niphr.github.io/cs9/articles/task-shapes.md)
+shows [staging as a
+checkpoint](https://niphr.github.io/cs9/articles/task-shapes.html#shape-staging-checkpoint),
+which commits each complete unit in the last plan.

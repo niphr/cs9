@@ -11,5 +11,3 @@
 - [How a task
   runs](https://niphr.github.io/cs9/articles/how-a-task-runs.md):
 - [Task shapes](https://niphr.github.io/cs9/articles/task-shapes.md):
-- [More task
-  shapes](https://niphr.github.io/cs9/articles/more-task-shapes.md):

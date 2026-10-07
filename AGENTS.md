@@ -195,8 +195,7 @@ argset <- ss$shortcut_get_argset("task_name", index_plan = 1, index_analysis = 1
     vignettes/
     ├── *.Rmd.orig                       # knitted into *.Rmd by _PRECOMPILER.R
     ├── how-a-task-runs.Rmd              # the execution rules, run on SQLite
-    ├── task-shapes.Rmd                  # task shapes, run on SQLite
-    └── more-task-shapes.Rmd             # task shapes, run on SQLite
+    └── task-shapes.Rmd                  # task shapes, run on SQLite
 
     tests/testthat/                      # no test needs a database server
 

@@ -21,6 +21,15 @@
   [`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
   states when a task builds its plans, and how to run plans that you
   edit by hand.
+- [`vignette("task-shapes")`](https://niphr.github.io/cs9/articles/task-shapes.md)
+  holds all seven task shapes. The sections of the removed
+  `vignette("more-task-shapes")` keep their heading ids there.
+- [`vignette("task-shapes")`](https://niphr.github.io/cs9/articles/task-shapes.md)
+  has a diagram for each shape, and
+  [`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
+  has a diagram of one run. Each diagram comes from a run that the
+  vignette records and checks when it builds. ggplot2 is in Suggests for
+  these diagrams.
 
 ## Version 26.10.6
 

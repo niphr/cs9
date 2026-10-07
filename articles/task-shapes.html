@@ -43,7 +43,6 @@
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
     <li><a class="dropdown-item" href="../articles/how-a-task-runs.html">How a task runs</a></li>
     <li><a class="dropdown-item" href="../articles/task-shapes.html">Task shapes</a></li>
-    <li><a class="dropdown-item" href="../articles/more-task-shapes.html">More task shapes</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -92,70 +91,56 @@
     
 <p>A task shape is a plan design that recurs across tasks. It fixes how
 the plans split the work, what the first and the last plan do, and how
-the task writes. This vignette and
-<code><a href="../articles/more-task-shapes.html">vignette("more-task-shapes")</a></code> describe seven shapes. Each
-shape runs against SQLite when the vignette builds. A chunk calls
+the task writes. This vignette describes seven shapes. Each shape runs
+against SQLite when the vignette builds. A chunk calls
 <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> if a shape does not keep its promise, so the build
 fails. <code><a href="../articles/how-a-task-runs.html">vignette("how-a-task-runs")</a></code> states the execution
 rules that every shape follows.</p>
 <table class="table">
 <colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
+<col width="50%">
+<col width="50%">
 </colgroup>
 <thead><tr class="header">
 <th>Shape</th>
 <th>Use it when</th>
-<th>Vignette</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><a href="more-task-shapes.html#shape-per-unit-rebuild">Per-unit
-rebuild</a></td>
+<td><a href="#shape-per-unit-rebuild">Per-unit rebuild</a></td>
 <td>the rows of each unit depend only on its own data pull, and no
 reader needs the table during the run</td>
-<td><code>more-task-shapes</code></td>
 </tr>
 <tr class="even">
 <td><a href="#shape-staged-import">Staged import</a></td>
 <td>an import replaces the weeks of a run, and the live table MUST
 change only when every week arrived</td>
-<td><code>task-shapes</code></td>
 </tr>
 <tr class="odd">
-<td><a href="more-task-shapes.html#shape-staging-checkpoint">Staging as
-a checkpoint</a></td>
-<td>an import is long, and a failed run MUST NOT lose the weeks that it
-already pulled</td>
-<td><code>more-task-shapes</code></td>
-</tr>
-<tr class="even">
-<td><a href="more-task-shapes.html#shape-per-plan-staged-swap">Per-plan
-staged swap</a></td>
+<td><a href="#shape-per-plan-staged-swap">Per-plan staged swap</a></td>
 <td>each plan pulls one unit, and a reader MAY see units from different
 runs</td>
-<td><code>more-task-shapes</code></td>
+</tr>
+<tr class="even">
+<td><a href="#shape-staging-checkpoint">Staging as a checkpoint</a></td>
+<td>an import is long, and a failed run MUST NOT lose the weeks that it
+already pulled</td>
 </tr>
 <tr class="odd">
 <td><a href="#shape-fit-then-fill">Fit then fill</a></td>
 <td>a fit can fail for one unit, and the fallback needs the results of
 all units</td>
-<td><code>task-shapes</code></td>
 </tr>
 <tr class="even">
-<td><a href="more-task-shapes.html#shape-export-finished-table">Export
-from a finished table</a></td>
+<td><a href="#shape-export-finished-table">Export from a finished
+table</a></td>
 <td>the output is files, made from tables that an earlier task
 finished</td>
-<td><code>more-task-shapes</code></td>
 </tr>
 <tr class="odd">
-<td><a href="more-task-shapes.html#shape-notify-after-export">Notify
-after export</a></td>
+<td><a href="#shape-notify-after-export">Notify after export</a></td>
 <td>a finished export wrote the output, and a task sends it on without
 computing anything</td>
-<td><code>more-task-shapes</code></td>
 </tr>
 </tbody>
 </table>
@@ -189,7 +174,116 @@ at two SQLite files under <code><a href="https://rdrr.io/r/base/tempfile.html" c
 <span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">order</span>, <span class="va">d</span><span class="op">[</span><span class="va">by</span><span class="op">]</span><span class="op">)</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
 <span>  <span class="va">d</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Values quoted for an SQL IN list.</span></span>
+<span><span class="va">sql_in</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbQuoteString.html" class="external-link">dbQuoteString</a></span><span class="op">(</span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/ANSI.html" class="external-link">ANSI</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">x</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span></code></pre></div>
+<p>Each example calls <code>record()</code> at each step that a plan
+does to a table. The diagram after the example draws those steps. A
+hidden chunk defines <code>record()</code> and the diagram code. It
+stops the build when the recorded steps differ from what the example
+checks.</p>
+<p>In a diagram, the top row holds the plans in the order that they run.
+Each lane below it is one table, the output folder, or the recipient of
+a message. Read the arrows as follows:</p>
+<ul>
+<li>A grey arrow clears rows. A blue arrow writes rows or files, or
+sends a file.</li>
+<li>A green arrow in a dashed box is a swap: one transaction that writes
+rows from the upper table into the lower table.</li>
+<li>A red arrow with a cross marks a step that failed. Its plan has a
+red box.</li>
+<li>A plan with a dashed grey box did not run.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="shape-per-unit-rebuild">Per-unit rebuild<a class="anchor" aria-label="anchor" href="#shape-per-unit-rebuild"></a>
+</h2>
+<p>The task has one plan per unit, for example a location or a
+partition. The first analysis empties the output table. Each analysis
+then inserts the rows of its own unit.</p>
+<ul>
+<li>
+<strong>Use it when</strong> the rows of each unit depend only on
+the data pull of that unit, and nothing reads the output during the
+run.</li>
+<li>
+<strong>Do not use it when</strong> a reader MUST see a complete
+table at every moment. Use <a href="#shape-fit-then-fill">fit then
+fill</a>, which publishes in one transaction.</li>
+<li>
+<strong>Failure modes.</strong> A failed run leaves the table
+partial until the next run succeeds. Only the first plan MAY empty the
+table, because the middle plans MAY run in parallel, in any order (<a href="how-a-task-runs.html#rule-first-last">rule</a>). With a
+partitioned output, one plan per partition writes only its own
+partition.</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
+<span>  name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"rebuild"</span>,</span>
+<span>  name_variant <span class="op">=</span> <span class="st">"rates"</span>,</span>
+<span>  field_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="st">"TEXT"</span>, rate_per_1000 <span class="op">=</span> <span class="st">"DOUBLE"</span><span class="op">)</span>,</span>
+<span>  keys <span class="op">=</span> <span class="st">"location_code"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
+<span>  location_code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"county_03"</span>, <span class="st">"county_11"</span>, <span class="st">"county_46"</span><span class="op">)</span>,</span>
+<span>  cases <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30L</span>, <span class="fl">12L</span>, <span class="fl">7L</span><span class="op">)</span>,</span>
+<span>  pop <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">700L</span>, <span class="fl">600L</span>, <span class="fl">650L</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">rebuild</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">rebuild</span><span class="op">$</span><span class="va">fail</span> <span class="op">&lt;-</span> <span class="cn">NA_character_</span></span>
+<span><span class="va">rebuild</span><span class="op">$</span><span class="va">log</span> <span class="op">&lt;-</span> <span class="fu">new_log</span><span class="op">(</span><span class="st">"rates"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">rebuild_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">counts</span><span class="op">[</span><span class="va">location_code</span> <span class="op">==</span> <span class="va">argset</span><span class="op">$</span><span class="va">location_code</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">rebuild_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">loc</span> <span class="op">&lt;-</span> <span class="va">argset</span><span class="op">$</span><span class="va">location_code</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">first_analysis</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">tables</span><span class="op">$</span><span class="va">rates</span><span class="op">$</span><span class="fu">drop_all_rows</span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">rebuild</span><span class="op">$</span><span class="va">log</span>, <span class="va">loc</span>, <span class="st">"clear"</span>, <span class="st">"rates"</span>, label <span class="op">=</span> <span class="st">"clear all"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">loc</span>, <span class="va">rebuild</span><span class="op">$</span><span class="va">fail</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">rebuild</span><span class="op">$</span><span class="va">log</span>, <span class="va">loc</span>, <span class="st">"write"</span>, <span class="st">"rates"</span>, ok <span class="op">=</span> <span class="cn">FALSE</span>, label <span class="op">=</span> <span class="st">"failed"</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"the computation failed for "</span>, <span class="va">rebuild</span><span class="op">$</span><span class="va">fail</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">tables</span><span class="op">$</span><span class="va">rates</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span></span>
+<span>    <span class="va">data</span><span class="op">$</span><span class="va">counts</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">location_code</span>, rate_per_1000 <span class="op">=</span> <span class="fl">1000</span> <span class="op">*</span> <span class="va">cases</span> <span class="op">/</span> <span class="va">pop</span><span class="op">)</span><span class="op">]</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span><span class="va">rebuild</span><span class="op">$</span><span class="va">log</span>, <span class="va">loc</span>, <span class="st">"write"</span>, <span class="st">"rates"</span>, label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"+"</span>, <span class="va">loc</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"rebuild"</span>,</span>
+<span>  name_action <span class="op">=</span> <span class="st">"rates"</span>,</span>
+<span>  for_each_plan <span class="op">=</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="va">counts</span><span class="op">$</span><span class="va">location_code</span><span class="op">)</span>,</span>
+<span>  data_selector_fn_name <span class="op">=</span> <span class="st">"rebuild_data"</span>,</span>
+<span>  action_fn_name <span class="op">=</span> <span class="st">"rebuild_action"</span>,</span>
+<span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rates <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_rebuild_rates</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The first run writes all 3 locations. The second run fails at the
+second location. The table then holds only the first location, and a
+reader sees that partial table until a run succeeds.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">log_run</span><span class="op">(</span><span class="va">rebuild</span><span class="op">$</span><span class="va">log</span>, <span class="st">"Run 1: every location succeeds"</span>, <span class="va">counts</span><span class="op">$</span><span class="va">location_code</span><span class="op">)</span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"rebuild_rates"</span><span class="op">)</span></span>
+<span><span class="va">full</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_rebuild_rates</span>, <span class="st">"location_code"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">rebuild</span><span class="op">$</span><span class="va">fail</span> <span class="op">&lt;-</span> <span class="st">"county_11"</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">rebuild</span><span class="op">$</span><span class="va">log</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Run 2:"</span>, <span class="va">rebuild</span><span class="op">$</span><span class="va">fail</span>, <span class="st">"fails"</span><span class="op">)</span>, <span class="va">counts</span><span class="op">$</span><span class="va">location_code</span><span class="op">)</span></span>
+<span><span class="va">run</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"rebuild_rates"</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
+<span><span class="va">partial</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_rebuild_rates</span>, <span class="st">"location_code"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">full</span><span class="op">$</span><span class="va">location_code</span>, <span class="va">counts</span><span class="op">$</span><span class="va">location_code</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">run</span>, <span class="st">"error"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">partial</span><span class="op">$</span><span class="va">location_code</span>, <span class="st">"county_03"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">partial</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"location_code"</span>, <span class="st">"rate_per_1000"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   location_code rate_per_1000</span></span>
+<span><span class="co">#&gt; 1     county_03      42.85714</span></span></code></pre></div>
+<p><img src="task-shapes_files/figure-html/rebuild-diagram-1.png" class="r-plt" alt="Diagram of two runs of the per-unit rebuild task, with one lane for the rates table. In run 1 the first plan clears the table, and each of the 3 plans writes its location. In run 2 the first plan clears the table and writes county_03, the write of county_11 fails, and county_46 does not run." width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="shape-staged-import">Staged import<a class="anchor" aria-label="anchor" href="#shape-staged-import"></a>
@@ -207,15 +301,14 @@ a mix.</li>
 <li>
 <strong>Do not use it when</strong> a run is long enough that a
 failure near the end costs a night of pulls. The first plan empties
-staging, so the next run pulls every week again. Use <a href="more-task-shapes.html#shape-staging-checkpoint">staging as a
-checkpoint</a>.</li>
+staging, so the next run pulls every week again. Use <a href="#shape-staging-checkpoint">staging as a checkpoint</a>.</li>
 <li>
 <strong>Failure modes.</strong> Only the last plan MAY check and
 swap, because the middle plans MAY run in parallel, in any order (<a href="how-a-task-runs.html#rule-first-last">rule</a>). A partitioned
 staging table MUST hold a week in every declared partition before the
 week counts as staged (<a href="how-a-task-runs.html#rule-partitions">rule</a>).</li>
 </ul>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">weeks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2026-01"</span>, <span class="st">"2026-02"</span>, <span class="st">"2026-03"</span>, <span class="st">"2026-04"</span><span class="op">)</span></span>
 <span><span class="va">import_fields</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="st">"TEXT"</span>, location_code <span class="op">=</span> <span class="st">"TEXT"</span>, n <span class="op">=</span> <span class="st">"INTEGER"</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">variant</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"staging"</span>, <span class="st">"live"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -234,23 +327,34 @@ week counts as staged (<a href="how-a-task-runs.html#rule-partitions">rule</a>).
 <span>  n <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">8</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">fail_week</span> <span class="op">&lt;-</span> <span class="cn">NA_character_</span></span>
+<span><span class="va">import_log</span> <span class="op">&lt;-</span> <span class="fu">new_log</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"staging"</span>, <span class="st">"live"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">import_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">source_counts</span><span class="op">[</span><span class="va">isoyearweek</span> <span class="op">==</span> <span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">import_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">first_analysis</span><span class="op">)</span> <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">drop_all_rows</span><span class="op">(</span><span class="op">)</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span>, <span class="va">fail_week</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">week</span> <span class="op">&lt;-</span> <span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">first_analysis</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">drop_all_rows</span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">import_log</span>, <span class="va">week</span>, <span class="st">"clear"</span>, <span class="st">"staging"</span>, label <span class="op">=</span> <span class="st">"clear all"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">week</span>, <span class="va">fail_week</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">import_log</span>, <span class="va">week</span>, <span class="st">"write"</span>, <span class="st">"staging"</span>, ok <span class="op">=</span> <span class="cn">FALSE</span>, label <span class="op">=</span> <span class="st">"pull\nfailed"</span><span class="op">)</span></span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"the source failed for "</span>, <span class="va">fail_week</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">last_analysis</span><span class="op">)</span> <span class="fu">swap_into_live</span><span class="op">(</span><span class="va">tables</span>, <span class="va">argset</span><span class="op">$</span><span class="va">weeks</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">import_log</span>, <span class="va">week</span>, <span class="st">"write"</span>, <span class="st">"staging"</span>, label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"+"</span>, <span class="va">week</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">import_log</span>, <span class="va">week</span>, <span class="st">"note"</span>, <span class="st">"staging"</span>, label <span class="op">=</span> <span class="st">"no rows"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">last_analysis</span><span class="op">)</span> <span class="fu">swap_into_live</span><span class="op">(</span><span class="va">tables</span>, <span class="va">argset</span><span class="op">$</span><span class="va">weeks</span>, <span class="va">week</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="co"># Deletes every week of the run from the live table, not only the weeks that</span></span>
 <span><span class="co"># reached staging, and appends the staged rows. One transaction holds both.</span></span>
-<span><span class="va">swap_into_live</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">tables</span>, <span class="va">weeks</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="va">swap_into_live</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">tables</span>, <span class="va">weeks</span>, <span class="va">plan_week</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">staged</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">staged</span><span class="op">$</span><span class="va">isoyearweek</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">weeks</span><span class="op">)</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">staged</span><span class="op">$</span><span class="va">n</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">live</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">live</span></span>
@@ -267,6 +371,12 @@ week counts as staged (<a href="how-a-task-runs.html#rule-partitions">rule</a>).
 <span>      <span class="va">staged</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">}</span><span class="op">)</span></span>
+<span>  <span class="va">gone</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">weeks</span>, <span class="va">staged</span><span class="op">$</span><span class="va">isoyearweek</span><span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span></span>
+<span>    <span class="va">import_log</span>, <span class="va">plan_week</span>, <span class="st">"swap"</span>, <span class="st">"live"</span>,</span>
+<span>    label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu">weeks_text</span><span class="op">(</span><span class="va">staged</span><span class="op">$</span><span class="va">isoyearweek</span>, <span class="st">"\n"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"no"</span>, <span class="va">gone</span><span class="op">)</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span>,</span>
+<span>    from_label <span class="op">=</span> <span class="st">"kept"</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
@@ -285,12 +395,13 @@ week counts as staged (<a href="how-a-task-runs.html#rule-partitions">rule</a>).
 withdraws week 2026-03, so no row for that week reaches staging. After
 the run, the live table MUST hold exactly the staged rows, and no row
 for 2026-03.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_import_live</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="va">weeks</span>, location_code <span class="op">=</span> <span class="st">"county_03"</span>, n <span class="op">=</span> <span class="fl">99L</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">source_counts</span> <span class="op">&lt;-</span> <span class="va">source_counts</span><span class="op">[</span><span class="va">isoyearweek</span> <span class="op">!=</span> <span class="st">"2026-03"</span><span class="op">]</span></span>
 <span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">import_log</span>, <span class="st">"Run 1: the source withdraws 2026-03"</span>, <span class="va">weeks</span><span class="op">)</span></span>
 <span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"import_weekly"</span><span class="op">)</span></span>
 <span><span class="va">live</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_import_live</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"isoyearweek"</span>, <span class="st">"location_code"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">staged</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_import_staging</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"isoyearweek"</span>, <span class="st">"location_code"</span><span class="op">)</span><span class="op">)</span></span>
@@ -306,9 +417,10 @@ for 2026-03.</p>
 <p>The second run reads new counts, and week 2026-02 fails. The task
 MUST stop with an error, and the live table MUST keep the rows of the
 first run.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">source_counts</span><span class="op">[</span>, <span class="va">n</span> <span class="op">:=</span> <span class="va">n</span> <span class="op">+</span> <span class="fl">100L</span><span class="op">]</span></span>
 <span><span class="va">fail_week</span> <span class="op">&lt;-</span> <span class="st">"2026-02"</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">import_log</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Run 2: the pull of"</span>, <span class="va">fail_week</span>, <span class="st">"fails"</span><span class="op">)</span>, <span class="va">weeks</span><span class="op">)</span></span>
 <span><span class="va">run</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"import_weekly"</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">run</span>, <span class="st">"error"</span><span class="op">)</span>,</span>
@@ -321,6 +433,305 @@ first run.</p>
 <span><span class="co">#&gt; [1] "the source failed for 2026-02"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"STAGED IMPORT CHECKS PASSED\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; STAGED IMPORT CHECKS PASSED</span></span></code></pre></div>
+<p><img src="task-shapes_files/figure-html/shape1-diagram-1.png" class="r-plt" alt="Diagram of two runs of the staged import, with a staging lane and a live lane. In run 1 the first plan clears staging, 3 plans write their week, and the plan for 2026-03 finds no rows. The last plan then swaps the staged weeks into the live table in one transaction, which removes 2026-03 from it. In run 2 the first plan clears staging and writes 2026-01, the pull of 2026-02 fails, and the last 2 plans do not run. The live table keeps the weeks of run 1." width="100%"></p>
+</div>
+<div class="section level2">
+<h2 id="shape-per-plan-staged-swap">Per-plan staged swap<a class="anchor" aria-label="anchor" href="#shape-per-plan-staged-swap"></a>
+</h2>
+<p>The task has one plan per unit, for example a week. Each plan pulls
+its unit and writes it to staging. The same plan then swaps that unit
+into the live table in its own transaction. No plan depends on another
+plan.</p>
+<ul>
+<li>
+<strong>Use it when</strong> each unit is complete in one plan, and
+a reader MAY see units from different runs in the live table.</li>
+<li>
+<strong>Do not use it when</strong> the live table MUST change only
+when every unit arrived. Use a <a href="#shape-staged-import">staged
+import</a>. Use <a href="#shape-staging-checkpoint">staging as a
+checkpoint</a> when a unit needs several plans. There only the last plan
+swaps.</li>
+<li>
+<strong>Failure modes.</strong> A failed plan leaves its own unit
+unchanged in the live table, so that unit is stale until the next run.
+The units of the plans that finished hold the new rows. A plan that did
+not run, for example after the task stopped, also leaves its unit stale.
+A plan MUST remove only its own unit from staging, because the other
+plans MAY run in parallel.</li>
+</ul>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">variant</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"staging"</span>, <span class="st">"live"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
+<span>    name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>
+<span>    name_grouping <span class="op">=</span> <span class="st">"pps"</span>,</span>
+<span>    name_variant <span class="op">=</span> <span class="va">variant</span>,</span>
+<span>    field_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="st">"TEXT"</span>, n <span class="op">=</span> <span class="st">"INTEGER"</span><span class="op">)</span>,</span>
+<span>    keys <span class="op">=</span> <span class="st">"isoyearweek"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">pps_weeks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2026-01"</span>, <span class="st">"2026-02"</span><span class="op">)</span></span>
+<span><span class="va">pps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">pps</span><span class="op">$</span><span class="va">fail_week</span> <span class="op">&lt;-</span> <span class="cn">NA_character_</span></span>
+<span><span class="va">pps</span><span class="op">$</span><span class="va">log</span> <span class="op">&lt;-</span> <span class="fu">new_log</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"staging"</span>, <span class="st">"live"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pps_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span>, n <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">pps_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">week</span> <span class="op">&lt;-</span> <span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span></span>
+<span>  <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">drop_rows_where</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"isoyearweek = "</span>, <span class="fu">sql_in</span><span class="op">(</span><span class="va">week</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span><span class="va">pps</span><span class="op">$</span><span class="va">log</span>, <span class="va">week</span>, <span class="st">"clear"</span>, <span class="st">"staging"</span>, label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"clear"</span>, <span class="va">week</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">week</span>, <span class="va">pps</span><span class="op">$</span><span class="va">fail_week</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">pps</span><span class="op">$</span><span class="va">log</span>, <span class="va">week</span>, <span class="st">"write"</span>, <span class="st">"staging"</span>, ok <span class="op">=</span> <span class="cn">FALSE</span>, label <span class="op">=</span> <span class="st">"write failed"</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"the write to staging failed for "</span>, <span class="va">pps</span><span class="op">$</span><span class="va">fail_week</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">rows</span><span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span><span class="va">pps</span><span class="op">$</span><span class="va">log</span>, <span class="va">week</span>, <span class="st">"write"</span>, <span class="st">"staging"</span>, label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"+"</span>, <span class="va">week</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">pps_swap</span><span class="op">(</span><span class="va">tables</span>, <span class="va">week</span><span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span></span>
+<span>    <span class="va">pps</span><span class="op">$</span><span class="va">log</span>, <span class="va">week</span>, <span class="st">"swap"</span>, <span class="st">"live"</span>,</span>
+<span>    label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"n="</span>, <span class="va">data</span><span class="op">$</span><span class="va">rows</span><span class="op">$</span><span class="va">n</span>, <span class="st">", new"</span><span class="op">)</span>, from_label <span class="op">=</span> <span class="st">"removed"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># One transaction deletes the week from the live table, copies it from</span></span>
+<span><span class="co"># staging and removes it from staging.</span></span>
+<span><span class="va">pps_swap</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">tables</span>, <span class="va">week</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">tables</span><span class="op">$</span><span class="va">live</span><span class="op">$</span><span class="fu">connect</span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="va">con</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">live</span><span class="op">$</span><span class="va">dbconnection</span><span class="op">$</span><span class="va">autoconnection</span></span>
+<span>  <span class="va">live_name</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">live</span><span class="op">$</span><span class="va">table_name_fully_specified_text</span></span>
+<span>  <span class="va">staging_name</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="va">table_name_fully_specified_text</span></span>
+<span>  <span class="va">where</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">" WHERE isoyearweek = "</span>, <span class="fu">sql_in</span><span class="op">(</span><span class="va">week</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbWithTransaction.html" class="external-link">dbWithTransaction</a></span><span class="op">(</span><span class="va">con</span>, <span class="op">{</span></span>
+<span>    <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbExecute.html" class="external-link">dbExecute</a></span><span class="op">(</span><span class="va">con</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"DELETE FROM "</span>, <span class="va">live_name</span>, <span class="va">where</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbExecute.html" class="external-link">dbExecute</a></span><span class="op">(</span><span class="va">con</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
+<span>      <span class="st">"INSERT INTO "</span>, <span class="va">live_name</span>, <span class="st">" SELECT * FROM "</span>, <span class="va">staging_name</span>, <span class="va">where</span></span>
+<span>    <span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbExecute.html" class="external-link">dbExecute</a></span><span class="op">(</span><span class="va">con</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"DELETE FROM "</span>, <span class="va">staging_name</span>, <span class="va">where</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"pps"</span>,</span>
+<span>  name_action <span class="op">=</span> <span class="st">"import"</span>,</span>
+<span>  for_each_plan <span class="op">=</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="va">pps_weeks</span><span class="op">)</span>,</span>
+<span>  data_selector_fn_name <span class="op">=</span> <span class="st">"pps_data"</span>,</span>
+<span>  action_fn_name <span class="op">=</span> <span class="st">"pps_action"</span>,</span>
+<span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    staging <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_pps_staging</span>,</span>
+<span>    live <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_pps_live</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The live table holds both weeks with <code>n = 1</code> from an
+earlier run. The run writes <code>n = 2</code>, and the write of week
+2026-02 fails. Week 2026-01 MUST hold the new rows, and week 2026-02
+MUST hold the old rows.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_pps_live</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="va">pps_weeks</span>, n <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">pps</span><span class="op">$</span><span class="va">fail_week</span> <span class="op">&lt;-</span> <span class="st">"2026-02"</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">pps</span><span class="op">$</span><span class="va">log</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"One run: the write of"</span>, <span class="va">pps</span><span class="op">$</span><span class="va">fail_week</span>, <span class="st">"fails"</span><span class="op">)</span>, <span class="va">pps_weeks</span><span class="op">)</span></span>
+<span><span class="va">run</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"pps_import"</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
+<span><span class="va">live</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_pps_live</span>, <span class="st">"isoyearweek"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">run</span>, <span class="st">"error"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">live</span><span class="op">$</span><span class="va">isoyearweek</span>, <span class="va">pps_weeks</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">live</span><span class="op">$</span><span class="va">n</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2L</span>, <span class="fl">1L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">live</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"isoyearweek"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   isoyearweek n</span></span>
+<span><span class="co">#&gt; 1     2026-01 2</span></span>
+<span><span class="co">#&gt; 2     2026-02 1</span></span></code></pre></div>
+<p><img src="task-shapes_files/figure-html/per-plan-diagram-1.png" class="r-plt" alt="Diagram of one run of the per-plan staged swap, with a staging lane and a live lane. The plan for 2026-01 clears its week in staging, writes it, and swaps it into the live table in its own transaction, so the live table holds n=2 for that week. The plan for 2026-02 clears its week, and its write to staging fails. The live table keeps n=1 for 2026-02 from the earlier run." width="100%"></p>
+</div>
+<div class="section level2">
+<h2 id="shape-staging-checkpoint">Staging as a checkpoint<a class="anchor" aria-label="anchor" href="#shape-staging-checkpoint"></a>
+</h2>
+<p>The import has one plan per week. A run imports the refresh weeks,
+which MUST always be fresh, and every week of each selected unit. Here
+the unit is the isoyear. The staging table keeps the weeks of a failed
+run, so the next run does not pull them again.</p>
+<ol style="list-style-type: decimal">
+<li>The planner selects each unit that the live table does not hold
+completely. It plans the refresh weeks, and every week of a selected
+unit that staging does not hold.</li>
+<li>The first plan removes only the refresh weeks from staging.</li>
+<li>Each plan pulls its week and writes it to staging.</li>
+<li>The last plan swaps the refresh weeks into the live table. It then
+swaps each unit whose weeks are all in staging. One transaction per swap
+deletes the weeks from the live table, copies them from staging and
+removes them from staging.</li>
+</ol>
+<ul>
+<li>
+<strong>Use it when</strong> an import runs for hours, and a failure
+part way MUST NOT cost the weeks that the run already pulled.</li>
+<li>
+<strong>Do not use it when</strong> one run is short. A <a href="#shape-staged-import">staged import</a> is simpler.</li>
+<li>
+<strong>Failure modes.</strong> The first plan MUST NOT empty
+staging, or the next run loses its checkpoint. Only the last plan MAY
+swap, because no middle plan knows which other weeks are staged (<a href="how-a-task-runs.html#rule-first-last">rule</a>). With partitioned
+tables, a week counts as staged only when every declared partition holds
+it (<a href="how-a-task-runs.html#rule-partitions">rule</a>). A plan
+holds one week in memory, and the swap copies the rows inside the
+database.</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ckpt_fields</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>isoyear <span class="op">=</span> <span class="st">"INTEGER"</span>, isoyearweek <span class="op">=</span> <span class="st">"TEXT"</span>, n <span class="op">=</span> <span class="st">"INTEGER"</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">variant</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"staging"</span>, <span class="st">"live"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
+<span>    name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>
+<span>    name_grouping <span class="op">=</span> <span class="st">"ckpt"</span>,</span>
+<span>    name_variant <span class="op">=</span> <span class="va">variant</span>,</span>
+<span>    field_types <span class="op">=</span> <span class="va">ckpt_fields</span>,</span>
+<span>    keys <span class="op">=</span> <span class="st">"isoyearweek"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">refresh_weeks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2026-01"</span>, <span class="st">"2026-02"</span><span class="op">)</span></span>
+<span><span class="va">unit_weeks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="st">"2024"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-01"</span>, <span class="st">"2024-02"</span>, <span class="st">"2024-03"</span><span class="op">)</span>,</span>
+<span>  <span class="st">"2025"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2025-01"</span>, <span class="st">"2025-02"</span>, <span class="st">"2025-03"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">ckpt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">ckpt</span><span class="op">$</span><span class="va">fail_week</span> <span class="op">&lt;-</span> <span class="cn">NA_character_</span></span>
+<span><span class="va">ckpt</span><span class="op">$</span><span class="va">pulled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
+<span><span class="va">ckpt</span><span class="op">$</span><span class="va">swapped</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
+<span><span class="va">ckpt</span><span class="op">$</span><span class="va">log</span> <span class="op">&lt;-</span> <span class="fu">new_log</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"staging"</span>, <span class="st">"live"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">weeks_in</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">table</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="va">table</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span>, <span class="va">isoyearweek</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ckpt_plan_analysis</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">live</span> <span class="op">&lt;-</span> <span class="fu">weeks_in</span><span class="op">(</span><span class="va">tables</span><span class="op">$</span><span class="va">live</span><span class="op">)</span></span>
+<span>  <span class="va">staged</span> <span class="op">&lt;-</span> <span class="fu">weeks_in</span><span class="op">(</span><span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">)</span></span>
+<span>  <span class="va">units</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">unit_weeks</span><span class="op">)</span><span class="op">[</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">unit_weeks</span>, <span class="kw">function</span><span class="op">(</span><span class="va">w</span><span class="op">)</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">w</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">live</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">]</span></span>
+<span>  <span class="va">to_pull</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">unit_weeks</span><span class="op">[</span><span class="va">units</span><span class="op">]</span>, use.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="va">staged</span><span class="op">)</span></span>
+<span>  <span class="fu">log_plans</span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">log</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">refresh_weeks</span>, <span class="va">to_pull</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    for_each_plan <span class="op">=</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">refresh_weeks</span>, <span class="va">to_pull</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="co"># One text value each, so every analysis gets the whole list.</span></span>
+<span>    for_each_analysis <span class="op">=</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span></span>
+<span>      refresh <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">refresh_weeks</span>, collapse <span class="op">=</span> <span class="st">","</span><span class="op">)</span>,</span>
+<span>      units <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">units</span>, collapse <span class="op">=</span> <span class="st">","</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ckpt_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">ckpt</span><span class="op">$</span><span class="va">pulled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">pulled</span>, <span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
+<span>    isoyear <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/substr.html" class="external-link">substr</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span>, <span class="fl">1</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    isoyearweek <span class="op">=</span> <span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span>,</span>
+<span>    n <span class="op">=</span> <span class="fl">10L</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ckpt_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">week</span> <span class="op">&lt;-</span> <span class="va">argset</span><span class="op">$</span><span class="va">isoyearweek</span></span>
+<span>  <span class="va">refresh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">refresh</span>, <span class="st">","</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">first_analysis</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">drop_rows_where</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"isoyearweek IN ("</span>, <span class="fu">sql_in</span><span class="op">(</span><span class="va">refresh</span><span class="op">)</span>, <span class="st">")"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">log</span>, <span class="va">week</span>, <span class="st">"clear"</span>, <span class="st">"staging"</span>, label <span class="op">=</span> <span class="st">"clear\nrefresh"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">week</span>, <span class="va">ckpt</span><span class="op">$</span><span class="va">fail_week</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">log</span>, <span class="va">week</span>, <span class="st">"write"</span>, <span class="st">"staging"</span>, ok <span class="op">=</span> <span class="cn">FALSE</span>, label <span class="op">=</span> <span class="st">"pull\nfailed"</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"the source failed for "</span>, <span class="va">ckpt</span><span class="op">$</span><span class="va">fail_week</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">rows</span><span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">log</span>, <span class="va">week</span>, <span class="st">"write"</span>, <span class="st">"staging"</span>, label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"+"</span>, <span class="va">week</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">last_analysis</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">ckpt_swap</span><span class="op">(</span><span class="va">tables</span>, <span class="va">refresh</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">units</span>, <span class="st">","</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">week</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># One transaction for the refresh weeks, and one for each complete unit.</span></span>
+<span><span class="va">ckpt_swap</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">tables</span>, <span class="va">refresh</span>, <span class="va">units</span>, <span class="va">week</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">staged</span> <span class="op">&lt;-</span> <span class="fu">weeks_in</span><span class="op">(</span><span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">)</span></span>
+<span>  <span class="va">batches</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>refresh <span class="op">=</span> <span class="va">refresh</span><span class="op">)</span>, <span class="va">unit_weeks</span><span class="op">[</span><span class="va">units</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="va">tables</span><span class="op">$</span><span class="va">live</span><span class="op">$</span><span class="fu">connect</span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="va">con</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">live</span><span class="op">$</span><span class="va">dbconnection</span><span class="op">$</span><span class="va">autoconnection</span></span>
+<span>  <span class="va">live_name</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">live</span><span class="op">$</span><span class="va">table_name_fully_specified_text</span></span>
+<span>  <span class="va">staging_name</span> <span class="op">&lt;-</span> <span class="va">tables</span><span class="op">$</span><span class="va">staging</span><span class="op">$</span><span class="va">table_name_fully_specified_text</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">b</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">batches</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="co"># A unit with a week missing from staging waits for the next run.</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">batches</span><span class="op">[[</span><span class="va">b</span><span class="op">]</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">staged</span><span class="op">)</span><span class="op">)</span> <span class="kw">next</span></span>
+<span>    <span class="va">where</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">" WHERE isoyearweek IN ("</span>, <span class="fu">sql_in</span><span class="op">(</span><span class="va">batches</span><span class="op">[[</span><span class="va">b</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">")"</span><span class="op">)</span></span>
+<span>    <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbWithTransaction.html" class="external-link">dbWithTransaction</a></span><span class="op">(</span><span class="va">con</span>, <span class="op">{</span></span>
+<span>      <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbExecute.html" class="external-link">dbExecute</a></span><span class="op">(</span><span class="va">con</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"DELETE FROM "</span>, <span class="va">live_name</span>, <span class="va">where</span><span class="op">)</span><span class="op">)</span></span>
+<span>      <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbExecute.html" class="external-link">dbExecute</a></span><span class="op">(</span><span class="va">con</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
+<span>        <span class="st">"INSERT INTO "</span>, <span class="va">live_name</span>, <span class="st">" SELECT * FROM "</span>, <span class="va">staging_name</span>, <span class="va">where</span></span>
+<span>      <span class="op">)</span><span class="op">)</span></span>
+<span>      <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbExecute.html" class="external-link">dbExecute</a></span><span class="op">(</span><span class="va">con</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"DELETE FROM "</span>, <span class="va">staging_name</span>, <span class="va">where</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">}</span><span class="op">)</span></span>
+<span>    <span class="va">ckpt</span><span class="op">$</span><span class="va">swapped</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">swapped</span>, <span class="va">b</span><span class="op">)</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span></span>
+<span>      <span class="va">ckpt</span><span class="op">$</span><span class="va">log</span>, <span class="va">week</span>, <span class="st">"swap"</span>, <span class="st">"live"</span>,</span>
+<span>      label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">b</span>, <span class="st">"\n"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">batches</span><span class="op">[[</span><span class="va">b</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">" weeks"</span><span class="op">)</span>, from_label <span class="op">=</span> <span class="st">"removed"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"ckpt"</span>,</span>
+<span>  name_action <span class="op">=</span> <span class="st">"import"</span>,</span>
+<span>  plan_analysis_fn_name <span class="op">=</span> <span class="st">"ckpt_plan_analysis"</span>,</span>
+<span>  data_selector_fn_name <span class="op">=</span> <span class="st">"ckpt_data"</span>,</span>
+<span>  action_fn_name <span class="op">=</span> <span class="st">"ckpt_action"</span>,</span>
+<span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    staging <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_staging</span>,</span>
+<span>    live <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_live</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The live table holds the refresh weeks of an earlier run. The first
+run fails at week 2025-02, after it staged every week of 2024. The live
+table MUST be unchanged.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_live</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>isoyear <span class="op">=</span> <span class="fl">2026L</span>, isoyearweek <span class="op">=</span> <span class="va">refresh_weeks</span>, n <span class="op">=</span> <span class="fl">99L</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">live_before</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_live</span>, <span class="st">"isoyearweek"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">ckpt</span><span class="op">$</span><span class="va">fail_week</span> <span class="op">&lt;-</span> <span class="st">"2025-02"</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">log</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Run 1: the pull of"</span>, <span class="va">ckpt</span><span class="op">$</span><span class="va">fail_week</span>, <span class="st">"fails"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">run</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"ckpt_import"</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">run</span>, <span class="st">"error"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_live</span>, <span class="st">"isoyearweek"</span><span class="op">)</span>, <span class="va">live_before</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">unit_weeks</span><span class="op">[[</span><span class="st">"2024"</span><span class="op">]</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu">weeks_in</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_staging</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">staged_after_fail</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu">weeks_in</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_staging</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">staged_after_fail</span></span>
+<span><span class="co">#&gt; [1] "2024-01" "2024-02" "2024-03" "2025-01" "2026-01" "2026-02"</span></span></code></pre></div>
+<p>The second run pulls the refresh weeks and the 2 missing weeks of
+2025, and no week of 2024. Its last plan swaps the refresh weeks and
+both units. Staging is then empty.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ckpt</span><span class="op">$</span><span class="va">fail_week</span> <span class="op">&lt;-</span> <span class="cn">NA_character_</span></span>
+<span><span class="va">ckpt</span><span class="op">$</span><span class="va">pulled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
+<span><span class="va">ckpt</span><span class="op">$</span><span class="va">swapped</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">log</span>, <span class="st">"Run 2: resumes from staging"</span><span class="op">)</span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"ckpt_import"</span><span class="op">)</span></span>
+<span><span class="va">live_after</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_live</span>, <span class="st">"isoyearweek"</span><span class="op">)</span></span>
+<span><span class="va">all_weeks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">unit_weeks</span>, use.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="va">refresh_weeks</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setequal</a></span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">pulled</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">refresh_weeks</span>, <span class="st">"2025-02"</span>, <span class="st">"2025-03"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">ckpt</span><span class="op">$</span><span class="va">swapped</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"refresh"</span>, <span class="st">"2024"</span>, <span class="st">"2025"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setequal</a></span><span class="op">(</span><span class="va">live_after</span><span class="op">$</span><span class="va">isoyearweek</span>, <span class="va">all_weeks</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">live_after</span><span class="op">$</span><span class="va">n</span> <span class="op">==</span> <span class="fl">10L</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu">weeks_in</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_ckpt_staging</span><span class="op">)</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>pulled <span class="op">=</span> <span class="va">ckpt</span><span class="op">$</span><span class="va">pulled</span>, swapped <span class="op">=</span> <span class="va">ckpt</span><span class="op">$</span><span class="va">swapped</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $pulled</span></span>
+<span><span class="co">#&gt; [1] "2026-01" "2026-02" "2025-02" "2025-03"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $swapped</span></span>
+<span><span class="co">#&gt; [1] "refresh" "2024"    "2025"</span></span></code></pre></div>
+<p><img src="task-shapes_files/figure-html/checkpoint-diagram-1.png" class="r-plt" alt="Diagram of two runs of the staging checkpoint, with a staging lane and a live lane. In run 1 the first plan clears the refresh weeks from staging, and 6 plans write their week to staging. The pull of 2025-02 fails, and the last plan, 2025-03, does not run. Staging keeps the weeks that run 1 wrote, and the live table is unchanged. Run 2 plans only the refresh weeks and the 2 missing weeks of 2025. Its last plan swaps the refresh weeks, the unit 2024 and the unit 2025 into the live table, in 3 transactions that each remove their weeks from staging." width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="shape-fit-then-fill">Fit then fill<a class="anchor" aria-label="anchor" href="#shape-fit-then-fill"></a>
@@ -337,8 +748,8 @@ publishes the whole result with
 fallback needs the result of another unit, here the national row.</li>
 <li>
 <strong>Do not use it when</strong> every unit has a valid result of
-its own. A <a href="more-task-shapes.html#shape-per-unit-rebuild">per-unit rebuild</a>
-is then enough.</li>
+its own. A <a href="#shape-per-unit-rebuild">per-unit rebuild</a> is
+then enough.</li>
 <li>
 <strong>Failure modes.</strong> A middle plan of the fit task MUST
 NOT fill, because the national row MAY not exist yet (<a href="how-a-task-runs.html#rule-first-last">rule</a>). The fill reads
@@ -346,7 +757,7 @@ the whole fitted table in one pull, so the fitted table MUST stay small.
 The published table changes in one transaction, so a failed fill leaves
 the previous thresholds.</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
 <span>  name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"threshold"</span>,</span>
@@ -375,16 +786,22 @@ the previous thresholds.</li>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">break_publish</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
+<span><span class="va">fit_log</span> <span class="op">&lt;-</span> <span class="fu">new_log</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fitted"</span>, <span class="st">"published"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>history <span class="op">=</span> <span class="va">history</span><span class="op">[</span><span class="va">location_code</span> <span class="op">==</span> <span class="va">argset</span><span class="op">$</span><span class="va">location_code</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">fit_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">loc</span> <span class="op">&lt;-</span> <span class="va">argset</span><span class="op">$</span><span class="va">location_code</span></span>
 <span>  <span class="va">n</span> <span class="op">&lt;-</span> <span class="va">data</span><span class="op">$</span><span class="va">history</span><span class="op">$</span><span class="va">n</span></span>
 <span>  <span class="va">threshold</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">4</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="kw">else</span> <span class="cn">NA_real_</span></span>
 <span>  <span class="va">tables</span><span class="op">$</span><span class="va">fitted</span><span class="op">$</span><span class="fu">upsert_data</span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="va">argset</span><span class="op">$</span><span class="va">location_code</span>, threshold <span class="op">=</span> <span class="va">threshold</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="va">loc</span>, threshold <span class="op">=</span> <span class="va">threshold</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span></span>
+<span>    <span class="va">fit_log</span>, <span class="va">loc</span>, <span class="st">"write"</span>, <span class="st">"fitted"</span>, task <span class="op">=</span> <span class="st">"threshold_fit"</span>,</span>
+<span>    label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"+"</span>, <span class="va">loc</span>, <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">threshold</span><span class="op">)</span><span class="op">)</span> <span class="st">"\nNA"</span> <span class="kw">else</span> <span class="st">""</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
@@ -399,7 +816,18 @@ the previous thresholds.</li>
 <span>  <span class="va">d</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">threshold</span><span class="op">)</span>, <span class="va">threshold</span> <span class="op">:=</span> <span class="va">national</span><span class="op">]</span></span>
 <span>  <span class="co"># A duplicate key makes the publish fail on purpose.</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="va">break_publish</span><span class="op">)</span> <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">d</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
-<span>  <span class="va">tables</span><span class="op">$</span><span class="va">published</span><span class="op">$</span><span class="fu">replace_all_rows</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span>
+<span>  <span class="co"># Records a failed publish, and lets the error reach cs9.</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers</a></span><span class="op">(</span></span>
+<span>    <span class="va">tables</span><span class="op">$</span><span class="va">published</span><span class="op">$</span><span class="fu">replace_all_rows</span><span class="op">(</span><span class="va">d</span><span class="op">)</span>,</span>
+<span>    error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="fu">record</span><span class="op">(</span><span class="va">fit_log</span>, <span class="st">"all"</span>, <span class="st">"swap"</span>, <span class="st">"published"</span>, ok <span class="op">=</span> <span class="cn">FALSE</span>, label <span class="op">=</span> <span class="st">"publish\nfailed"</span>,</span>
+<span>             task <span class="op">=</span> <span class="st">"threshold_fill"</span>, from_label <span class="op">=</span> <span class="st">"read"</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span></span>
+<span>    <span class="va">fit_log</span>, <span class="st">"all"</span>, <span class="st">"swap"</span>, <span class="st">"published"</span>, task <span class="op">=</span> <span class="st">"threshold_fill"</span>, from_label <span class="op">=</span> <span class="st">"read"</span>,</span>
+<span>    label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="st">" rows\n"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">source</span> <span class="op">==</span> <span class="st">"national"</span><span class="op">)</span>, <span class="st">" national"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
@@ -425,8 +853,12 @@ the previous thresholds.</li>
 <span><span class="op">)</span></span></code></pre></div>
 <p>After both tasks run, every published row MUST have a threshold and a
 source. County 46 MUST carry the national threshold.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"threshold_fit"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">log_run</span><span class="op">(</span></span>
+<span>  <span class="va">fit_log</span>, <span class="st">"Run 1: both tasks succeed"</span>,</span>
+<span>  threshold_fit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">history</span><span class="op">$</span><span class="va">location_code</span><span class="op">)</span>, threshold_fill <span class="op">=</span> <span class="st">"all"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"threshold_fit"</span><span class="op">)</span></span>
 <span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"threshold_fill"</span><span class="op">)</span></span>
 <span><span class="va">published</span> <span class="op">&lt;-</span> <span class="fu">read_rows</span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_threshold_published</span>, <span class="st">"location_code"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
@@ -443,8 +875,12 @@ source. County 46 MUST carry the national threshold.</p>
 <p>The history then doubles, and the fit runs again. The publish of the
 fill task fails. The published table MUST keep its previous
 contents.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">history</span><span class="op">[</span>, <span class="va">n</span> <span class="op">:=</span> <span class="fl">2L</span> <span class="op">*</span> <span class="va">n</span><span class="op">]</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span></span>
+<span>  <span class="va">fit_log</span>, <span class="st">"Run 2: the publish fails"</span>,</span>
+<span>  threshold_fit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">history</span><span class="op">$</span><span class="va">location_code</span><span class="op">)</span>, threshold_fill <span class="op">=</span> <span class="st">"all"</span></span>
+<span><span class="op">)</span></span>
 <span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"threshold_fit"</span><span class="op">)</span></span>
 <span><span class="va">break_publish</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
 <span><span class="va">run</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"threshold_fill"</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
@@ -456,6 +892,198 @@ contents.</p>
 <span><span class="co">#&gt; [1] "UNIQUE constraint failed: anon_threshold_published.location_code"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"FIT THEN FILL CHECKS PASSED\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; FIT THEN FILL CHECKS PASSED</span></span></code></pre></div>
+<p><img src="task-shapes_files/figure-html/shape2-diagram-1.png" class="r-plt" alt="Diagram of two runs of fit then fill, with a fitted lane and a published lane. In each run the fit task has 4 plans, and each plan writes the threshold of its location to the fitted table. county_46 gets NA. The fill task has 1 plan, which writes the published table in one transaction. In run 1 that transaction publishes 4 rows, 1 of them from the national threshold. In run 2 the publish fails, and the published table keeps the rows of run 1." width="100%"></p>
+</div>
+<div class="section level2">
+<h2 id="shape-export-finished-table">Export from a finished table<a class="anchor" aria-label="anchor" href="#shape-export-finished-table"></a>
+</h2>
+<p>The task reads tables that an earlier task finished, and writes
+files. It has one plan per output file, for example per location or per
+week. The first plan creates the folder. The last plan writes what needs
+every file, here an index, and checks that every expected file
+exists.</p>
+<ul>
+<li>
+<strong>Use it when</strong> the output is files, and the scheduler
+runs the task after the tasks that write its input tables.</li>
+<li>
+<strong>Do not use it when</strong> an input table can change during
+the export, for example a <a href="#shape-per-unit-rebuild">per-unit
+rebuild</a> that runs at the same time.</li>
+<li>
+<strong>Failure modes.</strong> Do not catch an error in the action
+only to print it. <code>Task$run()</code> then records the task as
+succeeded, with a file missing. Plans that run in parallel MUST write to
+different file names. A step that needs every file MUST run in the last
+plan (<a href="how-a-task-runs.html#rule-first-last">rule</a>).</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
+<span>  name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"export"</span>,</span>
+<span>  name_variant <span class="op">=</span> <span class="st">"source"</span>,</span>
+<span>  field_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="st">"TEXT"</span>, isoyearweek <span class="op">=</span> <span class="st">"TEXT"</span>, n <span class="op">=</span> <span class="st">"INTEGER"</span><span class="op">)</span>,</span>
+<span>  keys <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"location_code"</span>, <span class="st">"isoyearweek"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_export_source</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
+<span>  location_code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"county_03"</span>, <span class="st">"county_11"</span>, <span class="st">"county_46"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  isoyearweek <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2026-01"</span>, <span class="st">"2026-02"</span><span class="op">)</span>,</span>
+<span>  n <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">6</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">export_locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"county_03"</span>, <span class="st">"county_11"</span>, <span class="st">"county_46"</span><span class="op">)</span></span>
+<span><span class="va">export</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">export</span><span class="op">$</span><span class="va">broken</span> <span class="op">&lt;-</span> <span class="cn">NA_character_</span></span>
+<span><span class="va">export</span><span class="op">$</span><span class="va">log</span> <span class="op">&lt;-</span> <span class="fu">new_log</span><span class="op">(</span><span class="st">"folder"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">export_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
+<span>    <span class="va">tables</span><span class="op">$</span><span class="va">source</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    <span class="va">location_code</span> <span class="op">==</span> <span class="op">!</span><span class="op">!</span><span class="va">argset</span><span class="op">$</span><span class="va">location_code</span></span>
+<span>  <span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">export_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">loc</span> <span class="op">&lt;-</span> <span class="va">argset</span><span class="op">$</span><span class="va">location_code</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">first_analysis</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">folder</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">export</span><span class="op">$</span><span class="va">log</span>, <span class="va">loc</span>, <span class="st">"note"</span>, <span class="st">"folder"</span>, label <span class="op">=</span> <span class="st">"new folder"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">loc</span>, <span class="va">export</span><span class="op">$</span><span class="va">broken</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">export</span><span class="op">$</span><span class="va">log</span>, <span class="va">loc</span>, <span class="st">"write"</span>, <span class="st">"folder"</span>, ok <span class="op">=</span> <span class="cn">FALSE</span>, label <span class="op">=</span> <span class="st">"failed"</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"the figure failed for "</span>, <span class="va">export</span><span class="op">$</span><span class="va">broken</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fwrite.html" class="external-link">fwrite</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">rows</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">folder</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">loc</span>, <span class="st">".csv"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span><span class="va">export</span><span class="op">$</span><span class="va">log</span>, <span class="va">loc</span>, <span class="st">"write"</span>, <span class="st">"folder"</span>, label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"+"</span>, <span class="va">loc</span>, <span class="st">".csv"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">last_analysis</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">expected</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">locations</span>, <span class="st">","</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="st">".csv"</span><span class="op">)</span></span>
+<span>    <span class="va">missing</span> <span class="op">&lt;-</span> <span class="va">expected</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">folder</span>, <span class="va">expected</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">missing</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"missing exports: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">missing</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">expected</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">folder</span>, <span class="st">"index.txt"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span><span class="va">export</span><span class="op">$</span><span class="va">log</span>, <span class="va">loc</span>, <span class="st">"write"</span>, <span class="st">"folder"</span>, label <span class="op">=</span> <span class="st">"+index.txt"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"export"</span>,</span>
+<span>  name_action <span class="op">=</span> <span class="st">"csv"</span>,</span>
+<span>  for_each_plan <span class="op">=</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="va">export_locations</span><span class="op">)</span>,</span>
+<span>  universal_argset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    folder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">db_dir</span>, <span class="st">"export"</span><span class="op">)</span>,</span>
+<span>    locations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">export_locations</span>, collapse <span class="op">=</span> <span class="st">","</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  data_selector_fn_name <span class="op">=</span> <span class="st">"export_data"</span>,</span>
+<span>  action_fn_name <span class="op">=</span> <span class="st">"export_action"</span>,</span>
+<span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>source <span class="op">=</span> <span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_export_source</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The first run writes 3 files and the index. In the second run the
+export for county 11 fails. The task MUST stop with an error.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">folder</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">db_dir</span>, <span class="st">"export"</span><span class="op">)</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">export</span><span class="op">$</span><span class="va">log</span>, <span class="st">"Run 1: every file is written"</span>, <span class="va">export_locations</span><span class="op">)</span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"export_csv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"index.txt"</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">export_locations</span>, <span class="st">".csv"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">folder</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">export</span><span class="op">$</span><span class="va">broken</span> <span class="op">&lt;-</span> <span class="st">"county_11"</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">export</span><span class="op">$</span><span class="va">log</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Run 2: the export for"</span>, <span class="va">export</span><span class="op">$</span><span class="va">broken</span>, <span class="st">"fails"</span><span class="op">)</span>, <span class="va">export_locations</span><span class="op">)</span></span>
+<span><span class="va">run</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"export_csv"</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">run</span>, <span class="st">"error"</span><span class="op">)</span>,</span>
+<span>  <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"index.txt"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">run</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "the figure failed for county_11"</span></span></code></pre></div>
+<p><img src="task-shapes_files/figure-html/export-diagram-1.png" class="r-plt" alt="Diagram of two runs of the export, with one lane for the output folder. In run 1 the first plan creates the folder, each of the 3 plans writes its csv file, and the last plan also writes index.txt. In run 2 the first plan creates the folder and writes county_03.csv, the export for county_11 fails, and county_46 does not run, so no index is written." width="100%"></p>
+</div>
+<div class="section level2">
+<h2 id="shape-notify-after-export">Notify after export<a class="anchor" aria-label="anchor" href="#shape-notify-after-export"></a>
+</h2>
+<p>The task reads what a finished export produced, files or a table, and
+sends it on, for example by email or as a message. It computes nothing
+itself. It has one plan. The data selector finds the output, and the
+action checks the output and sends it.</p>
+<ul>
+<li>
+<strong>Use it when</strong> an <a href="#shape-export-finished-table">export</a> already wrote the output,
+and the scheduler runs the notify task after that export.</li>
+<li>
+<strong>Do not use it when</strong> the message needs a value that
+no export wrote. Never compute in the notify task. Add the value to the
+export.</li>
+<li>
+<strong>Failure modes.</strong> The task can send stale output, for
+example when the export did not run today. Check the date or the hash of
+the output before you send it. A send failure MUST make the task fail.
+Do not catch the error of the send function, or the task succeeds and
+nobody receives the message.</li>
+</ul>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">notify_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">db_dir</span>, <span class="st">"notify"</span>, <span class="st">"weekly.csv"</span><span class="op">)</span></span>
+<span><span class="va">notify</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">notify</span><span class="op">$</span><span class="va">sent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
+<span><span class="va">notify</span><span class="op">$</span><span class="va">log</span> <span class="op">&lt;-</span> <span class="fu">new_log</span><span class="op">(</span><span class="st">"recipient"</span><span class="op">)</span></span>
+<span><span class="co"># A local stub for an email or a message API. It records the file it receives.</span></span>
+<span><span class="va">notify</span><span class="op">$</span><span class="va">send</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">notify</span><span class="op">$</span><span class="va">sent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">notify</span><span class="op">$</span><span class="va">sent</span>, <span class="va">path</span><span class="op">)</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span><span class="va">notify</span><span class="op">$</span><span class="va">log</span>, <span class="st">"weekly"</span>, <span class="st">"write"</span>, <span class="st">"recipient"</span>, label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"+"</span>, <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># A fake export, which writes the file that the notify task sends.</span></span>
+<span><span class="va">fake_export</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">dirname</a></span><span class="op">(</span><span class="va">notify_file</span><span class="op">)</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fwrite.html" class="external-link">fwrite</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>location_code <span class="op">=</span> <span class="st">"county_03"</span>, n <span class="op">=</span> <span class="fl">30L</span><span class="op">)</span>, <span class="va">notify_file</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">notify_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>path <span class="op">=</span> <span class="va">argset</span><span class="op">$</span><span class="va">path</span>, written <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.mtime</a></span><span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">path</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">notify_action</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">age_hours</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/difftime.html" class="external-link">difftime</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">data</span><span class="op">$</span><span class="va">written</span>, units <span class="op">=</span> <span class="st">"hours"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">age_hours</span><span class="op">)</span> <span class="op">||</span> <span class="va">age_hours</span> <span class="op">&gt;</span> <span class="va">argset</span><span class="op">$</span><span class="va">max_age_hours</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">record</span><span class="op">(</span></span>
+<span>      <span class="va">notify</span><span class="op">$</span><span class="va">log</span>, <span class="va">argset</span><span class="op">$</span><span class="va">report</span>, <span class="st">"write"</span>, <span class="st">"recipient"</span>,</span>
+<span>      ok <span class="op">=</span> <span class="cn">FALSE</span>, label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"not sent:\nfile %.0f h old"</span>, <span class="va">age_hours</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"the export is missing or older than "</span>, <span class="va">argset</span><span class="op">$</span><span class="va">max_age_hours</span>, <span class="st">" hours"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">notify</span><span class="op">$</span><span class="fu">send</span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">path</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"notify"</span>,</span>
+<span>  name_action <span class="op">=</span> <span class="st">"weekly"</span>,</span>
+<span>  for_each_plan <span class="op">=</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span>report <span class="op">=</span> <span class="st">"weekly"</span><span class="op">)</span>,</span>
+<span>  universal_argset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>path <span class="op">=</span> <span class="va">notify_file</span>, max_age_hours <span class="op">=</span> <span class="fl">24</span><span class="op">)</span>,</span>
+<span>  data_selector_fn_name <span class="op">=</span> <span class="st">"notify_data"</span>,</span>
+<span>  action_fn_name <span class="op">=</span> <span class="st">"notify_action"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The first run sends the file that the fake export wrote. The second
+run finds a file from 2 days ago, and MUST stop without a send. In the
+third run the send fails, and the task MUST stop with an error.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">fake_export</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">notify</span><span class="op">$</span><span class="va">log</span>, <span class="st">"Run 1: sent"</span>, <span class="st">"weekly"</span><span class="op">)</span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"notify_weekly"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">notify</span><span class="op">$</span><span class="va">sent</span>, <span class="va">notify_file</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">notify</span><span class="op">$</span><span class="va">sent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setFileTime.html" class="external-link">Sys.setFileTime</a></span><span class="op">(</span><span class="va">notify_file</span>, <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">48</span> <span class="op">*</span> <span class="fl">3600</span><span class="op">)</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">notify</span><span class="op">$</span><span class="va">log</span>, <span class="st">"Run 2: stale file"</span>, <span class="st">"weekly"</span><span class="op">)</span></span>
+<span><span class="va">stale</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"notify_weekly"</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">stale</span>, <span class="st">"error"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">notify</span><span class="op">$</span><span class="va">sent</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">fake_export</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">notify</span><span class="op">$</span><span class="va">send</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">record</span><span class="op">(</span><span class="va">notify</span><span class="op">$</span><span class="va">log</span>, <span class="st">"weekly"</span>, <span class="st">"write"</span>, <span class="st">"recipient"</span>, ok <span class="op">=</span> <span class="cn">FALSE</span>, label <span class="op">=</span> <span class="st">"send\nfailed"</span><span class="op">)</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"the mail server refused the message"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu">log_run</span><span class="op">(</span><span class="va">notify</span><span class="op">$</span><span class="va">log</span>, <span class="st">"Run 3: send fails"</span>, <span class="st">"weekly"</span><span class="op">)</span></span>
+<span><span class="va">run</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"notify_weekly"</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">run</span>, <span class="st">"error"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">run</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "the mail server refused the message"</span></span></code></pre></div>
+<p><img src="task-shapes_files/figure-html/notify-diagram-1.png" class="r-plt" alt="Diagram of three runs of the notify task, each with 1 plan and one lane for the recipient. In run 1 the plan sends weekly.csv. In run 2 the file is 48 hours old, and the plan fails without a send. In run 3 the send fails." width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="three-rules">Three rules<a class="anchor" aria-label="anchor" href="#three-rules"></a>
@@ -474,7 +1102,7 @@ the live table.</p>
 threshold copied into a county row looks the same as a threshold fitted
 for that county. Fit then fill writes <code>source</code> next to each
 threshold.</p>
-<p>Both shapes need cs9 to run the argset with
+<p>The staged import and fit then fill need cs9 to run the argset with
 <code>last_analysis = TRUE</code> after every other argset of the task.
 <code>tests/testthat/test-first-last-analysis.R</code> pins that
 order.</p>

@@ -8,9 +8,8 @@ articles:
   file-layout: file-layout.html
   how-a-task-runs: how-a-task-runs.html
   installation: installation.html
-  more-task-shapes: more-task-shapes.html
   task-shapes: task-shapes.html
-last_built: 2026-10-07T18:43Z
+last_built: 2026-10-07T20:23Z
 urls:
   reference: https://niphr.github.io/cs9/reference
   article: https://niphr.github.io/cs9/articles

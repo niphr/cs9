@@ -43,7 +43,6 @@
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
     <li><a class="dropdown-item" href="../articles/how-a-task-runs.html">How a task runs</a></li>
     <li><a class="dropdown-item" href="../articles/task-shapes.html">Task shapes</a></li>
-    <li><a class="dropdown-item" href="../articles/more-task-shapes.html">More task shapes</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -118,6 +117,20 @@ variables.</p>
 <span><span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/reload_db_config.html">reload_db_config</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ss</span> <span class="op">&lt;-</span> <span class="fu">cs9</span><span class="fu">::</span><span class="va"><a href="../reference/SurveillanceSystem_v9.html">SurveillanceSystem_v9</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>name <span class="op">=</span> <span class="st">"rules"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="overview">A run in one diagram<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h2>
+<p>The diagram shows one run of a task with 4 plans, 2 analyses per plan
+and 2 cores. In each plan, <code>pull</code> is the call to the data
+selector. <code>A1</code> and <code>A2</code> are the calls to the
+action for analysis 1 and 2. The sections below state each rule that the
+diagram shows.</p>
+<p>The vignette records this run when it builds, and draws the diagram
+from that record. A hidden chunk stops the build when the record breaks
+a rule that the diagram shows. The run forks, so the diagram appears
+only on Linux and macOS, in a session that is not interactive.</p>
+<p><img src="how-a-task-runs_files/figure-html/overview-diagram-1.png" class="r-plt" alt="Diagram of one run of a task with 4 plans and 2 analyses per plan on 2 cores. It has one row for the main process and one row for each of 2 forked workers. In the main process, run_task() builds the plans, and plan 1 then pulls its data and runs analyses 1 and 2. The main process then forks, and each worker runs one middle plan, plan 2 or plan 3, while the main process waits. After both workers end, plan 4, the last plan, runs in the main process." width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="rule-one-pull">A plan is one data pull<a class="anchor" aria-label="anchor" href="#rule-one-pull"></a>
@@ -301,10 +314,10 @@ that the work was complete. The last plan saw all 4.</p>
 <span><span class="co">#&gt;     plan worker finished_before</span></span>
 <span><span class="co">#&gt;    &lt;int&gt; &lt;char&gt;           &lt;int&gt;</span></span>
 <span><span class="co">#&gt; 1:     1   main               0</span></span>
-<span><span class="co">#&gt; 2:     2 forked               0</span></span>
-<span><span class="co">#&gt; 3:     3 forked               1</span></span>
-<span><span class="co">#&gt; 4:     4 forked               2</span></span>
-<span><span class="co">#&gt; 5:     5 forked               3</span></span>
+<span><span class="co">#&gt; 2:     2 forked               2</span></span>
+<span><span class="co">#&gt; 3:     3 forked               0</span></span>
+<span><span class="co">#&gt; 4:     4 forked               3</span></span>
+<span><span class="co">#&gt; 5:     5 forked               2</span></span>
 <span><span class="co">#&gt; 6:     6   main               4</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -680,8 +693,8 @@ live table in one transaction.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">size</span><span class="op">$</span><span class="va">pulls</span>, commits <span class="op">=</span> <span class="va">size</span><span class="op">$</span><span class="va">commits</span>, live_rows <span class="op">=</span> <span class="va">live_n</span><span class="op">)</span></span>
 <span><span class="co">#&gt; per_week_location          per_week           commits         live_rows </span></span>
 <span><span class="co">#&gt;                 6                 2                 1                 6</span></span></code></pre></div>
-<p><code><a href="../articles/more-task-shapes.html">vignette("more-task-shapes")</a></code> shows staging as a
-checkpoint, which commits each complete unit in the last plan.</p>
+<p><code><a href="../articles/task-shapes.html">vignette("task-shapes")</a></code> shows <a href="task-shapes.html#shape-staging-checkpoint">staging as a
+checkpoint</a>, which commits each complete unit in the last plan.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
