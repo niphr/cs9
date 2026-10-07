@@ -489,4 +489,4 @@ stopifnot(
 c(size$pulls, commits = size$commits, live_rows = live_n)
 ```
 
-`vignette("more-task-shapes")` shows staging as a checkpoint, which commits each complete unit in the last plan.
+`vignette("task-shapes")` shows [staging as a checkpoint](task-shapes.html#shape-staging-checkpoint), which commits each complete unit in the last plan.
