@@ -17,6 +17,10 @@
 - [`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
   shows a task that reads its cores from an environment variable that
   changes after `add_task()`.
+- The section `#rule-plans-per-run` of
+  [`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
+  states when a task builds its plans, and how to run plans that you
+  edit by hand.
 
 ## Version 26.10.6
 

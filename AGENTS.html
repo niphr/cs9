@@ -69,6 +69,7 @@
 <li>
 <code><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">plnr::expand_list()</a></code> makes one argset per element of a vector. To give one argset several values, pass them as one text value. <a href="https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-expand-list">Demonstration</a>.</li>
 <li>Size a plan by its data pull, not by the unit of work that you commit. Group the commits in the last plan. <a href="https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-plan-size">Demonstration</a>.</li>
+<li>A task builds its plans once per <code>run_task()</code>, before any plan runs, and never during a run. To run plans that you edited by hand, call <code>task$run()</code>, because <code>run_task()</code> builds them again. <a href="https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-plans-per-run">Demonstration</a>.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a></h2>

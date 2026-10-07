@@ -1,7 +1,7 @@
 # How a task runs
 
-This vignette states the eight rules that `Task$run()` imposes on a
-task. Each section runs a small task against SQLite. A chunk calls
+This vignette states the nine rules that `Task$run()` imposes on a task.
+Each section runs a small task against SQLite. A chunk calls
 [`stopifnot()`](https://rdrr.io/r/base/stopifnot.html) on the rule, so
 the vignette fails to build when cs9 stops keeping it.
 
@@ -273,16 +273,12 @@ mid[, .(plan, open_at_start)]
 #> 4:     5         FALSE
 ```
 
-## A task reads `cores` and the date when it runs
+## A task reads `cores` when it runs
 
 `cores` MAY be a function with no arguments. `Task$run()` calls the
 function each time the task runs, so the function reads its settings at
 that time. A number works as before. `TaskJob` sets `cores` to 1 before
 it runs a task, and this replaces the function.
-
-`run_task()` also builds the plans of the task again on every call.
-`argset$today` and `argset$yesterday` are therefore the date of the run,
-not the date when the package loaded.
 
 This task reads its cores from the environment variable
 `RULES_CORES_MAX`, which changes after `add_task()`. The task has 4
@@ -311,6 +307,116 @@ cores_used <- cs9::get_config_tasks_stats(task = "rules_cores")$cores_n
 stopifnot(cores_used == 2)
 cores_used
 #> [1] 2
+```
+
+## A task builds its plans once per run
+
+`run_task()` builds the plans of a task once, before any plan runs. It
+builds them in the main process, before `Task$run()` forks a worker. The
+plans do not change during the run, and every worker gets the same
+plans.
+
+A task with a plan analysis builds its plans again on every `run_task()`
+since 26.10.3. A task with fixed plans (`for_each_plan`) does the same
+since 26.10.7. `argset$today` and `argset$yesterday` are therefore the
+date of the run. Before 26.10.7, a task with fixed plans kept the date
+of `add_task()`, which norsyss.cs9 calls when the package loads.
+
+A scheduler such as Airflow starts a new R process for each task. The
+package loads and `run_task()` runs once, so the rebuild makes no
+material difference there.
+
+In an interactive session, a second `run_task()` of the same task builds
+new plans. A plan analysis that reads external state can then give
+different plans from the first run. External state includes the
+database, environment variables and the date. This is intended: each run
+plans for the data that it finds.
+
+`get_task()` and the `shortcut_get_*()` methods build plans only when a
+task has none. They show the plans of the last build.
+
+This task has 2 plans and runs twice.
+[`testthat::with_mocked_bindings()`](https://testthat.r-lib.org/reference/local_mocked_bindings.html)
+gives each run a different date from
+[`lubridate::today()`](https://lubridate.tidyverse.org/reference/now.html),
+which cs9 calls when it builds the plans.
+
+``` r
+plan_runs <- new.env()
+plan_runs$rows <- list()
+
+record_today <- function(data, argset, tables) {
+  plan_runs$rows[[length(plan_runs$rows) + 1L]] <- data.table(
+    run = plan_runs$run,
+    plan = argset$plan,
+    today = argset$today
+  )
+}
+
+ss$add_task(
+  name_grouping = "rules",
+  name_action = "today",
+  for_each_plan = plnr::expand_list(plan = 1:2),
+  action_fn_name = "record_today"
+)
+registered <- ss$tasks$rules_today$plans[[1]]$get_argset(1)$today
+
+run_on <- function(run, date) {
+  plan_runs$run <- run
+  testthat::with_mocked_bindings(
+    ss$run_task("rules_today"),
+    today = function(tzone = "") date,
+    .package = "lubridate"
+  )
+}
+day_1 <- registered + 1
+day_2 <- registered + 2
+invisible(run_on("first", day_1))
+invisible(run_on("second", day_2))
+
+seen_today <- rbindlist(plan_runs$rows)
+stopifnot(
+  seen_today[run == "first", all(today == day_1)],
+  seen_today[run == "second", all(today == day_2)]
+)
+seen_today[, .(run, plan, today)]
+#>       run  plan      today
+#>    <char> <int>     <Date>
+#> 1:  first     1 2026-10-08
+#> 2:  first     2 2026-10-08
+#> 3: second     1 2026-10-09
+#> 4: second     2 2026-10-09
+```
+
+Do not edit `task$plans` by hand and then call `run_task()`.
+`run_task()` builds the plans again, and the edit is lost. Call
+`task$run()` instead. It runs the current plans and does not build them
+again.
+
+This chunk keeps only plan 2 and calls `task$run()`. The edited plan
+still has the date of the second run. A later `run_task()` builds both
+plans again.
+
+``` r
+task <- ss$tasks$rules_today
+task$plans <- task$plans[2]
+plan_runs$run <- "edited"
+invisible(task$run())
+plan_runs$run <- "run_task"
+invisible(ss$run_task("rules_today"))
+
+seen_today <- rbindlist(plan_runs$rows)
+stopifnot(
+  identical(seen_today[run == "edited", plan], 2L),
+  seen_today[run == "edited", all(today == day_2)],
+  setequal(seen_today[run == "run_task", plan], 1:2)
+)
+seen_today[run %in% c("edited", "run_task")]
+#>         run  plan      today
+#>      <char> <int>     <Date>
+#> 1:   edited     2 2026-10-09
+#> 2: run_task     1 2026-10-07
+#> 3: run_task     2 2026-10-07
 ```
 
 ## A completeness check covers every declared partition

@@ -381,7 +381,10 @@ task to the surveillance system.
 
 ### `SurveillanceSystem_v9$get_task()`
 
-Get a surveillance task by name.
+Get a surveillance task by name. The task builds its plans only when it
+has none, so it shows the plans of the last build. Call `task$run()` on
+the result to run plans that you edit by hand, because `run_task()`
+builds the plans again.
 
 #### Usage
 
@@ -401,8 +404,9 @@ A Task R6 object representing the surveillance task.
 
 ### `SurveillanceSystem_v9$run_task()`
 
-Execute a surveillance task by name. The task builds its plans again on
-every call, so `argset$today` is the date of the run.
+Execute a surveillance task by name. The task builds its plans once on
+every call, before any plan runs and before a worker forks. The plans do
+not change during the run, and `argset$today` is the date of the run.
 
 #### Usage
 

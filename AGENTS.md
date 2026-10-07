@@ -39,6 +39,10 @@ lists the task shapes that follow these rules.
 - Size a plan by its data pull, not by the unit of work that you commit.
   Group the commits in the last plan.
   [Demonstration](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-plan-size).
+- A task builds its plans once per `run_task()`, before any plan runs,
+  and never during a run. To run plans that you edited by hand, call
+  `task$run()`, because `run_task()` builds them again.
+  [Demonstration](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-plans-per-run).
 
 ## Overview
 

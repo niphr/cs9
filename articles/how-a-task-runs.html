@@ -90,7 +90,7 @@
 
     
     
-<p>This vignette states the eight rules that <code>Task$run()</code>
+<p>This vignette states the nine rules that <code>Task$run()</code>
 imposes on a task. Each section runs a small task against SQLite. A
 chunk calls <code><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot()</a></code> on the rule, so the vignette fails
 to build when cs9 stops keeping it.</p>
@@ -353,17 +353,13 @@ inherited handle before it reports.</p>
 <span><span class="co">#&gt; 4:     5         FALSE</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="rule-run-time">A task reads <code>cores</code> and the date when it runs<a class="anchor" aria-label="anchor" href="#rule-run-time"></a>
+<h2 id="rule-run-time">A task reads <code>cores</code> when it runs<a class="anchor" aria-label="anchor" href="#rule-run-time"></a>
 </h2>
 <p><code>cores</code> MAY be a function with no arguments.
 <code>Task$run()</code> calls the function each time the task runs, so
 the function reads its settings at that time. A number works as before.
 <code>TaskJob</code> sets <code>cores</code> to 1 before it runs a task,
 and this replaces the function.</p>
-<p><code>run_task()</code> also builds the plans of the task again on
-every call. <code>argset$today</code> and <code>argset$yesterday</code>
-are therefore the date of the run, not the date when the package
-loaded.</p>
 <p>This task reads its cores from the environment variable
 <code>RULES_CORES_MAX</code>, which changes after
 <code>add_task()</code>. The task has 4 plans, the smallest count that
@@ -390,6 +386,108 @@ macOS, in a session that is not interactive.</p>
 <span><span class="co">#&gt; [1] 2</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="rule-plans-per-run">A task builds its plans once per run<a class="anchor" aria-label="anchor" href="#rule-plans-per-run"></a>
+</h2>
+<p><code>run_task()</code> builds the plans of a task once, before any
+plan runs. It builds them in the main process, before
+<code>Task$run()</code> forks a worker. The plans do not change during
+the run, and every worker gets the same plans.</p>
+<p>A task with a plan analysis builds its plans again on every
+<code>run_task()</code> since 26.10.3. A task with fixed plans
+(<code>for_each_plan</code>) does the same since 26.10.7.
+<code>argset$today</code> and <code>argset$yesterday</code> are
+therefore the date of the run. Before 26.10.7, a task with fixed plans
+kept the date of <code>add_task()</code>, which norsyss.cs9 calls when
+the package loads.</p>
+<p>A scheduler such as Airflow starts a new R process for each task. The
+package loads and <code>run_task()</code> runs once, so the rebuild
+makes no material difference there.</p>
+<p>In an interactive session, a second <code>run_task()</code> of the
+same task builds new plans. A plan analysis that reads external state
+can then give different plans from the first run. External state
+includes the database, environment variables and the date. This is
+intended: each run plans for the data that it finds.</p>
+<p><code>get_task()</code> and the <code>shortcut_get_*()</code> methods
+build plans only when a task has none. They show the plans of the last
+build.</p>
+<p>This task has 2 plans and runs twice.
+<code><a href="https://testthat.r-lib.org/reference/local_mocked_bindings.html" class="external-link">testthat::with_mocked_bindings()</a></code> gives each run a different
+date from <code><a href="https://lubridate.tidyverse.org/reference/now.html" class="external-link">lubridate::today()</a></code>, which cs9 calls when it
+builds the plans.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plan_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">plan_runs</span><span class="op">$</span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">record_today</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">plan_runs</span><span class="op">$</span><span class="va">rows</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">plan_runs</span><span class="op">$</span><span class="va">rows</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1L</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
+<span>    run <span class="op">=</span> <span class="va">plan_runs</span><span class="op">$</span><span class="va">run</span>,</span>
+<span>    plan <span class="op">=</span> <span class="va">argset</span><span class="op">$</span><span class="va">plan</span>,</span>
+<span>    today <span class="op">=</span> <span class="va">argset</span><span class="op">$</span><span class="va">today</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">add_task</span><span class="op">(</span></span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"rules"</span>,</span>
+<span>  name_action <span class="op">=</span> <span class="st">"today"</span>,</span>
+<span>  for_each_plan <span class="op">=</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span>plan <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>  action_fn_name <span class="op">=</span> <span class="st">"record_today"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">registered</span> <span class="op">&lt;-</span> <span class="va">ss</span><span class="op">$</span><span class="va">tasks</span><span class="op">$</span><span class="va">rules_today</span><span class="op">$</span><span class="va">plans</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="fu">get_argset</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">today</span></span>
+<span></span>
+<span><span class="va">run_on</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">run</span>, <span class="va">date</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">plan_runs</span><span class="op">$</span><span class="va">run</span> <span class="op">&lt;-</span> <span class="va">run</span></span>
+<span>  <span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/local_mocked_bindings.html" class="external-link">with_mocked_bindings</a></span><span class="op">(</span></span>
+<span>    <span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"rules_today"</span><span class="op">)</span>,</span>
+<span>    today <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">tzone</span> <span class="op">=</span> <span class="st">""</span><span class="op">)</span> <span class="va">date</span>,</span>
+<span>    .package <span class="op">=</span> <span class="st">"lubridate"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">day_1</span> <span class="op">&lt;-</span> <span class="va">registered</span> <span class="op">+</span> <span class="fl">1</span></span>
+<span><span class="va">day_2</span> <span class="op">&lt;-</span> <span class="va">registered</span> <span class="op">+</span> <span class="fl">2</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu">run_on</span><span class="op">(</span><span class="st">"first"</span>, <span class="va">day_1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu">run_on</span><span class="op">(</span><span class="st">"second"</span>, <span class="va">day_2</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">seen_today</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/rbindlist.html" class="external-link">rbindlist</a></span><span class="op">(</span><span class="va">plan_runs</span><span class="op">$</span><span class="va">rows</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="va">seen_today</span><span class="op">[</span><span class="va">run</span> <span class="op">==</span> <span class="st">"first"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">today</span> <span class="op">==</span> <span class="va">day_1</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  <span class="va">seen_today</span><span class="op">[</span><span class="va">run</span> <span class="op">==</span> <span class="st">"second"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">today</span> <span class="op">==</span> <span class="va">day_2</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">seen_today</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">run</span>, <span class="va">plan</span>, <span class="va">today</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;       run  plan      today</span></span>
+<span><span class="co">#&gt;    &lt;char&gt; &lt;int&gt;     &lt;Date&gt;</span></span>
+<span><span class="co">#&gt; 1:  first     1 2026-10-08</span></span>
+<span><span class="co">#&gt; 2:  first     2 2026-10-08</span></span>
+<span><span class="co">#&gt; 3: second     1 2026-10-09</span></span>
+<span><span class="co">#&gt; 4: second     2 2026-10-09</span></span></code></pre></div>
+<p>Do not edit <code>task$plans</code> by hand and then call
+<code>run_task()</code>. <code>run_task()</code> builds the plans again,
+and the edit is lost. Call <code>task$run()</code> instead. It runs the
+current plans and does not build them again.</p>
+<p>This chunk keeps only plan 2 and calls <code>task$run()</code>. The
+edited plan still has the date of the second run. A later
+<code>run_task()</code> builds both plans again.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">task</span> <span class="op">&lt;-</span> <span class="va">ss</span><span class="op">$</span><span class="va">tasks</span><span class="op">$</span><span class="va">rules_today</span></span>
+<span><span class="va">task</span><span class="op">$</span><span class="va">plans</span> <span class="op">&lt;-</span> <span class="va">task</span><span class="op">$</span><span class="va">plans</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span><span class="va">plan_runs</span><span class="op">$</span><span class="va">run</span> <span class="op">&lt;-</span> <span class="st">"edited"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">plan_runs</span><span class="op">$</span><span class="va">run</span> <span class="op">&lt;-</span> <span class="st">"run_task"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="st">"rules_today"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">seen_today</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/rbindlist.html" class="external-link">rbindlist</a></span><span class="op">(</span><span class="va">plan_runs</span><span class="op">$</span><span class="va">rows</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">seen_today</span><span class="op">[</span><span class="va">run</span> <span class="op">==</span> <span class="st">"edited"</span>, <span class="va">plan</span><span class="op">]</span>, <span class="fl">2L</span><span class="op">)</span>,</span>
+<span>  <span class="va">seen_today</span><span class="op">[</span><span class="va">run</span> <span class="op">==</span> <span class="st">"edited"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">today</span> <span class="op">==</span> <span class="va">day_2</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setequal</a></span><span class="op">(</span><span class="va">seen_today</span><span class="op">[</span><span class="va">run</span> <span class="op">==</span> <span class="st">"run_task"</span>, <span class="va">plan</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">seen_today</span><span class="op">[</span><span class="va">run</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"edited"</span>, <span class="st">"run_task"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;         run  plan      today</span></span>
+<span><span class="co">#&gt;      &lt;char&gt; &lt;int&gt;     &lt;Date&gt;</span></span>
+<span><span class="co">#&gt; 1:   edited     2 2026-10-09</span></span>
+<span><span class="co">#&gt; 2: run_task     1 2026-10-07</span></span>
+<span><span class="co">#&gt; 3: run_task     2 2026-10-07</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="rule-partitions">A completeness check covers every declared partition<a class="anchor" aria-label="anchor" href="#rule-partitions"></a>
 </h2>
 <p>A partitioned table is one database table per partition.
@@ -398,7 +496,7 @@ that a week is complete MUST cover every declared partition, and never
 only the partitions that hold rows.</p>
 <p>This table declares 3 partitions. The import wrote rows for
 <code>flu</code> and <code>covid</code> only.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_partitionedtable</span><span class="op">(</span></span>
 <span>  name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>
 <span>  name_grouping <span class="op">=</span> <span class="st">"rules"</span>,</span>
@@ -427,7 +525,7 @@ use, so <code>rsv</code> has no row here. Use
 <p>The <code>partition</code> column holds the partition tag. Never
 parse the tag from <code>table_name</code>. The separator in the name
 depends on the database driver.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The weeks that every partition in `partitions` holds.</span></span>
 <span><span class="va">complete_weeks</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">pt</span>, <span class="va">partitions</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">held</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">partitions</span>, <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="op">{</span></span>
@@ -471,7 +569,7 @@ combination of its arguments. A vector of 3 weeks therefore gives 3
 argsets. To give each argset all 3 weeks, pass them as one text value
 and split it in the action. A vector inside <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code> also
 gives one argset.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">weeks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2026-01"</span>, <span class="st">"2026-02"</span>, <span class="st">"2026-03"</span><span class="op">)</span></span>
 <span><span class="va">one_per_week</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span>isoyearweek <span class="op">=</span> <span class="va">weeks</span><span class="op">)</span></span>
 <span><span class="va">one_text</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/expand_list.html" class="external-link">expand_list</a></span><span class="op">(</span>run_weeks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">weeks</span>, collapse <span class="op">=</span> <span class="st">","</span><span class="op">)</span><span class="op">)</span></span>
@@ -503,7 +601,7 @@ pulls each week 3 times. <code>per_week</code> makes a plan per week and
 an analysis per location, so it pulls each week once. Its analyses write
 to a staging table. The last analysis moves the staged rows into the
 live table in one transaction.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">variant</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"staging"</span>, <span class="st">"live"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
 <span>    name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>

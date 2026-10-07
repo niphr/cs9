@@ -370,7 +370,9 @@ A runner that sets <code>cores</code> to 1, such as <code>TaskJob</code>, replac
 
 <p></p><hr><a id="method-SurveillanceSystem_v9-get_task"></a><div class="section">
 <h3 id="surveillancesystem-v-get-task-"><code>SurveillanceSystem_v9$get_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-get-task-"></a></h3>
-<p>Get a surveillance task by name.</p><div class="section">
+<p>Get a surveillance task by name.
+The task builds its plans only when it has none, so it shows the plans of the last build.
+Call <code>task$run()</code> on the result to run plans that you edit by hand, because <code>run_task()</code> builds the plans again.</p><div class="section">
 <h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">get_task</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
@@ -390,7 +392,8 @@ A runner that sets <code>cores</code> to 1, such as <code>TaskJob</code>, replac
 <p></p><hr><a id="method-SurveillanceSystem_v9-run_task"></a><div class="section">
 <h3 id="surveillancesystem-v-run-task-"><code>SurveillanceSystem_v9$run_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-run-task-"></a></h3>
 <p>Execute a surveillance task by name.
-The task builds its plans again on every call, so <code>argset$today</code> is the date of the run.</p><div class="section">
+The task builds its plans once on every call, before any plan runs and before a worker forks.
+The plans do not change during the run, and <code>argset$today</code> is the date of the run.</p><div class="section">
 <h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
