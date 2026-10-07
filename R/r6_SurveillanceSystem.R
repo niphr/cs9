@@ -294,6 +294,8 @@ SurveillanceSystem_v9 <- R6::R6Class(
     },
     #' @description
     #' Get a surveillance task by name.
+    #' The task builds its plans only when it has none, so it shows the plans of the last build.
+    #' Call `task$run()` on the result to run plans that you edit by hand, because `run_task()` builds the plans again.
     #' @param task_name Character string specifying the task name.
     #' @return A Task R6 object representing the surveillance task.
     get_task = function(task_name) {
@@ -303,7 +305,8 @@ SurveillanceSystem_v9 <- R6::R6Class(
     },
     #' @description
     #' Execute a surveillance task by name.
-    #' The task builds its plans again on every call, so `argset$today` is the date of the run.
+    #' The task builds its plans once on every call, before any plan runs and before a worker forks.
+    #' The plans do not change during the run, and `argset$today` is the date of the run.
     #' @param task_name Character string specifying the task name to run.
     #' @return No return value. This method is called for its side effect of executing the task.
     run_task = function(task_name) {

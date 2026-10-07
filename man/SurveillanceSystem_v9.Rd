@@ -339,6 +339,8 @@ A runner that sets \code{cores} to 1, such as \code{TaskJob}, replaces the funct
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-get_task}{}}}
 \subsection{\code{SurveillanceSystem_v9$get_task()}}{
   Get a surveillance task by name.
+The task builds its plans only when it has none, so it shows the plans of the last build.
+Call \code{task$run()} on the result to run plans that you edit by hand, because \code{run_task()} builds the plans again.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$get_task(task_name)}
@@ -361,7 +363,8 @@ A runner that sets \code{cores} to 1, such as \code{TaskJob}, replaces the funct
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-run_task}{}}}
 \subsection{\code{SurveillanceSystem_v9$run_task()}}{
   Execute a surveillance task by name.
-The task builds its plans again on every call, so \code{argset$today} is the date of the run.
+The task builds its plans once on every call, before any plan runs and before a worker forks.
+The plans do not change during the run, and \code{argset$today} is the date of the run.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$run_task(task_name)}

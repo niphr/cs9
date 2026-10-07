@@ -11,6 +11,7 @@ Each rule links to the section of `vignette("how-a-task-runs")` whose chunk demo
 - A completeness check covers every declared partition, `names(pt$tables)`, never only the partitions that hold rows. The `partition` column of `pt$nrow(collapse = FALSE)` lists only the partitions whose table exists. Never parse a partition tag from a table name. [Demonstration](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-partitions).
 - `plnr::expand_list()` makes one argset per element of a vector. To give one argset several values, pass them as one text value. [Demonstration](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-expand-list).
 - Size a plan by its data pull, not by the unit of work that you commit. Group the commits in the last plan. [Demonstration](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-plan-size).
+- A task builds its plans once per `run_task()`, before any plan runs, and never during a run. To run plans that you edited by hand, call `task$run()`, because `run_task()` builds them again. [Demonstration](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-plans-per-run).
 
 ## Overview
 

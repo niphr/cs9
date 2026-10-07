@@ -5,6 +5,7 @@
 - `run_task()` builds the plans of a `for_each_plan` task again on every call, so `argset$today` and `argset$yesterday` are the date of the run. Before, they were the date when the package loaded.
 - `get_task()` and the `shortcut_get_*()` methods still show the plans of the last build, with the date of that build.
 - `vignette("how-a-task-runs")` shows a task that reads its cores from an environment variable that changes after `add_task()`.
+- The section `#rule-plans-per-run` of `vignette("how-a-task-runs")` states when a task builds its plans, and how to run plans that you edit by hand.
 
 # Version 26.10.6
 
