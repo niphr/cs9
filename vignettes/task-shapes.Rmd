@@ -68,6 +68,321 @@ read_rows <- function(table, by) {
 sql_in <- function(x) paste(DBI::dbQuoteString(DBI::ANSI(), x), collapse = ", ")
 ```
 
+Each example calls `record()` at each step that a plan does to a table. The diagram after the example draws those steps. A hidden chunk defines `record()` and the diagram code. It stops the build when the recorded steps differ from what the example checks.
+
+In a diagram, the top row holds the plans in the order that they run. Each lane below it is one table, the output folder, or the recipient of a message. Read the arrows as follows:
+
+- A grey arrow clears rows. A blue arrow writes rows or files, or sends a file.
+- A green arrow in a dashed box is a swap: one transaction that writes rows from the upper table into the lower table.
+- A red arrow with a cross marks a step that failed. Its plan has a red box.
+- A plan with a dashed grey box did not run.
+
+```{r diagram-helpers, include = FALSE}
+library(ggplot2)
+
+knitr::opts_template$set(diagram = list(
+  echo = FALSE,
+  fig.width = 8,
+  dpi = 100,
+  out.width = "100%"
+))
+
+# An empty log of the steps that the plans of one task shape do to its
+# tables. `lanes` names the tables, from the top lane of the diagram down.
+new_log <- function(lanes) {
+  log <- new.env()
+  log$lanes <- lanes
+  log$runs <- character(0)
+  log$plans <- data.table()
+  log$events <- data.table()
+  log$after <- list()
+  log
+}
+
+# Starts a run with the title `title`. `...` holds the units of the plans of
+# each task in plan order, named by task when the run has more than one task.
+log_run <- function(log, title, ...) {
+  log$runs <- c(log$runs, title)
+  log$run <- title
+  log$tx <- 0L
+  units <- list(...)
+  tasks <- names(units)
+  if (is.null(tasks)) tasks <- rep("", length(units))
+  for (i in seq_along(units)) log_plans(log, units[[i]], tasks[i])
+}
+
+# Adds the plans of a task to the current run.
+log_plans <- function(log, units, task = "") {
+  log$plans <- rbind(
+    log$plans,
+    data.table(run = log$run, task = task, unit = as.character(units))
+  )
+}
+
+# Records one step of a plan: "clear", "write", "swap" or "note". A swap moves
+# rows from the top lane into `lane` in one transaction, and `from_label` is
+# the label of its cell in the top lane. A note draws only its label.
+record <- function(log, unit, step, lane, ok = TRUE, label = "", task = "",
+                   from_label = "") {
+  tx <- NA_integer_
+  if (step == "swap") {
+    log$tx <- log$tx + 1L
+    tx <- log$tx
+  }
+  log$events <- rbind(log$events, data.table(
+    run = log$run, task = task, unit = as.character(unit), step = step,
+    lane = lane, ok = ok, label = label, from_label = from_label, tx = tx
+  ))
+}
+
+# The units of the steps `step` of run `i` that succeeded, or that failed.
+logged <- function(log, i, step, ok = TRUE) {
+  e <- log$events
+  e$unit[e$run == log$runs[i] & e$step == step & e$ok == ok]
+}
+
+# Weeks as ranges, for example "2024-01..03, 2025-01".
+weeks_text <- function(weeks, sep = ", ") {
+  weeks <- sort(unique(weeks))
+  if (length(weeks) == 0) return("empty")
+  year <- substr(weeks, 1, 4)
+  week <- as.integer(substr(weeks, 6, 7))
+  block <- cumsum(c(TRUE, diff(week) != 1 | year[-1] != year[-length(year)]))
+  parts <- vapply(split(seq_along(weeks), block), function(i) {
+    if (length(i) == 1) return(weeks[i])
+    paste0(weeks[i[1]], "..", sprintf("%02d", week[i[length(i)]]))
+  }, character(1))
+  paste(parts, collapse = sep)
+}
+
+# The widest line of a label, in characters.
+label_width <- function(x) {
+  max(0, nchar(unlist(strsplit(x, "\n", fixed = TRUE))))
+}
+
+# The plans, columns, cells and arrows of a log, in diagram coordinates.
+# x counts characters of 10 pt text. y is 1 at the bottom lane and grows upward.
+layout_events <- function(log) {
+  # Lanes are 1.35 apart, so that a swap arrow has room between two cells.
+  ypos <- setNames(1 + 1.35 * rev(seq_along(log$lanes) - 1), log$lanes)
+  top_y <- max(ypos)
+  plan_y <- top_y + 1.5
+  pl <- copy(log$plans)
+  pl[, k := .I]
+  pl[, role := if (.N == 1) "first, last" else fifelse(
+    seq_len(.N) == 1, "first", fifelse(seq_len(.N) == .N, "last", "middle")
+  ), by = .(run, task)]
+  ev <- copy(log$events)
+  ev[pl, on = .(run, task, unit), k := i.k]
+  # Every step belongs to a plan that the run planned.
+  stopifnot(!anyNA(ev$k))
+  pl[, ran := k %in% ev$k]
+  pl[, failed := k %in% ev[step != "note" & !ok, k]]
+  pl[, label := paste0(unit, "\n", role, fifelse(ran, "", "\nnot run"))]
+
+  # A plan has one column for its other steps, and one column per swap.
+  ev[, col := fifelse(step == "swap", tx, 0L)]
+  cols <- unique(rbind(ev[, .(k, col)], pl[!(ran), .(k, col = 0L)]))
+  setorder(cols, k, col)
+  sw <- ev[step == "swap"]
+  cells <- rbind(
+    ev[step != "swap", .(
+      label = paste(label[nzchar(label)], collapse = "\n"),
+      ok = all(ok),
+      note = all(step == "note")
+    ), by = .(k, col, lane)],
+    sw[, .(k, col, lane, label, ok, note = FALSE)],
+    sw[nzchar(from_label), .(
+      k, col, lane = log$lanes[1], label = from_label, ok = TRUE, note = FALSE
+    )]
+  )
+  cells[, y := ypos[lane]]
+
+  # Column widths follow the text, and a plan box fits its own label.
+  cols[, w := 0]
+  cw <- cells[, .(cw = max(vapply(label, label_width, numeric(1)))), by = .(k, col)]
+  cols[cw, on = .(k, col), w := i.cw]
+  cols[, w := pmax(w + 1.4, 7)]
+  pl[, need := vapply(label, label_width, numeric(1)) + 1.4]
+  cols[pl, on = "k", `:=`(run = i.run, need = i.need)]
+  cols[, w := w + c(rep(0, .N - 1), max(0, need[1] - sum(w))), by = k]
+  cols[, gap := fifelse(k != shift(k, fill = -1L), 0.8, 0.25), by = run]
+  cols[, x2 := cumsum(gap + w), by = run]
+  cols[, `:=`(x1 = x2 - w, x = x2 - w / 2)]
+  pl[cols[, .(x1 = min(x1), x2 = max(x2)), by = k], on = "k",
+     `:=`(x1 = i.x1, x2 = i.x2)]
+  cells[cols, on = .(k, col), `:=`(run = i.run, x = i.x, w = i.w)]
+
+  # Arrows: from the plan down to a cell, or a swap from the top lane down.
+  ev[cols, on = .(k, col), `:=`(x = i.x, w = i.w)]
+  ev[, y := ypos[lane]]
+  ar <- ev[step %in% c("clear", "write")]
+  ar[, dx := if (.N == 1) 0 else seq(-0.2, 0.2, length.out = .N) * w[1],
+     by = .(k, col)]
+  ar[, `:=`(x0 = x + dx, y0 = plan_y - 0.42, y1 = y + 0.38)]
+  sw <- ev[step == "swap"]
+  sw[, `:=`(
+    x0 = x,
+    y0 = fifelse(nzchar(from_label), top_y - 0.38, top_y + 0.1),
+    y1 = y + 0.38
+  )]
+  arrows <- rbind(ar, sw, fill = TRUE)
+  arrows[, colour := fifelse(ok, step, "failed")]
+
+  # What a run left in a lane goes inside that lane when it fits left of the
+  # first cell, and otherwise on a line below the lanes.
+  after <- rbindlist(lapply(names(log$after), function(r) {
+    a <- log$after[[r]]
+    data.table(run = r, lane = names(a), value = unname(a))
+  }))
+  n_after <- 0
+  if (nrow(after) > 0) {
+    first_x <- cells[, .(first_x = min(x - w / 2)), by = .(run, lane)]
+    after[first_x, on = .(run, lane), first_x := i.first_x]
+    after[is.na(first_x), first_x := Inf]
+    after[, inside := nchar(value) + 17 < first_x]
+    after[, text := fifelse(
+      inside, paste("after the run:", value), paste0(lane, " after the run: ", value)
+    )]
+    after[, y := ypos[lane]]
+    after[!(inside), line := seq_len(.N), by = run]
+    after[!(inside), y := 0.45 - 0.32 * line - 0.02]
+    n_after <- max(0, after$line, na.rm = TRUE)
+  }
+  lines <- c(
+    vapply(strsplit(c(cells$label, pl$label), "\n", fixed = TRUE), length, 1L),
+    1L
+  )
+  list(
+    plans = pl, cells = cells, arrows = arrows, swaps = sw, after = after,
+    ypos = ypos, top_y = top_y, plan_y = plan_y,
+    top = plan_y + if (any(nzchar(pl$task))) 0.85 else 0.5,
+    bottom = if (n_after > 0) 0.45 - 0.32 * n_after - 0.15 else 0.45,
+    max_lines = max(lines),
+    x_max = max(pl$x2) + 0.4
+  )
+}
+
+# The height in inches that a diagram of `log` needs.
+diagram_height <- function(log, ncol = 1) {
+  g <- layout_events(log)
+  per_lane <- (g$max_lines * 15.5 + 12) / 100 / 0.76
+  rows <- ceiling(length(log$runs) / ncol)
+  rows * ((g$top - g$bottom) * per_lane + 0.35) + 0.5
+}
+
+# Draws a log: the plans of each run, one lane per table, the arrows and the
+# transactions, and what a run left behind where no cell shows it.
+plot_events <- function(log, ncol = 1, width = 80) {
+  g <- layout_events(log)
+  pl <- g$plans
+  cells <- g$cells
+  arrows <- g$arrows
+  after <- g$after
+  fct <- function(d) {
+    d[, run := factor(run, levels = log$runs)]
+    d
+  }
+  pl <- fct(pl)
+  cells <- fct(cells)
+  arrows <- fct(arrows)
+  sw <- fct(copy(g$swaps))
+  red <- "#d7191c"
+  colours <- c(write = "#2c7bb6", swap = "#1a9641", clear = "grey45", failed = red)
+  text_size <- 10 / .pt
+
+  q <- ggplot()
+  q <- q + annotate(
+    "rect", xmin = -Inf, xmax = Inf, ymin = g$ypos - 0.48, ymax = g$ypos + 0.48,
+    fill = "grey95"
+  )
+  q <- q + geom_rect(
+    data = pl,
+    aes(xmin = x1 + 0.1, xmax = x2 - 0.1, ymin = g$plan_y - 0.42, ymax = g$plan_y + 0.42),
+    fill = "white",
+    colour = fifelse(pl$failed, red, fifelse(pl$ran, "grey20", "grey60")),
+    linetype = fifelse(pl$ran, "solid", "dashed"),
+    linewidth = 0.5
+  )
+  q <- q + geom_text(
+    data = pl, aes(x = (x1 + x2) / 2, y = g$plan_y, label = label),
+    size = text_size, lineheight = 1,
+    colour = fifelse(pl$failed, red, fifelse(pl$ran, "black", "grey45"))
+  )
+  if (any(nzchar(pl$task))) {
+    th <- pl[, .(x = (min(x1) + max(x2)) / 2), by = .(run, task)]
+    q <- q + geom_text(
+      data = th, aes(x = x, y = g$plan_y + 0.64, label = task),
+      size = text_size, fontface = "bold"
+    )
+  }
+  if (nrow(sw) > 0) {
+    q <- q + geom_rect(
+      data = sw,
+      aes(xmin = x - w / 2 + 0.1, xmax = x + w / 2 - 0.1,
+          ymin = y - 0.46, ymax = g$top_y + 0.46),
+      fill = NA, colour = fifelse(sw$ok, colours[["swap"]], red),
+      linetype = "dashed", linewidth = 0.5
+    )
+    q <- q + geom_text(
+      data = sw, aes(x = x, y = g$top_y + 0.73, label = paste("tx", tx)),
+      size = text_size, colour = fifelse(sw$ok, colours[["swap"]], red)
+    )
+  }
+  q <- q + geom_rect(
+    data = cells,
+    aes(xmin = x - w / 2 + 0.35, xmax = x + w / 2 - 0.35, ymin = y - 0.38, ymax = y + 0.38),
+    fill = fifelse(cells$ok, "white", "#fdeaea"),
+    colour = fifelse(cells$ok, "grey55", red),
+    linetype = fifelse(cells$note, "dotted", "solid"),
+    linewidth = 0.4
+  )
+  q <- q + geom_text(
+    data = cells, aes(x = x, y = y, label = label),
+    size = text_size, lineheight = 1,
+    colour = fifelse(cells$ok, "black", red),
+    fontface = fifelse(cells$note, "italic", "plain")
+  )
+  q <- q + geom_segment(
+    data = arrows, aes(x = x0, xend = x0, y = y0, yend = y1, colour = colour),
+    arrow = arrow(length = unit(6, "pt"), type = "closed"), linewidth = 0.8
+  )
+  failed <- arrows[ok == FALSE]
+  if (nrow(failed) > 0) {
+    q <- q + geom_point(
+      data = failed, aes(x = x0, y = (y0 + y1) / 2),
+      shape = 4, size = 4, stroke = 1.5, colour = red
+    )
+  }
+  if (nrow(after) > 0) {
+    after <- fct(after)
+    q <- q + geom_text(
+      data = after, aes(x = 0.4, y = y, label = text),
+      hjust = 0, size = text_size, fontface = "italic", colour = "grey20"
+    )
+  }
+  q <- q + scale_colour_manual(
+    NULL, values = colours, breaks = names(colours)[names(colours) %in% arrows$colour]
+  )
+  q <- q + scale_y_continuous(
+    NULL, breaks = c(g$ypos, g$plan_y), labels = c(names(g$ypos), "plan"),
+    limits = c(g$bottom, g$top), expand = c(0, 0)
+  )
+  q <- q + scale_x_continuous(
+    NULL, breaks = NULL, limits = c(0, max(width, g$x_max)), expand = c(0, 0)
+  )
+  q <- q + facet_wrap(~run, ncol = ncol)
+  q <- q + theme_minimal(base_size = 10)
+  q + theme(
+    legend.position = "bottom",
+    legend.text = element_text(size = 10),
+    panel.grid = element_blank(),
+    axis.text.y = element_text(colour = "black", face = "bold", size = 10),
+    strip.text = element_text(hjust = 0, face = "bold", size = 11)
+  )
+}
+```
+
 ## Per-unit rebuild {#shape-per-unit-rebuild}
 
 The task has one plan per unit, for example a location or a partition. The first analysis empties the output table. Each analysis then inserts the rows of its own unit.
@@ -91,19 +406,26 @@ counts <- data.table(
 )
 rebuild <- new.env()
 rebuild$fail <- NA_character_
+rebuild$log <- new_log("rates")
 
 rebuild_data <- function(argset, tables) {
   list(counts = counts[location_code == argset$location_code])
 }
 
 rebuild_action <- function(data, argset, tables) {
-  if (argset$first_analysis) tables$rates$drop_all_rows()
-  if (identical(argset$location_code, rebuild$fail)) {
+  loc <- argset$location_code
+  if (argset$first_analysis) {
+    tables$rates$drop_all_rows()
+    record(rebuild$log, loc, "clear", "rates", label = "clear all")
+  }
+  if (identical(loc, rebuild$fail)) {
+    record(rebuild$log, loc, "write", "rates", ok = FALSE, label = "failed")
     stop("the computation failed for ", rebuild$fail)
   }
   tables$rates$insert_data(
     data$counts[, .(location_code, rate_per_1000 = 1000 * cases / pop)]
   )
+  record(rebuild$log, loc, "write", "rates", label = paste0("+", loc))
 }
 
 ss$add_task(
@@ -119,10 +441,12 @@ ss$add_task(
 The first run writes all 3 locations. The second run fails at the second location. The table then holds only the first location, and a reader sees that partial table until a run succeeds.
 
 ```{r rebuild-run}
+log_run(rebuild$log, "Run 1: every location succeeds", counts$location_code)
 ss$run_task("rebuild_rates")
 full <- read_rows(ss$tables$anon_rebuild_rates, "location_code")
 
 rebuild$fail <- "county_11"
+log_run(rebuild$log, paste("Run 2:", rebuild$fail, "fails"), counts$location_code)
 run <- tryCatch(ss$run_task("rebuild_rates"), error = function(e) e)
 partial <- read_rows(ss$tables$anon_rebuild_rates, "location_code")
 stopifnot(
@@ -131,6 +455,19 @@ stopifnot(
   identical(partial$location_code, "county_03")
 )
 partial[c("location_code", "rate_per_1000")]
+```
+
+```{r rebuild-check, include = FALSE}
+# The recorded steps MUST match what the example checked.
+stopifnot(
+  identical(logged(rebuild$log, 1, "write"), full$location_code),
+  identical(logged(rebuild$log, 2, "write"), partial$location_code),
+  identical(logged(rebuild$log, 2, "write", ok = FALSE), rebuild$fail)
+)
+```
+
+```{r rebuild-diagram, opts.label = "diagram", fig.height = diagram_height(rebuild$log), fig.alt = "Diagram of two runs of the per-unit rebuild task, with one lane for the rates table. In run 1 the first plan clears the table, and each of the 3 plans writes its location. In run 2 the first plan clears the table and writes county_03, the write of county_11 fails, and county_46 does not run."}
+plot_events(rebuild$log)
 ```
 
 ## Staged import {#shape-staged-import}
@@ -163,23 +500,34 @@ source_counts <- data.table(
   n = 1:8
 )
 fail_week <- NA_character_
+import_log <- new_log(c("staging", "live"))
 
 import_data <- function(argset, tables) {
   list(counts = source_counts[isoyearweek == argset$isoyearweek])
 }
 
 import_action <- function(data, argset, tables) {
-  if (argset$first_analysis) tables$staging$drop_all_rows()
-  if (identical(argset$isoyearweek, fail_week)) {
+  week <- argset$isoyearweek
+  if (argset$first_analysis) {
+    tables$staging$drop_all_rows()
+    record(import_log, week, "clear", "staging", label = "clear all")
+  }
+  if (identical(week, fail_week)) {
+    record(import_log, week, "write", "staging", ok = FALSE, label = "pull\nfailed")
     stop("the source failed for ", fail_week)
   }
-  if (nrow(data$counts) > 0) tables$staging$insert_data(data$counts)
-  if (argset$last_analysis) swap_into_live(tables, argset$weeks)
+  if (nrow(data$counts) > 0) {
+    tables$staging$insert_data(data$counts)
+    record(import_log, week, "write", "staging", label = paste0("+", week))
+  } else {
+    record(import_log, week, "note", "staging", label = "no rows")
+  }
+  if (argset$last_analysis) swap_into_live(tables, argset$weeks, week)
 }
 
 # Deletes every week of the run from the live table, not only the weeks that
 # reached staging, and appends the staged rows. One transaction holds both.
-swap_into_live <- function(tables, weeks) {
+swap_into_live <- function(tables, weeks, plan_week) {
   staged <- dplyr::collect(tables$staging$tbl())
   stopifnot(all(staged$isoyearweek %in% weeks), !anyNA(staged$n))
   live <- tables$live
@@ -196,6 +544,12 @@ swap_into_live <- function(tables, weeks) {
       staged
     )
   })
+  gone <- setdiff(weeks, staged$isoyearweek)
+  record(
+    import_log, plan_week, "swap", "live",
+    label = paste(c(weeks_text(staged$isoyearweek, "\n"), paste("no", gone)), collapse = "\n"),
+    from_label = "kept"
+  )
 }
 
 ss$add_task(
@@ -222,6 +576,7 @@ ss$tables$anon_import_live$insert_data(
 )
 source_counts <- source_counts[isoyearweek != "2026-03"]
 
+log_run(import_log, "Run 1: the source withdraws 2026-03", weeks)
 ss$run_task("import_weekly")
 live <- read_rows(ss$tables$anon_import_live, c("isoyearweek", "location_code"))
 staged <- read_rows(ss$tables$anon_import_staging, c("isoyearweek", "location_code"))
@@ -235,6 +590,7 @@ the live table MUST keep the rows of the first run.
 ```{r shape1-fail}
 source_counts[, n := n + 100L]
 fail_week <- "2026-02"
+log_run(import_log, paste("Run 2: the pull of", fail_week, "fails"), weeks)
 run <- tryCatch(ss$run_task("import_weekly"), error = function(e) e)
 stopifnot(
   inherits(run, "error"),
@@ -245,6 +601,23 @@ stopifnot(
 )
 conditionMessage(run)
 cat("STAGED IMPORT CHECKS PASSED\n")
+```
+
+```{r shape1-check, include = FALSE}
+# The recorded steps MUST match what the example checked.
+stopifnot(
+  identical(logged(import_log, 1, "write"), unique(staged$isoyearweek)),
+  length(logged(import_log, 1, "swap")) == 1,
+  length(logged(import_log, 2, "swap")) == 0,
+  identical(logged(import_log, 2, "write", ok = FALSE), fail_week)
+)
+import_log$after[[import_log$runs[2]]] <- c(
+  live = paste("unchanged,", weeks_text(live$isoyearweek))
+)
+```
+
+```{r shape1-diagram, opts.label = "diagram", fig.height = diagram_height(import_log), fig.alt = "Diagram of two runs of the staged import, with a staging lane and a live lane. In run 1 the first plan clears staging, 3 plans write their week, and the plan for 2026-03 finds no rows. The last plan then swaps the staged weeks into the live table in one transaction, which removes 2026-03 from it. In run 2 the first plan clears staging and writes 2026-01, the pull of 2026-02 fails, and the last 2 plans do not run. The live table keeps the weeks of run 1."}
+plot_events(import_log)
 ```
 
 ## Per-plan staged swap {#shape-per-plan-staged-swap}
@@ -268,18 +641,27 @@ for (variant in c("staging", "live")) {
 pps_weeks <- c("2026-01", "2026-02")
 pps <- new.env()
 pps$fail_week <- NA_character_
+pps$log <- new_log(c("staging", "live"))
 
 pps_data <- function(argset, tables) {
   list(rows = data.table(isoyearweek = argset$isoyearweek, n = 2L))
 }
 
 pps_action <- function(data, argset, tables) {
-  tables$staging$drop_rows_where(paste0("isoyearweek = ", sql_in(argset$isoyearweek)))
-  if (identical(argset$isoyearweek, pps$fail_week)) {
+  week <- argset$isoyearweek
+  tables$staging$drop_rows_where(paste0("isoyearweek = ", sql_in(week)))
+  record(pps$log, week, "clear", "staging", label = paste("clear", week))
+  if (identical(week, pps$fail_week)) {
+    record(pps$log, week, "write", "staging", ok = FALSE, label = "write failed")
     stop("the write to staging failed for ", pps$fail_week)
   }
   tables$staging$insert_data(data$rows)
-  pps_swap(tables, argset$isoyearweek)
+  record(pps$log, week, "write", "staging", label = paste0("+", week))
+  pps_swap(tables, week)
+  record(
+    pps$log, week, "swap", "live",
+    label = paste0("n=", data$rows$n, ", new"), from_label = "removed"
+  )
 }
 
 # One transaction deletes the week from the live table, copies it from
@@ -317,6 +699,7 @@ The live table holds both weeks with `n = 1` from an earlier run. The run writes
 ```{r per-plan-run}
 ss$tables$anon_pps_live$insert_data(data.table(isoyearweek = pps_weeks, n = 1L))
 pps$fail_week <- "2026-02"
+log_run(pps$log, paste("One run: the write of", pps$fail_week, "fails"), pps_weeks)
 run <- tryCatch(ss$run_task("pps_import"), error = function(e) e)
 live <- read_rows(ss$tables$anon_pps_live, "isoyearweek")
 stopifnot(
@@ -325,6 +708,23 @@ stopifnot(
   all(live$n == c(2L, 1L))
 )
 live[c("isoyearweek", "n")]
+```
+
+```{r per-plan-check, include = FALSE}
+# The recorded steps MUST match what the example checked.
+old <- live[live$n == 1L, ]
+record(
+  pps$log, old$isoyearweek, "note", "live",
+  ok = FALSE, label = paste0("n=", old$n, ", old")
+)
+stopifnot(
+  identical(logged(pps$log, 1, "swap"), live$isoyearweek[live$n == 2L]),
+  identical(logged(pps$log, 1, "write", ok = FALSE), pps$fail_week)
+)
+```
+
+```{r per-plan-diagram, opts.label = "diagram", fig.height = diagram_height(pps$log), fig.alt = "Diagram of one run of the per-plan staged swap, with a staging lane and a live lane. The plan for 2026-01 clears its week in staging, writes it, and swaps it into the live table in its own transaction, so the live table holds n=2 for that week. The plan for 2026-02 clears its week, and its write to staging fails. The live table keeps n=1 for 2026-02 from the earlier run."}
+plot_events(pps$log)
 ```
 
 ## Staging as a checkpoint {#shape-staging-checkpoint}
@@ -360,6 +760,7 @@ ckpt <- new.env()
 ckpt$fail_week <- NA_character_
 ckpt$pulled <- character(0)
 ckpt$swapped <- character(0)
+ckpt$log <- new_log(c("staging", "live"))
 
 weeks_in <- function(table) {
   dplyr::pull(dplyr::distinct(table$tbl(), isoyearweek))
@@ -372,6 +773,7 @@ ckpt_plan_analysis <- function(argset, tables) {
     vapply(unit_weeks, function(w) !all(w %in% live), logical(1))
   ]
   to_pull <- setdiff(unlist(unit_weeks[units], use.names = FALSE), staged)
+  log_plans(ckpt$log, c(refresh_weeks, to_pull))
   list(
     for_each_plan = plnr::expand_list(isoyearweek = c(refresh_weeks, to_pull)),
     # One text value each, so every analysis gets the whole list.
@@ -392,21 +794,25 @@ ckpt_data <- function(argset, tables) {
 }
 
 ckpt_action <- function(data, argset, tables) {
+  week <- argset$isoyearweek
   refresh <- strsplit(argset$refresh, ",")[[1]]
   if (argset$first_analysis) {
     tables$staging$drop_rows_where(paste0("isoyearweek IN (", sql_in(refresh), ")"))
+    record(ckpt$log, week, "clear", "staging", label = "clear\nrefresh")
   }
-  if (identical(argset$isoyearweek, ckpt$fail_week)) {
+  if (identical(week, ckpt$fail_week)) {
+    record(ckpt$log, week, "write", "staging", ok = FALSE, label = "pull\nfailed")
     stop("the source failed for ", ckpt$fail_week)
   }
   tables$staging$insert_data(data$rows)
+  record(ckpt$log, week, "write", "staging", label = paste0("+", week))
   if (argset$last_analysis) {
-    ckpt_swap(tables, refresh, strsplit(argset$units, ",")[[1]])
+    ckpt_swap(tables, refresh, strsplit(argset$units, ",")[[1]], week)
   }
 }
 
 # One transaction for the refresh weeks, and one for each complete unit.
-ckpt_swap <- function(tables, refresh, units) {
+ckpt_swap <- function(tables, refresh, units, week) {
   staged <- weeks_in(tables$staging)
   batches <- c(list(refresh = refresh), unit_weeks[units])
   tables$live$connect()
@@ -425,6 +831,10 @@ ckpt_swap <- function(tables, refresh, units) {
       DBI::dbExecute(con, paste0("DELETE FROM ", staging_name, where))
     })
     ckpt$swapped <- c(ckpt$swapped, b)
+    record(
+      ckpt$log, week, "swap", "live",
+      label = paste0(b, "\n", length(batches[[b]]), " weeks"), from_label = "removed"
+    )
   }
 }
 
@@ -450,13 +860,15 @@ ss$tables$anon_ckpt_live$insert_data(
 live_before <- read_rows(ss$tables$anon_ckpt_live, "isoyearweek")
 
 ckpt$fail_week <- "2025-02"
+log_run(ckpt$log, paste("Run 1: the pull of", ckpt$fail_week, "fails"))
 run <- tryCatch(ss$run_task("ckpt_import"), error = function(e) e)
 stopifnot(
   inherits(run, "error"),
   identical(read_rows(ss$tables$anon_ckpt_live, "isoyearweek"), live_before),
   all(unit_weeks[["2024"]] %in% weeks_in(ss$tables$anon_ckpt_staging))
 )
-sort(weeks_in(ss$tables$anon_ckpt_staging))
+staged_after_fail <- sort(weeks_in(ss$tables$anon_ckpt_staging))
+staged_after_fail
 ```
 
 The second run pulls the refresh weeks and the 2 missing weeks of 2025, and no week of 2024. Its last plan swaps the refresh weeks and both units. Staging is then empty.
@@ -465,6 +877,7 @@ The second run pulls the refresh weeks and the 2 missing weeks of 2025, and no w
 ckpt$fail_week <- NA_character_
 ckpt$pulled <- character(0)
 ckpt$swapped <- character(0)
+log_run(ckpt$log, "Run 2: resumes from staging")
 ss$run_task("ckpt_import")
 live_after <- read_rows(ss$tables$anon_ckpt_live, "isoyearweek")
 all_weeks <- c(unlist(unit_weeks, use.names = FALSE), refresh_weeks)
@@ -476,6 +889,26 @@ stopifnot(
   length(weeks_in(ss$tables$anon_ckpt_staging)) == 0
 )
 list(pulled = ckpt$pulled, swapped = ckpt$swapped)
+```
+
+```{r checkpoint-check, include = FALSE}
+# The recorded steps MUST match what the example checked.
+stopifnot(
+  length(logged(ckpt$log, 1, "swap")) == 0,
+  setequal(logged(ckpt$log, 1, "write"), staged_after_fail),
+  setequal(logged(ckpt$log, 2, "write"), ckpt$pulled),
+  length(logged(ckpt$log, 2, "swap")) == length(ckpt$swapped)
+)
+ckpt$log$after[[ckpt$log$runs[1]]] <- c(
+  staging = weeks_text(staged_after_fail),
+  live = paste0(
+    "unchanged, ", weeks_text(live_before$isoyearweek), " with n=", unique(live_before$n)
+  )
+)
+```
+
+```{r checkpoint-diagram, opts.label = "diagram", fig.height = diagram_height(ckpt$log), fig.alt = "Diagram of two runs of the staging checkpoint, with a staging lane and a live lane. In run 1 the first plan clears the refresh weeks from staging, and 6 plans write their week to staging. The pull of 2025-02 fails, and the last plan, 2025-03, does not run. Staging keeps the weeks that run 1 wrote, and the live table is unchanged. Run 2 plans only the refresh weeks and the 2 missing weeks of 2025. Its last plan swaps the refresh weeks, the unit 2024 and the unit 2025 into the live table, in 3 transactions that each remove their weeks from staging."}
+plot_events(ckpt$log)
 ```
 
 ## Fit then fill {#shape-fit-then-fill}
@@ -518,16 +951,22 @@ history <- data.table(
   )
 )
 break_publish <- FALSE
+fit_log <- new_log(c("fitted", "published"))
 
 fit_data <- function(argset, tables) {
   list(history = history[location_code == argset$location_code])
 }
 
 fit_action <- function(data, argset, tables) {
+  loc <- argset$location_code
   n <- data$history$n
   threshold <- if (length(n) >= 4) mean(n) + 2 * sd(n) else NA_real_
   tables$fitted$upsert_data(
-    data.table(location_code = argset$location_code, threshold = threshold)
+    data.table(location_code = loc, threshold = threshold)
+  )
+  record(
+    fit_log, loc, "write", "fitted", task = "threshold_fit",
+    label = paste0("+", loc, if (is.na(threshold)) "\nNA" else "")
   )
 }
 
@@ -542,7 +981,18 @@ fill_action <- function(data, argset, tables) {
   d[is.na(threshold), threshold := national]
   # A duplicate key makes the publish fail on purpose.
   if (break_publish) d <- rbind(d, d[1])
-  tables$published$replace_all_rows(d)
+  # Records a failed publish, and lets the error reach cs9.
+  withCallingHandlers(
+    tables$published$replace_all_rows(d),
+    error = function(e) {
+      record(fit_log, "all", "swap", "published", ok = FALSE, label = "publish\nfailed",
+             task = "threshold_fill", from_label = "read")
+    }
+  )
+  record(
+    fit_log, "all", "swap", "published", task = "threshold_fill", from_label = "read",
+    label = paste0(nrow(d), " rows\n", sum(d$source == "national"), " national")
+  )
 }
 
 ss$add_task(
@@ -572,6 +1022,10 @@ After both tasks run, every published row MUST have a threshold and a source. Co
 carry the national threshold.
 
 ```{r shape2-run}
+log_run(
+  fit_log, "Run 1: both tasks succeed",
+  threshold_fit = unique(history$location_code), threshold_fill = "all"
+)
 ss$run_task("threshold_fit")
 ss$run_task("threshold_fill")
 published <- read_rows(ss$tables$anon_threshold_published, "location_code")
@@ -588,6 +1042,10 @@ published table MUST keep its previous contents.
 
 ```{r shape2-fail}
 history[, n := 2L * n]
+log_run(
+  fit_log, "Run 2: the publish fails",
+  threshold_fit = unique(history$location_code), threshold_fill = "all"
+)
 ss$run_task("threshold_fit")
 break_publish <- TRUE
 run <- tryCatch(ss$run_task("threshold_fill"), error = function(e) e)
@@ -597,6 +1055,25 @@ stopifnot(
 )
 conditionMessage(run)
 cat("FIT THEN FILL CHECKS PASSED\n")
+```
+
+```{r shape2-check, include = FALSE}
+# The recorded steps MUST match what the example checked.
+fitted_units <- unique(history$location_code)
+stopifnot(
+  identical(logged(fit_log, 1, "write"), fitted_units),
+  identical(logged(fit_log, 2, "write"), fitted_units),
+  length(logged(fit_log, 1, "swap")) == 1,
+  length(logged(fit_log, 2, "swap")) == 0,
+  length(logged(fit_log, 2, "swap", ok = FALSE)) == 1
+)
+fit_log$after[[fit_log$runs[2]]] <- c(
+  published = sprintf("unchanged, the %d rows of run 1", nrow(published))
+)
+```
+
+```{r shape2-diagram, opts.label = "diagram", fig.height = diagram_height(fit_log), fig.alt = "Diagram of two runs of fit then fill, with a fitted lane and a published lane. In each run the fit task has 4 plans, and each plan writes the threshold of its location to the fitted table. county_46 gets NA. The fill task has 1 plan, which writes the published table in one transaction. In run 1 that transaction publishes 4 rows, 1 of them from the national threshold. In run 2 the publish fails, and the published table keeps the rows of run 1."}
+plot_events(fit_log)
 ```
 
 ## Export from a finished table {#shape-export-finished-table}
@@ -623,6 +1100,7 @@ ss$tables$anon_export_source$insert_data(data.table(
 export_locations <- c("county_03", "county_11", "county_46")
 export <- new.env()
 export$broken <- NA_character_
+export$log <- new_log("folder")
 
 export_data <- function(argset, tables) {
   list(rows = dplyr::collect(dplyr::filter(
@@ -632,19 +1110,23 @@ export_data <- function(argset, tables) {
 }
 
 export_action <- function(data, argset, tables) {
-  if (argset$first_analysis) dir.create(argset$folder, recursive = TRUE)
-  if (identical(argset$location_code, export$broken)) {
+  loc <- argset$location_code
+  if (argset$first_analysis) {
+    dir.create(argset$folder, recursive = TRUE)
+    record(export$log, loc, "note", "folder", label = "new folder")
+  }
+  if (identical(loc, export$broken)) {
+    record(export$log, loc, "write", "folder", ok = FALSE, label = "failed")
     stop("the figure failed for ", export$broken)
   }
-  data.table::fwrite(
-    data$rows,
-    file.path(argset$folder, paste0(argset$location_code, ".csv"))
-  )
+  data.table::fwrite(data$rows, file.path(argset$folder, paste0(loc, ".csv")))
+  record(export$log, loc, "write", "folder", label = paste0("+", loc, ".csv"))
   if (argset$last_analysis) {
     expected <- paste0(strsplit(argset$locations, ",")[[1]], ".csv")
     missing <- expected[!file.exists(file.path(argset$folder, expected))]
     if (length(missing) > 0) stop("missing exports: ", paste(missing, collapse = ", "))
     writeLines(expected, file.path(argset$folder, "index.txt"))
+    record(export$log, loc, "write", "folder", label = "+index.txt")
   }
 }
 
@@ -666,17 +1148,38 @@ The first run writes 3 files and the index. In the second run the export for cou
 
 ```{r export-run}
 folder <- file.path(db_dir, "export")
+log_run(export$log, "Run 1: every file is written", export_locations)
 ss$run_task("export_csv")
 stopifnot(identical(readLines(file.path(folder, "index.txt")), paste0(export_locations, ".csv")))
 
 unlink(folder, recursive = TRUE)
 export$broken <- "county_11"
+log_run(export$log, paste("Run 2: the export for", export$broken, "fails"), export_locations)
 run <- tryCatch(ss$run_task("export_csv"), error = function(e) e)
 stopifnot(
   inherits(run, "error"),
   !file.exists(file.path(folder, "index.txt"))
 )
 conditionMessage(run)
+```
+
+```{r export-check, include = FALSE}
+# The recorded steps MUST match what the example checked.
+stopifnot(
+  identical(
+    logged(export$log, 1, "write"),
+    c(export_locations, export_locations[length(export_locations)])
+  ),
+  identical(
+    logged(export$log, 2, "write"),
+    sub("\\.csv$", "", list.files(folder, pattern = "\\.csv$"))
+  ),
+  identical(logged(export$log, 2, "write", ok = FALSE), export$broken)
+)
+```
+
+```{r export-diagram, opts.label = "diagram", fig.height = diagram_height(export$log), fig.alt = "Diagram of two runs of the export, with one lane for the output folder. In run 1 the first plan creates the folder, each of the 3 plans writes its csv file, and the last plan also writes index.txt. In run 2 the first plan creates the folder and writes county_03.csv, the export for county_11 fails, and county_46 does not run, so no index is written."}
+plot_events(export$log)
 ```
 
 ## Notify after export {#shape-notify-after-export}
@@ -691,8 +1194,12 @@ The task reads what a finished export produced, files or a table, and sends it o
 notify_file <- file.path(db_dir, "notify", "weekly.csv")
 notify <- new.env()
 notify$sent <- character(0)
+notify$log <- new_log("recipient")
 # A local stub for an email or a message API. It records the file it receives.
-notify$send <- function(path) notify$sent <- c(notify$sent, path)
+notify$send <- function(path) {
+  notify$sent <- c(notify$sent, path)
+  record(notify$log, "weekly", "write", "recipient", label = paste0("+", basename(path)))
+}
 
 # A fake export, which writes the file that the notify task sends.
 fake_export <- function() {
@@ -707,6 +1214,10 @@ notify_data <- function(argset, tables) {
 notify_action <- function(data, argset, tables) {
   age_hours <- as.numeric(difftime(Sys.time(), data$written, units = "hours"))
   if (is.na(age_hours) || age_hours > argset$max_age_hours) {
+    record(
+      notify$log, argset$report, "write", "recipient",
+      ok = FALSE, label = sprintf("not sent:\nfile %.0f h old", age_hours)
+    )
     stop("the export is missing or older than ", argset$max_age_hours, " hours")
   }
   notify$send(data$path)
@@ -726,19 +1237,40 @@ The first run sends the file that the fake export wrote. The second run finds a 
 
 ```{r notify-run}
 fake_export()
+log_run(notify$log, "Run 1: sent", "weekly")
 ss$run_task("notify_weekly")
 stopifnot(identical(notify$sent, notify_file))
 
 notify$sent <- character(0)
 Sys.setFileTime(notify_file, Sys.time() - 48 * 3600)
+log_run(notify$log, "Run 2: stale file", "weekly")
 stale <- tryCatch(ss$run_task("notify_weekly"), error = function(e) e)
 stopifnot(inherits(stale, "error"), length(notify$sent) == 0)
 
 fake_export()
-notify$send <- function(path) stop("the mail server refused the message")
+notify$send <- function(path) {
+  record(notify$log, "weekly", "write", "recipient", ok = FALSE, label = "send\nfailed")
+  stop("the mail server refused the message")
+}
+log_run(notify$log, "Run 3: send fails", "weekly")
 run <- tryCatch(ss$run_task("notify_weekly"), error = function(e) e)
 stopifnot(inherits(run, "error"))
 conditionMessage(run)
+```
+
+```{r notify-check, include = FALSE}
+# The recorded steps MUST match what the example checked.
+stopifnot(
+  length(logged(notify$log, 1, "write")) == 1,
+  length(logged(notify$log, 2, "write")) == 0,
+  length(logged(notify$log, 2, "write", ok = FALSE)) == 1,
+  length(logged(notify$log, 3, "write")) == 0,
+  length(logged(notify$log, 3, "write", ok = FALSE)) == 1
+)
+```
+
+```{r notify-diagram, opts.label = "diagram", fig.height = diagram_height(notify$log, ncol = 3), fig.alt = "Diagram of three runs of the notify task, each with 1 plan and one lane for the recipient. In run 1 the plan sends weekly.csv. In run 2 the file is 48 hours old, and the plan fails without a send. In run 3 the send fails."}
+plot_events(notify$log, ncol = 3, width = 26)
 ```
 
 ## Three rules {#three-rules}

@@ -46,6 +46,182 @@ cs9::reload_db_config()
 ss <- cs9::SurveillanceSystem_v9$new(name = "rules")
 ```
 
+## A run in one diagram {#overview}
+
+The diagram shows one run of a task with 4 plans, 2 analyses per plan and 2 cores. In each plan, `pull` is the call to the data selector. `A1` and `A2` are the calls to the action for analysis 1 and 2. The sections below state each rule that the diagram shows.
+
+The vignette records this run when it builds, and draws the diagram from that record. A hidden chunk stops the build when the record breaks a rule that the diagram shows. The run forks, so the diagram appears only on Linux and macOS, in a session that is not interactive.
+
+```{r overview-run, eval = .Platform$OS.type == "unix" && !interactive(), echo = FALSE, results = "hide"}
+ov_dir <- file.path(db_dir, "overview-log")
+dir.create(ov_dir)
+ov_main <- Sys.getpid()
+ov_n_plans <- 4L
+ov_n_analyses <- 2L
+
+# Saves one step of the run with its process and time. A forked worker cannot
+# change an object of the main process, so each step is a file.
+ov_record <- function(step, plan = 0L, analysis = 0L) {
+  saveRDS(
+    data.table(
+      step = step, plan = plan, analysis = analysis,
+      pid = Sys.getpid(), time = Sys.time()
+    ),
+    file.path(ov_dir, sprintf("%s-%d-%d-%d.rds", step, plan, analysis, Sys.getpid()))
+  )
+}
+
+ov_plan_analysis <- function(argset, tables) {
+  ov_record("build")
+  list(
+    for_each_plan = plnr::expand_list(plan = seq_len(ov_n_plans)),
+    for_each_analysis = plnr::expand_list(analysis = seq_len(ov_n_analyses))
+  )
+}
+
+ov_data <- function(argset, tables) {
+  ov_record("pull", argset$plan)
+  list(pid = Sys.getpid())
+}
+
+ov_action <- function(data, argset, tables) {
+  ov_record("analysis", argset$plan, argset$analysis)
+}
+
+ss$add_task(
+  name_grouping = "rules",
+  name_action = "overview",
+  cores = 2,
+  plan_analysis_fn_name = "ov_plan_analysis",
+  data_selector_fn_name = "ov_data",
+  action_fn_name = "ov_action"
+)
+ss$run_task("rules_overview")
+```
+
+```{r overview-diagram, eval = .Platform$OS.type == "unix" && !interactive(), echo = FALSE, fig.width = 8, fig.height = 2.9, dpi = 100, out.width = "100%", fig.alt = "Diagram of one run of a task with 4 plans and 2 analyses per plan on 2 cores. It has one row for the main process and one row for each of 2 forked workers. In the main process, run_task() builds the plans, and plan 1 then pulls its data and runs analyses 1 and 2. The main process then forks, and each worker runs one middle plan, plan 2 or plan 3, while the main process waits. After both workers end, plan 4, the last plan, runs in the main process."}
+library(ggplot2)
+ov <- rbindlist(lapply(list.files(ov_dir, full.names = TRUE), readRDS))
+setorder(ov, time, analysis)
+ov_middle <- 2:(ov_n_plans - 1L)
+in_worker <- ov$pid != ov_main
+stopifnot(
+  "run_task() builds the plans once, in the main process" =
+    sum(ov$step == "build") == 1 && ov[step == "build", pid] == ov_main,
+  "plan 1 and the last plan run in the main process" =
+    all(ov[plan %in% c(1L, ov_n_plans), pid] == ov_main),
+  "the middle plans run in forked workers" =
+    all(ov[plan %in% ov_middle, pid] != ov_main),
+  "plan 1 ends before the fork" =
+    max(ov[plan == 1L, time]) < min(ov[in_worker, time]),
+  "the last plan starts after every worker ends" =
+    min(ov[plan == ov_n_plans, time]) > max(ov[in_worker, time]),
+  "the plans are built before any plan runs" =
+    ov[step == "build", time] < min(ov[step != "build", time]),
+  "each plan pulls its data once" =
+    all(ov[step == "pull", .N, by = plan]$N == 1L),
+  "each plan runs every analysis" =
+    all(ov[step == "analysis", .N, by = plan]$N == ov_n_analyses)
+)
+
+# Rows: the main process on top, then each worker in the order it started.
+procs <- c(ov_main, unique(ov[in_worker, pid]))
+row_y <- rev(seq_along(procs))
+row_names <- c("main process", paste("worker", seq_len(length(procs) - 1L)))
+ov[, y := row_y[match(pid, procs)]]
+y_main <- row_y[1]
+
+# x counts characters of 10 pt text. Each plan box holds its steps in order.
+cell_w <- 5
+plan_w <- (ov_n_analyses + 1) * cell_w + 1.4
+build_x2 <- 13
+steps <- ov[step != "build"]
+steps[, label := fifelse(step == "pull", "pull", paste0("A", analysis))]
+steps[, j := seq_len(.N), by = plan]
+plans <- steps[, .(y = y[1], pid = pid[1], start = min(time)), by = plan]
+plans[, role := fifelse(plan == 1L, "first", fifelse(plan == ov_n_plans, "last", "middle"))]
+plans[plan == 1L, x1 := build_x2 + 2.5]
+fork_x <- build_x2 + 2.5 + plan_w + 6
+plans[role == "middle", x1 := fork_x + (rank(start) - 1) * (plan_w + 1), by = pid]
+last_x <- plans[role == "middle", max(x1)] + plan_w + 6
+plans[role == "last", x1 := last_x]
+plans[, x2 := x1 + plan_w]
+steps[plans, on = "plan", x := i.x1 + 0.7 + (j - 0.5) * cell_w]
+first_x2 <- plans[plan == 1L, x2]
+mid <- plans[role == "middle"]
+mid_first <- mid[, .SD[which.min(x1)], by = pid]
+mid_last <- mid[, .SD[which.max(x1)], by = pid]
+
+blue <- "#2c7bb6"
+text_size <- 10 / .pt
+q <- ggplot()
+q <- q + annotate(
+  "rect", xmin = -Inf, xmax = Inf, ymin = row_y - 0.47, ymax = row_y + 0.47,
+  fill = "grey95"
+)
+q <- q + annotate(
+  "segment", x = first_x2 + 0.3, xend = last_x - 0.3, y = y_main, yend = y_main,
+  linetype = "dotted", colour = "grey40", linewidth = 0.6
+)
+wait_x <- (first_x2 + last_x) / 2
+q <- q + annotate(
+  "rect", xmin = wait_x - 11, xmax = wait_x + 11, ymin = y_main - 0.15, ymax = y_main + 0.15,
+  fill = "grey95"
+)
+q <- q + annotate(
+  "text", x = wait_x, y = y_main, label = "waits for the workers",
+  size = text_size, colour = "grey30"
+)
+q <- q + annotate(
+  "rect", xmin = 0.4, xmax = build_x2, ymin = y_main - 0.4, ymax = y_main + 0.4,
+  fill = "white", colour = "grey20"
+)
+q <- q + annotate(
+  "text", x = (0.4 + build_x2) / 2, y = y_main, label = "run_task()\nbuilds plans",
+  size = text_size, lineheight = 1
+)
+q <- q + annotate(
+  "segment", x = build_x2 + 0.1, xend = build_x2 + 2.4, y = y_main, yend = y_main,
+  colour = blue, linewidth = 0.8, arrow = arrow(length = unit(6, "pt"), type = "closed")
+)
+q <- q + geom_rect(
+  data = plans, aes(xmin = x1, xmax = x2, ymin = y - 0.42, ymax = y + 0.42),
+  fill = "white", colour = "grey20"
+)
+q <- q + geom_text(
+  data = plans, aes(x = (x1 + x2) / 2, y = y + 0.2, label = paste0("plan ", plan, ", ", role)),
+  size = text_size
+)
+q <- q + geom_rect(
+  data = steps,
+  aes(xmin = x - cell_w / 2 + 0.3, xmax = x + cell_w / 2 - 0.3, ymin = y - 0.36, ymax = y + 0.02),
+  fill = fifelse(steps$step == "pull", "#d1e5f0", "grey92"), colour = "grey55"
+)
+q <- q + geom_text(data = steps, aes(x = x, y = y - 0.17, label = label), size = text_size)
+q <- q + geom_segment(
+  data = mid_first, aes(x = first_x2 + 0.3, xend = x1 - 0.3, y = y_main, yend = y),
+  colour = blue, linewidth = 0.8, arrow = arrow(length = unit(6, "pt"), type = "closed")
+)
+q <- q + geom_segment(
+  data = mid_last, aes(x = x2 + 0.3, xend = last_x - 0.3, y = y, yend = y_main),
+  colour = blue, linewidth = 0.8, arrow = arrow(length = unit(6, "pt"), type = "closed")
+)
+q <- q + annotate(
+  "text", x = c(first_x2 + 3, last_x - 3), y = y_main + 0.62,
+  label = c("fork", "workers end"), size = text_size, fontface = "bold"
+)
+q <- q + scale_y_continuous(
+  NULL, breaks = row_y, labels = row_names,
+  limits = c(min(row_y) - 0.5, y_main + 0.8), expand = c(0, 0)
+)
+q <- q + scale_x_continuous(NULL, breaks = NULL, limits = c(0, last_x + plan_w + 0.4), expand = c(0, 0))
+q <- q + theme_minimal(base_size = 10)
+q + theme(
+  panel.grid = element_blank(),
+  axis.text.y = element_text(colour = "black", face = "bold", size = 10)
+)
+```
+
 ## A plan is one data pull {#rule-one-pull}
 
 cs9 calls the data selector once per plan. Every analysis of that plan then gets the same `data`. This task has 3 plans, one per location, and 3 analyses per plan, one per age group. A counter records each call to the data selector.

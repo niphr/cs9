@@ -7,6 +7,7 @@
 - `vignette("how-a-task-runs")` shows a task that reads its cores from an environment variable that changes after `add_task()`.
 - The section `#rule-plans-per-run` of `vignette("how-a-task-runs")` states when a task builds its plans, and how to run plans that you edit by hand.
 - `vignette("task-shapes")` holds all seven task shapes. The sections of the removed `vignette("more-task-shapes")` keep their heading ids there.
+- `vignette("task-shapes")` has a diagram for each shape, and `vignette("how-a-task-runs")` has a diagram of one run. Each diagram comes from a run that the vignette records and checks when it builds. ggplot2 is in Suggests for these diagrams.
 
 # Version 26.10.6
 
