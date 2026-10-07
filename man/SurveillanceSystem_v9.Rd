@@ -286,6 +286,7 @@ global$ss$add_table(
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-add_task}{}}}
 \subsection{\code{SurveillanceSystem_v9$add_task()}}{
   Add a surveillance task to the system.
+\code{run_task()} builds the plans again on every call, so \code{argset$today} and \code{argset$yesterday} hold the date of the run.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$add_task(
@@ -312,7 +313,9 @@ global$ss$add_table(
       \item{\code{name_grouping}}{Name of the task (grouping).}
       \item{\code{name_action}}{Name of the task (action).}
       \item{\code{name_variant}}{Name of the task (variant).}
-      \item{\code{cores}}{Number of CPU cores.}
+      \item{\code{cores}}{The number of CPU cores, or a function with no arguments that returns it.
+The task calls the function each time it runs, so the function MAY read an environment variable that changes after \code{add_task()}.
+A runner that sets \code{cores} to 1, such as \code{TaskJob}, replaces the function.}
       \item{\code{permission}}{A permission R6 instance.}
       \item{\code{plan_analysis_fn_name}}{The name of a function that returns a named list \code{list(for_each_plan = list(), for_each_analysis = NULL)}.}
       \item{\code{for_each_plan}}{A list, where each unit corresponds to one data extraction. You SHOULD use \code{plnr::expand_list}.}
@@ -358,7 +361,7 @@ global$ss$add_table(
 \if{latex}{\out{\hypertarget{method-SurveillanceSystem_v9-run_task}{}}}
 \subsection{\code{SurveillanceSystem_v9$run_task()}}{
   Execute a surveillance task by name.
-A task with a plan analysis builds its plans again on every call.
+The task builds its plans again on every call, so \code{argset$today} is the date of the run.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SurveillanceSystem_v9$run_task(task_name)}

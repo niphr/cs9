@@ -30,10 +30,14 @@ Task <- R6::R6Class(
       upsert_at_end_of_each_plan = FALSE,
       insert_at_end_of_each_plan = FALSE,
       action_before_fn = NULL,
-      action_after_fn = NULL
+      action_after_fn = NULL,
+      fixed_plans_fn = NULL
     ) {
-
-      self$name <- paste0(c(name_grouping, name_action, name_variant), collapse = "_")
+      private$fixed_plans_fn <- fixed_plans_fn
+      self$name <- paste0(
+        c(name_grouping, name_action, name_variant),
+        collapse = "_"
+      )
       self$name_grouping <- name_grouping
       self$name_action <- name_action
       self$name_variant <- name_variant
@@ -79,22 +83,32 @@ Task <- R6::R6Class(
             self$plans[[i]]$analyses[[j]]$argset$first_analysis <- FALSE
           }
 
-          if (i == length(self$plans) && j == length(self$plans[[i]]$analyses)) {
+          if (
+            i == length(self$plans) && j == length(self$plans[[i]]$analyses)
+          ) {
             self$plans[[i]]$analyses[[j]]$argset$last_analysis <- TRUE
           } else {
             self$plans[[i]]$analyses[[j]]$argset$last_analysis <- FALSE
           }
 
-          if(j == 1){
-            self$plans[[i]]$analyses[[j]]$argset$within_plan_first_analysis <- TRUE
+          if (j == 1) {
+            self$plans[[i]]$analyses[[
+              j
+            ]]$argset$within_plan_first_analysis <- TRUE
           } else {
-            self$plans[[i]]$analyses[[j]]$argset$within_plan_first_analysis <- FALSE
+            self$plans[[i]]$analyses[[
+              j
+            ]]$argset$within_plan_first_analysis <- FALSE
           }
 
-          if(j == length(self$plans[[i]]$analyses)){
-            self$plans[[i]]$analyses[[j]]$argset$within_plan_last_analysis <- TRUE
+          if (j == length(self$plans[[i]]$analyses)) {
+            self$plans[[i]]$analyses[[
+              j
+            ]]$argset$within_plan_last_analysis <- TRUE
           } else {
-            self$plans[[i]]$analyses[[j]]$argset$within_plan_last_analysis <- FALSE
+            self$plans[[i]]$analyses[[
+              j
+            ]]$argset$within_plan_last_analysis <- FALSE
           }
         }
       }
@@ -105,11 +119,18 @@ Task <- R6::R6Class(
     # reuse them, so the plan indexes stay the same between interactive calls.
     # SurveillanceSystem_v9$run_task() passes replan = TRUE, because the data
     # that the plan analysis reads can change between two runs in one session.
+    # A task with fixed plans builds them again with fixed_plans_fn when
+    # replan = TRUE, so that argset$today is the date of the run and not the
+    # date of registration. update_plans_fn stays NULL for that task, because
+    # callers read a non-NULL update_plans_fn as "this task has a plan
+    # analysis".
     update_plans = function(replan = FALSE) {
       if (!is.null(self$update_plans_fn) && (replan || !private$plans_built)) {
         message(glue::glue("Updating plans..."))
         self$plans <- self$update_plans_fn()
         private$plans_built <- TRUE
+      } else if (replan && !is.null(private$fixed_plans_fn)) {
+        self$plans <- private$fixed_plans_fn()
       }
       return(self$insert_first_last_analysis())
     },
@@ -124,11 +145,19 @@ Task <- R6::R6Class(
       return(retval)
     },
     run = function(cores = self$cores) {
+      # `cores` MAY be a function with no arguments. It is called here, so it
+      # reads its settings when the task runs. A runner that sets
+      # `self$cores <- 1` replaces the function.
+      if (is.function(cores)) {
+        cores <- cores()
+      }
 
       status <- "failed"
       start_datetime <- lubridate::now()
       on.exit({
-        if(status=="failed") ram_max_used_mb <- 0
+        if (status == "failed") {
+          ram_max_used_mb <- 0
+        }
         update_config_tasks_stats(
           ss = self$ss,
           task = self$name,
@@ -139,14 +168,17 @@ Task <- R6::R6Class(
           start_datetime = start_datetime,
           stop_datetime = lubridate::now(),
           ram_all_cores_mb = round(ram_max_used_mb, 1),
-          ram_per_core_mb = round(ram_max_used_mb/cores, 1),
-          status = status)
+          ram_per_core_mb = round(ram_max_used_mb / cores, 1),
+          status = status
+        )
       })
 
       # task <- tm_get_task("analysis_norsyss_qp_gastro")
       message(glue::glue("task: {self$name}"))
-      if (!is.null(self$permission)) if (!self$permission$has_permission()) {
-        return(NULL)
+      if (!is.null(self$permission)) {
+        if (!self$permission$has_permission()) {
+          return(NULL)
+        }
       }
 
       upsert_at_end_of_each_plan <- self$upsert_at_end_of_each_plan
@@ -156,7 +188,9 @@ Task <- R6::R6Class(
       update_config_log(
         ss = self$ss,
         task = self$name,
-        message = glue::glue("Running task={self$name} with plans={length(self$plans)} and analyses={self$num_analyses()}")
+        message = glue::glue(
+          "Running task={self$name} with plans={length(self$plans)} and analyses={self$num_analyses()}"
+        )
       )
       if (self$num_analyses() == 0) {
         message("Quitting because there is nothing to do (0 analyses)")
@@ -211,16 +245,25 @@ Task <- R6::R6Class(
           delay_conditions = ""
         )
 
-        ram_max_used_mb <- gc(reset = FALSE)[,6]|>sum()
-
+        ram_max_used_mb <- gc(reset = FALSE)[, 6] |> sum()
       } else if (run_type == "parallel_plans") {
         # running in parallel
 
-        message("Running plans 1 and ", length(self$plans), " sequentially, and 2:", length(self$plans) - 1, " in parallel\n")
+        message(
+          "Running plans 1 and ",
+          length(self$plans),
+          " sequentially, and 2:",
+          length(self$plans) - 1,
+          " in parallel\n"
+        )
 
         message("*****")
         message("*****")
-        message("***** Running plan 1 sequentially at ", lubridate::now(), " *****")
+        message(
+          "***** Running plan 1 sequentially at ",
+          lubridate::now(),
+          " *****"
+        )
         # pb <- progressr::progressor(steps = self$plans[[1]]$x_length())
         private$run_sequential(
           plans_index = 1,
@@ -230,11 +273,21 @@ Task <- R6::R6Class(
           cores = cores
         )
         b0 <- Sys.time()
-        message("\nPlan 1 ran in ", round(as.numeric(difftime(b0, a0, units = "mins")), 1), " mins\n")
+        message(
+          "\nPlan 1 ran in ",
+          round(as.numeric(difftime(b0, a0, units = "mins")), 1),
+          " mins\n"
+        )
 
         message("*****")
         message("*****")
-        message("***** Running plans 2:", (length(self$plans) - 1), " in parallel at ", lubridate::now(), " *****")
+        message(
+          "***** Running plans 2:",
+          (length(self$plans) - 1),
+          " in parallel at ",
+          lubridate::now(),
+          " *****"
+        )
 
         private$run_parallel_plans(
           plans_index = 2:(length(self$plans) - 1),
@@ -246,7 +299,13 @@ Task <- R6::R6Class(
 
         message("\n*****")
         message("*****")
-        message("***** Running plan ", length(self$plans), " sequentially at ", lubridate::now(), " *****")
+        message(
+          "***** Running plan ",
+          length(self$plans),
+          " sequentially at ",
+          lubridate::now(),
+          " *****"
+        )
         a1 <- Sys.time()
         private$run_sequential(
           plans_index = length(self$plans),
@@ -256,14 +315,24 @@ Task <- R6::R6Class(
           cores = cores
         )
         b1 <- Sys.time()
-        message("\nPlan ", length(self$plans), " ran in ", round(as.numeric(difftime(b1, a1, units = "mins")), 1), " mins")
+        message(
+          "\nPlan ",
+          length(self$plans),
+          " ran in ",
+          round(as.numeric(difftime(b1, a1, units = "mins")), 1),
+          " mins"
+        )
 
-        ram_max_used_mb <- gc(reset = FALSE)[,6]|>sum()
+        ram_max_used_mb <- gc(reset = FALSE)[, 6] |> sum()
         ram_max_used_mb <- ram_max_used_mb * cores
       }
 
       b1 <- Sys.time()
-      message("Task ran in ", round(as.numeric(difftime(b1, a0, units = "mins")), 1), " mins\n")
+      message(
+        "Task ran in ",
+        round(as.numeric(difftime(b1, a0, units = "mins")), 1),
+        " mins\n"
+      )
 
       data.table::setDTthreads()
 
@@ -278,10 +347,20 @@ Task <- R6::R6Class(
   ),
   private = list(
     plans_built = FALSE,
-    run_sequential = function(plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, pb = NULL, cores) {
+    fixed_plans_fn = NULL,
+    run_sequential = function(
+      plans_index,
+      tables,
+      upsert_at_end_of_each_plan,
+      insert_at_end_of_each_plan,
+      pb = NULL,
+      cores
+    ) {
       # for (s in tables) s$connect()
       for (i in seq_along(self$plans[plans_index])) {
-        if (!is.null(pb)) self$plans[plans_index][[i]]$set_progressor(pb)
+        if (!is.null(pb)) {
+          self$plans[plans_index][[i]]$set_progressor(pb)
+        }
         config$plan_attempt_index <- 1
 
         if (length(plans_index) == 1 && is.null(pb)) {
@@ -292,21 +371,38 @@ Task <- R6::R6Class(
 
         data <- self$plans[plans_index][[i]]$get_data()
         hashes <- data$hash
-        last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(task = self$name, index_plan = plans_index[i], expected_element_tags = names(data$hash$current_elements))
+        last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(
+          task = self$name,
+          index_plan = plans_index[i],
+          expected_element_tags = names(data$hash$current_elements)
+        )
         data$hash$last_run <- last_run_hashes$last_run
         data$hash$last_run_elements <- last_run_hashes$last_run_elements
 
-        retval <- self$plans[plans_index][[i]]$run_all_with_data(data = data, tables = tables)
+        retval <- self$plans[plans_index][[i]]$run_all_with_data(
+          data = data,
+          tables = tables
+        )
 
-        if(upsert_at_end_of_each_plan){
-          retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = TRUE, fill = TRUE)
-          for(df_name in names(retval)){
+        if (upsert_at_end_of_each_plan) {
+          retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
+            retval,
+            returned_name_when_dfs_are_not_nested = "output",
+            use.names = TRUE,
+            fill = TRUE
+          )
+          for (df_name in names(retval)) {
             tables[[df_name]]$upsert_data(retval[[df_name]], verbose = verbose)
           }
         }
         if (insert_at_end_of_each_plan) {
-          retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = TRUE, fill = TRUE)
-          for(df_name in names(retval)){
+          retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
+            retval,
+            returned_name_when_dfs_are_not_nested = "output",
+            use.names = TRUE,
+            fill = TRUE
+          )
+          for (df_name in names(retval)) {
             tables[[df_name]]$insert_data(retval[[df_name]], verbose = verbose)
           }
         }
@@ -322,14 +418,29 @@ Task <- R6::R6Class(
         )
         rm("data")
       }
-      for (s in tables) s$disconnect()
-      for (s in config$tables) s$disconnect()
+      for (s in tables) {
+        s$disconnect()
+      }
+      for (s in config$tables) {
+        s$disconnect()
+      }
       return(invisible(NULL))
     },
-    run_parallel_plans = function(plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, cores) {
+    run_parallel_plans = function(
+      plans_index,
+      tables,
+      upsert_at_end_of_each_plan,
+      insert_at_end_of_each_plan,
+      cores
+    ) {
       y <- pbmcapply::pbmclapply(
         self$plans[plans_index],
-        function(x, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan) {
+        function(
+          x,
+          tables,
+          upsert_at_end_of_each_plan,
+          insert_at_end_of_each_plan
+        ) {
           config$in_parallel <- TRUE # this will stop TABLOCK from being used in in/upserts
           data.table::setDTthreads(1)
           x$set_verbose(FALSE)
@@ -349,22 +460,42 @@ Task <- R6::R6Class(
                 # for (s in tables) s$connect()
                 data <- x$get_data()
                 hashes <- data$hash
-                last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(task = self$name, index_plan = x$get_argset(1)$index_plan, expected_element_tags = names(data$hash$current_elements))
+                last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(
+                  task = self$name,
+                  index_plan = x$get_argset(1)$index_plan,
+                  expected_element_tags = names(data$hash$current_elements)
+                )
                 data$hash$last_run <- last_run_hashes$last_run
                 data$hash$last_run_elements <- last_run_hashes$last_run_elements
 
                 retval <- x$run_all_with_data(data = data, tables = tables)
 
-                if(upsert_at_end_of_each_plan){
-                  retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = TRUE, fill = TRUE)
-                  for(df_name in names(retval)){
-                    tables[[df_name]]$upsert_data(retval[[df_name]], verbose = FALSE)
+                if (upsert_at_end_of_each_plan) {
+                  retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
+                    retval,
+                    returned_name_when_dfs_are_not_nested = "output",
+                    use.names = TRUE,
+                    fill = TRUE
+                  )
+                  for (df_name in names(retval)) {
+                    tables[[df_name]]$upsert_data(
+                      retval[[df_name]],
+                      verbose = FALSE
+                    )
                   }
                 }
                 if (insert_at_end_of_each_plan) {
-                  retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(retval, returned_name_when_dfs_are_not_nested = "output", use.names = TRUE, fill = TRUE)
-                  for(df_name in names(retval)){
-                    tables[[df_name]]$insert_data(retval[[df_name]], verbose = FALSE)
+                  retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
+                    retval,
+                    returned_name_when_dfs_are_not_nested = "output",
+                    use.names = TRUE,
+                    fill = TRUE
+                  )
+                  for (df_name in names(retval)) {
+                    tables[[df_name]]$insert_data(
+                      retval[[df_name]],
+                      verbose = FALSE
+                    )
                   }
                 }
 
@@ -388,7 +519,13 @@ Task <- R6::R6Class(
               error = function(e) {
                 return(list(
                   error = TRUE,
-                  msg = paste0("Error in index ", x$get_argset(1)$index, ".\n********\n", e$message, "\n********\n")
+                  msg = paste0(
+                    "Error in index ",
+                    x$get_argset(1)$index,
+                    ".\n********\n",
+                    e$message,
+                    "\n********\n"
+                  )
                 ))
               }
             )
@@ -403,7 +540,9 @@ Task <- R6::R6Class(
               Sys.sleep(5)
             }
           }
-          if (catch_result$error) stop(catch_result$msg)
+          if (catch_result$error) {
+            stop(catch_result$msg)
+          }
 
           # ***************************** #
           # NEVER DELETE gc()             #
@@ -425,7 +564,11 @@ Task <- R6::R6Class(
 
       try_error_index <- unlist(lapply(y, function(x) inherits(x, "try-error")))
       if (sum(try_error_index) > 0) {
-        stop("Error running in parallel: ", y[try_error_index][1][[1]][1], call. = FALSE)
+        stop(
+          "Error running in parallel: ",
+          y[try_error_index][1][[1]][1],
+          call. = FALSE
+        )
       }
       # print(y)
     },
@@ -458,7 +601,13 @@ Task <- R6::R6Class(
     #     1
     #   }
     # },
-    run_parallel = function(plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, pb) {
+    run_parallel = function(
+      plans_index,
+      tables,
+      upsert_at_end_of_each_plan,
+      insert_at_end_of_each_plan,
+      pb
+    ) {
       # y <- future.apply::future_lapply(
       #   self$plans[plans_index],
       #   function(x, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, pb){
@@ -493,41 +642,52 @@ Task <- R6::R6Class(
       #   insert_at_end_of_each_plan = insert_at_end_of_each_plan,
       #   pb = pb
       # )
-      return(y <- pbmcapply::pbmcmapply(
-        function(x, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, pb) {
-          data.table::setDTthreads(1)
+      return(
+        y <- pbmcapply::pbmcmapply(
+          function(
+            x,
+            tables,
+            upsert_at_end_of_each_plan,
+            insert_at_end_of_each_plan,
+            pb
+          ) {
+            data.table::setDTthreads(1)
 
-          # for (s in tables) s$connect()
-          x$set_progressor(pb)
-          retval <- x$run_all(tables = tables)
+            # for (s in tables) s$connect()
+            x$set_progressor(pb)
+            retval <- x$run_all(tables = tables)
 
-          if (upsert_at_end_of_each_plan) {
-            retval <- rbindlist(retval)
-            tables$output$upsert_data(retval, verbose = FALSE)
-          }
+            if (upsert_at_end_of_each_plan) {
+              retval <- rbindlist(retval)
+              tables$output$upsert_data(retval, verbose = FALSE)
+            }
 
-          if (insert_at_end_of_each_plan) {
-            retval <- rbindlist(retval)
-            tables$output$insert_data(retval, verbose = FALSE)
-          }
-          rm("retval")
-          # for (s in tables) s$db_disconnect()
+            if (insert_at_end_of_each_plan) {
+              retval <- rbindlist(retval)
+              tables$output$insert_data(retval, verbose = FALSE)
+            }
+            rm("retval")
+            # for (s in tables) s$db_disconnect()
 
-          # ***************************** #
-          # NEVER DELETE gc()             #
-          # IT CAUSES 2x SPEEDUP          #
-          # AND 10x MEMORY EFFICIENCY     #
-          gc() #
-          # ***************************** #
-          return(1)
-        },
-        self$plans[plans_index],
-        MoreArgs = list(
-          tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, pb
-        ),
-        ignore.interactive = TRUE,
-        mc.cores = 2
-      ))
+            # ***************************** #
+            # NEVER DELETE gc()             #
+            # IT CAUSES 2x SPEEDUP          #
+            # AND 10x MEMORY EFFICIENCY     #
+            gc() #
+            # ***************************** #
+            return(1)
+          },
+          self$plans[plans_index],
+          MoreArgs = list(
+            tables,
+            upsert_at_end_of_each_plan,
+            insert_at_end_of_each_plan,
+            pb
+          ),
+          ignore.interactive = TRUE,
+          mc.cores = 2
+        )
+      )
       # y <- foreach(x = self$plans[plans_index]) %dopar% {
       #   data.table::setDTthreads(1)
       #

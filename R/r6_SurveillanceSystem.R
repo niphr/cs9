@@ -223,10 +223,13 @@ SurveillanceSystem_v9 <- R6::R6Class(
     },
     #' @description
     #' Add a surveillance task to the system.
+    #' `run_task()` builds the plans again on every call, so `argset$today` and `argset$yesterday` hold the date of the run.
     #' @param name_grouping Name of the task (grouping).
     #' @param name_action Name of the task (action).
     #' @param name_variant Name of the task (variant).
-    #' @param cores Number of CPU cores.
+    #' @param cores The number of CPU cores, or a function with no arguments that returns it.
+    #' The task calls the function each time it runs, so the function MAY read an environment variable that changes after `add_task()`.
+    #' A runner that sets `cores` to 1, such as `TaskJob`, replaces the function.
     #' @param permission A permission R6 instance.
     #' @param plan_analysis_fn_name The name of a function that returns a named list \code{list(for_each_plan = list(), for_each_analysis = NULL)}.
     #' @param for_each_plan A list, where each unit corresponds to one data extraction. You SHOULD use \code{plnr::expand_list}.
@@ -300,13 +303,15 @@ SurveillanceSystem_v9 <- R6::R6Class(
     },
     #' @description
     #' Execute a surveillance task by name.
-    #' A task with a plan analysis builds its plans again on every call.
+    #' The task builds its plans again on every call, so `argset$today` is the date of the run.
     #' @param task_name Character string specifying the task name to run.
     #' @return No return value. This method is called for its side effect of executing the task.
     run_task = function(task_name) {
       # Not get_task(). get_task() builds the plans only when the task has
       # none, so a second run in one session reused the plans of the first.
       # A call to get_task() here would build the plans twice in the first run.
+      # replan = TRUE also builds the fixed plans of a for_each_plan task
+      # again, which sets argset$today and argset$yesterday to the run date.
       task <- self$tasks[[task_name]]
       task$update_plans(replan = TRUE)
       return(task$run())
@@ -329,7 +334,9 @@ SurveillanceSystem_v9 <- R6::R6Class(
       index_plan = 1,
       index_analysis = 1
     ) {
-      return(self$get_task(task_name)$plans[[index_plan]]$get_argset(index_analysis))
+      return(self$get_task(task_name)$plans[[index_plan]]$get_argset(
+        index_analysis
+      ))
     },
     #' @description
     #' Get data for a specific plan.
@@ -474,6 +481,35 @@ generic_list_plan_function_factory_v9 <- function(
   })
 }
 
+# Builds the plans of a task with fixed plans. A factory, so that the closure
+# holds only these arguments and not the plans of an earlier build.
+fixed_plans_function_factory_v9 <- function(
+  for_each_plan,
+  for_each_analysis,
+  universal_argset,
+  action_fn_name,
+  data_selector_fn_name,
+  tables
+) {
+  force(for_each_plan)
+  force(for_each_analysis)
+  force(universal_argset)
+  force(action_fn_name)
+  force(data_selector_fn_name)
+  force(tables)
+
+  return(function() {
+    return(task_from_config_v9_list_plan(
+      for_each_plan = for_each_plan,
+      for_each_analysis = for_each_analysis,
+      universal_argset = universal_argset,
+      action_fn_name = action_fn_name,
+      data_selector_fn_name = data_selector_fn_name,
+      tables = tables
+    ))
+  })
+}
+
 task_from_config_v9_list_plan <- function(
   for_each_plan,
   for_each_analysis = NULL,
@@ -566,9 +602,11 @@ task_from_config_v9 <- function(
     )
   }
 
+  fixed_plans_fn <- NULL
   if (!is.null(for_each_plan)) {
     stopifnot(is.list(for_each_plan))
-    list_plan <- task_from_config_v9_list_plan(
+    # run_task() calls fixed_plans_fn again, so argset$today is the run date.
+    fixed_plans_fn <- fixed_plans_function_factory_v9(
       for_each_plan = for_each_plan,
       for_each_analysis = for_each_analysis,
       universal_argset = universal_argset,
@@ -576,6 +614,7 @@ task_from_config_v9 <- function(
       data_selector_fn_name = data_selector_fn_name,
       tables = tables
     )
+    list_plan <- fixed_plans_fn()
     update_plans_fn <- NULL
   } else if (!is.null(plan_analysis_fn_name)) {
     list_plan <- NULL
@@ -598,7 +637,8 @@ task_from_config_v9 <- function(
     tables = tables,
     cores = cores,
     upsert_at_end_of_each_plan = upsert_at_end_of_each_plan,
-    insert_at_end_of_each_plan = insert_at_end_of_each_plan
+    insert_at_end_of_each_plan = insert_at_end_of_each_plan,
+    fixed_plans_fn = fixed_plans_fn
   )
 
   return(task)
