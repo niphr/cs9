@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette holds three of the five task shapes. `vignette("task-shapes")` lists all five and holds the other two. Each shape runs against SQLite when the vignette builds, and a chunk calls `stopifnot()` on what the shape promises.
+This vignette holds five of the seven task shapes. `vignette("task-shapes")` lists all seven and holds the other two. Each shape runs against SQLite when the vignette builds, and a chunk calls `stopifnot()` on what the shape promises.
 
 ## Setup
 
@@ -275,6 +275,86 @@ stopifnot(
 list(pulled = ckpt$pulled, swapped = ckpt$swapped)
 ```
 
+## Per-plan staged swap {#shape-per-plan-staged-swap}
+
+The task has one plan per unit, for example a week. Each plan pulls its unit and writes it to staging. The same plan then swaps that unit into the live table in its own transaction. No plan depends on another plan.
+
+- **Use it when** each unit is complete in one plan, and a reader MAY see units from different runs in the live table.
+- **Do not use it when** the live table MUST change only when every unit arrived. Use a [staged import](task-shapes.html#shape-staged-import). Use [staging as a checkpoint](#shape-staging-checkpoint) when a unit needs several plans. There only the last plan swaps.
+- **Failure modes.** A failed plan leaves its own unit unchanged in the live table, so that unit is stale until the next run. The units of the plans that finished hold the new rows. A plan that did not run, for example after the task stopped, also leaves its unit stale. A plan MUST remove only its own unit from staging, because the other plans MAY run in parallel.
+
+```{r per-plan-define}
+for (variant in c("staging", "live")) {
+  ss$add_table(
+    name_access = "anon",
+    name_grouping = "pps",
+    name_variant = variant,
+    field_types = c(isoyearweek = "TEXT", n = "INTEGER"),
+    keys = "isoyearweek"
+  )
+}
+pps_weeks <- c("2026-01", "2026-02")
+pps <- new.env()
+pps$fail_week <- NA_character_
+
+pps_data <- function(argset, tables) {
+  list(rows = data.table(isoyearweek = argset$isoyearweek, n = 2L))
+}
+
+pps_action <- function(data, argset, tables) {
+  tables$staging$drop_rows_where(paste0("isoyearweek = ", sql_in(argset$isoyearweek)))
+  if (identical(argset$isoyearweek, pps$fail_week)) {
+    stop("the write to staging failed for ", pps$fail_week)
+  }
+  tables$staging$insert_data(data$rows)
+  pps_swap(tables, argset$isoyearweek)
+}
+
+# One transaction deletes the week from the live table, copies it from
+# staging and removes it from staging.
+pps_swap <- function(tables, week) {
+  tables$live$connect()
+  con <- tables$live$dbconnection$autoconnection
+  live_name <- tables$live$table_name_fully_specified_text
+  staging_name <- tables$staging$table_name_fully_specified_text
+  where <- paste0(" WHERE isoyearweek = ", sql_in(week))
+  DBI::dbWithTransaction(con, {
+    DBI::dbExecute(con, paste0("DELETE FROM ", live_name, where))
+    DBI::dbExecute(con, paste0(
+      "INSERT INTO ", live_name, " SELECT * FROM ", staging_name, where
+    ))
+    DBI::dbExecute(con, paste0("DELETE FROM ", staging_name, where))
+  })
+}
+
+ss$add_task(
+  name_grouping = "pps",
+  name_action = "import",
+  for_each_plan = plnr::expand_list(isoyearweek = pps_weeks),
+  data_selector_fn_name = "pps_data",
+  action_fn_name = "pps_action",
+  tables = list(
+    staging = ss$tables$anon_pps_staging,
+    live = ss$tables$anon_pps_live
+  )
+)
+```
+
+The live table holds both weeks with `n = 1` from an earlier run. The run writes `n = 2`, and the write of week 2026-02 fails. Week 2026-01 MUST hold the new rows, and week 2026-02 MUST hold the old rows.
+
+```{r per-plan-run}
+ss$tables$anon_pps_live$insert_data(data.table(isoyearweek = pps_weeks, n = 1L))
+pps$fail_week <- "2026-02"
+run <- tryCatch(ss$run_task("pps_import"), error = function(e) e)
+live <- read_rows(ss$tables$anon_pps_live, "isoyearweek")
+stopifnot(
+  inherits(run, "error"),
+  identical(live$isoyearweek, pps_weeks),
+  all(live$n == c(2L, 1L))
+)
+live
+```
+
 ## Export from a finished table {#shape-export-finished-table}
 
 The task reads tables that an earlier task finished, and writes files. It has one plan per output file, for example per location or per week. The first plan creates the folder. The last plan writes what needs every file, here an index, and checks that every expected file exists.
@@ -352,5 +432,67 @@ stopifnot(
   inherits(run, "error"),
   !file.exists(file.path(folder, "index.txt"))
 )
+conditionMessage(run)
+```
+
+## Notify after export {#shape-notify-after-export}
+
+The task reads what a finished export produced, files or a table, and sends it on, for example by email or as a message. It computes nothing itself. It has one plan. The data selector finds the output, and the action checks the output and sends it.
+
+- **Use it when** an [export](#shape-export-finished-table) already wrote the output, and the scheduler runs the notify task after that export.
+- **Do not use it when** the message needs a value that no export wrote. Never compute in the notify task. Add the value to the export.
+- **Failure modes.** The task can send stale output, for example when the export did not run today. Check the date or the hash of the output before you send it. A send failure MUST make the task fail. Do not catch the error of the send function, or the task succeeds and nobody receives the message.
+
+```{r notify-define}
+notify_file <- file.path(db_dir, "notify", "weekly.csv")
+notify <- new.env()
+notify$sent <- character(0)
+# A local stub for an email or a message API. It records the file it receives.
+notify$send <- function(path) notify$sent <- c(notify$sent, path)
+
+# A fake export, which writes the file that the notify task sends.
+fake_export <- function() {
+  dir.create(dirname(notify_file), showWarnings = FALSE)
+  data.table::fwrite(data.table(location_code = "county_03", n = 30L), notify_file)
+}
+
+notify_data <- function(argset, tables) {
+  list(path = argset$path, written = file.mtime(argset$path))
+}
+
+notify_action <- function(data, argset, tables) {
+  age_hours <- as.numeric(difftime(Sys.time(), data$written, units = "hours"))
+  if (is.na(age_hours) || age_hours > argset$max_age_hours) {
+    stop("the export is missing or older than ", argset$max_age_hours, " hours")
+  }
+  notify$send(data$path)
+}
+
+ss$add_task(
+  name_grouping = "notify",
+  name_action = "weekly",
+  for_each_plan = plnr::expand_list(report = "weekly"),
+  universal_argset = list(path = notify_file, max_age_hours = 24),
+  data_selector_fn_name = "notify_data",
+  action_fn_name = "notify_action"
+)
+```
+
+The first run sends the file that the fake export wrote. The second run finds a file from 2 days ago, and MUST stop without a send. In the third run the send fails, and the task MUST stop with an error.
+
+```{r notify-run}
+fake_export()
+ss$run_task("notify_weekly")
+stopifnot(identical(notify$sent, notify_file))
+
+notify$sent <- character(0)
+Sys.setFileTime(notify_file, Sys.time() - 48 * 3600)
+stale <- tryCatch(ss$run_task("notify_weekly"), error = function(e) e)
+stopifnot(inherits(stale, "error"), length(notify$sent) == 0)
+
+fake_export()
+notify$send <- function(path) stop("the mail server refused the message")
+run <- tryCatch(ss$run_task("notify_weekly"), error = function(e) e)
+stopifnot(inherits(run, "error"))
 conditionMessage(run)
 ```
