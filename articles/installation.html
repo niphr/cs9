@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -315,15 +315,16 @@ file.</p>
 <span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PORT</span><span class="op">=</span>5432</span>
 <span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SERVER</span><span class="op">=</span>localhost</span>
 <span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="va">CS9_DBCONFIG_USER</span><span class="op">=</span>cs9_user</span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PASSWORD</span><span class="op">=</span>yourStrongPassword100</span>
-<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SSLMODE</span><span class="op">=</span>prefer</span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="va">CS9_DBCONFIG_ROLE_CREATE_TABLE</span><span class="op">=</span>x</span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a></span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co"># Database Schema Configuration</span></span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_CONFIG</span><span class="op">=</span>config</span>
-<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_CONFIG</span><span class="op">=</span>cs9_surveillance</span>
-<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_ANON</span><span class="op">=</span>anon</span>
-<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>cs9_surveillance</span></code></pre></div>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co"># Optional when csdb::csdb_set_password_hook() supplies the password</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PASSWORD</span><span class="op">=</span>yourStrongPassword100</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SSLMODE</span><span class="op">=</span>prefer</span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="va">CS9_DBCONFIG_ROLE_CREATE_TABLE</span><span class="op">=</span>x</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co"># Database Schema Configuration</span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_CONFIG</span><span class="op">=</span>config</span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_CONFIG</span><span class="op">=</span>cs9_surveillance</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_ANON</span><span class="op">=</span>anon</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>cs9_surveillance</span></code></pre></div>
 <p><code>CS9_PATH</code> MUST be a real directory. An empty value counts
 as missing, and <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> reports it as an
 error.</p>
@@ -394,7 +395,8 @@ value counts as missing and fails validation</td>
 <tr class="even">
 <td><code>CS9_DBCONFIG_PASSWORD</code></td>
 <td><code>yourStrongPassword100</code></td>
-<td>Database password</td>
+<td>Database password. Optional when a hook from
+<code><a href="https://niphr.github.io/csdb/reference/csdb_set_password_hook.html" class="external-link">csdb::csdb_set_password_hook()</a></code> supplies the password</td>
 </tr>
 <tr class="odd">
 <td><code>CS9_DBCONFIG_SSLMODE</code></td>

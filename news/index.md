@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 26.10.8
+
+- [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+  no longer requires `CS9_DBCONFIG_PASSWORD` for `PostgreSQL Unicode`,
+  so CS9 loads when a hook from
+  [`csdb::csdb_set_password_hook()`](https://niphr.github.io/csdb/reference/csdb_set_password_hook.html)
+  supplies the password. An unset password is still an empty string.
+- [`vignette("backends")`](https://niphr.github.io/cs9/articles/backends.md)
+  and
+  [`vignette("installation")`](https://niphr.github.io/cs9/articles/installation.md)
+  say when `CS9_DBCONFIG_PASSWORD` is optional.
+
 ## Version 26.10.7
 
 - `add_task()` accepts `cores` as a function with no arguments.

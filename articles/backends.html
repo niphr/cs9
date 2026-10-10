@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -118,15 +118,16 @@ level, and credentials.</p>
 <span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PORT</span><span class="op">=</span>5432</span>
 <span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SERVER</span><span class="op">=</span>localhost</span>
 <span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="va">CS9_DBCONFIG_USER</span><span class="op">=</span>cs9_user</span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PASSWORD</span><span class="op">=</span>yourStrongPassword100</span>
-<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SSLMODE</span><span class="op">=</span>prefer</span>
-<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="va">CS9_DBCONFIG_ROLE_CREATE_TABLE</span><span class="op">=</span>x</span>
-<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="co"># Database Schema Configuration</span></span>
-<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_CONFIG</span><span class="op">=</span>config</span>
-<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_CONFIG</span><span class="op">=</span>cs9_surveillance</span>
-<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_ANON</span><span class="op">=</span>anon</span>
-<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>cs9_surveillance</span></code></pre></div>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co"># Optional when csdb::csdb_set_password_hook() supplies the password</span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="va">CS9_DBCONFIG_PASSWORD</span><span class="op">=</span>yourStrongPassword100</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SSLMODE</span><span class="op">=</span>prefer</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="va">CS9_DBCONFIG_ROLE_CREATE_TABLE</span><span class="op">=</span>x</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co"># Database Schema Configuration</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_CONFIG</span><span class="op">=</span>config</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_CONFIG</span><span class="op">=</span>cs9_surveillance</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="va">CS9_DBCONFIG_SCHEMA_ANON</span><span class="op">=</span>anon</span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="va">CS9_DBCONFIG_DB_ANON</span><span class="op">=</span>cs9_surveillance</span></code></pre></div>
 <p>SQLite needs a file path per access level. There is nothing to
 install, nothing to start and nothing to authenticate against.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># CS9 Core Configuration</span></span>
@@ -207,7 +208,8 @@ it MUST equal an <code>odbcinst.ini</code> entry.</td>
 </tr>
 <tr class="even">
 <td><code>CS9_DBCONFIG_PASSWORD</code></td>
-<td>Required, and used to authenticate.</td>
+<td>Not required. Used to authenticate, unless a hook from
+<code><a href="https://niphr.github.io/csdb/reference/csdb_set_password_hook.html" class="external-link">csdb::csdb_set_password_hook()</a></code> supplies the password.</td>
 <td>Not required. Recorded, ignored.</td>
 </tr>
 <tr class="odd">
@@ -275,12 +277,17 @@ the driver decides which tiers apply.</p>
 level, and <code>config</code> among the access levels.</li>
 <li>
 <code>PostgreSQL Unicode</code>: <code>CS9_DBCONFIG_USER</code>,
-<code>CS9_DBCONFIG_PASSWORD</code>,
 <code>CS9_DBCONFIG_SCHEMA_CONFIG</code>,
 <code>CS9_DBCONFIG_DB_CONFIG</code>,
 <code>CS9_DBCONFIG_SCHEMA_ANON</code> and
 <code>CS9_DBCONFIG_DB_ANON</code>.</li>
 </ul>
+<p><code>CS9_DBCONFIG_PASSWORD</code> is optional for
+<code>PostgreSQL Unicode</code>. A hook set with
+<code><a href="https://niphr.github.io/csdb/reference/csdb_set_password_hook.html" class="external-link">csdb::csdb_set_password_hook()</a></code> can supply the password for
+each connection, for example an access token that expires. Without a
+hook, the connection uses <code>CS9_DBCONFIG_PASSWORD</code>, and an
+unset value is an empty password.</p>
 <p><code>config</code> is required among the access levels because CS9
 builds its four configuration tables from that access unconditionally.
 An access list without it fails later, and obscurely.</p>

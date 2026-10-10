@@ -230,6 +230,7 @@ CS9_DBCONFIG_DRIVER=PostgreSQL Unicode
 CS9_DBCONFIG_PORT=5432
 CS9_DBCONFIG_SERVER=localhost
 CS9_DBCONFIG_USER=cs9_user
+# Optional when csdb::csdb_set_password_hook() supplies the password
 CS9_DBCONFIG_PASSWORD=yourStrongPassword100
 CS9_DBCONFIG_SSLMODE=prefer
 CS9_DBCONFIG_ROLE_CREATE_TABLE=x
@@ -257,22 +258,22 @@ the `CREATE TABLE`.
 
 ### Variable descriptions
 
-| Variable                         | Example Value           | Description                                                                                                       |
-|----------------------------------|-------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `CS9_AUTO`                       | `0`                     | Set to 0 for interactive mode, 1 for automated mode                                                               |
-| `CS9_PATH`                       | `/home/myuser/cs9`      | Base path for cs9::path function. MUST be a real directory: an empty value counts as missing and fails validation |
-| `CS9_DBCONFIG_ACCESS`            | `config/anon`           | Database access levels (slash-separated)                                                                          |
-| `CS9_DBCONFIG_DRIVER`            | `PostgreSQL Unicode`    | Database driver name                                                                                              |
-| `CS9_DBCONFIG_SERVER`            | `localhost`             | Database server hostname or IP                                                                                    |
-| `CS9_DBCONFIG_PORT`              | `5432`                  | Database server port                                                                                              |
-| `CS9_DBCONFIG_USER`              | `cs9_user`              | Database username                                                                                                 |
-| `CS9_DBCONFIG_PASSWORD`          | `yourStrongPassword100` | Database password                                                                                                 |
-| `CS9_DBCONFIG_SSLMODE`           | `prefer`                | SSL connection preference                                                                                         |
-| `CS9_DBCONFIG_ROLE_CREATE_TABLE` | `x`                     | Role to take when creating tables. `x` means take no role                                                         |
-| `CS9_DBCONFIG_SCHEMA_CONFIG`     | `config`                | Schema for CS9 configuration tables                                                                               |
-| `CS9_DBCONFIG_DB_CONFIG`         | `cs9_surveillance`      | Database for configuration                                                                                        |
-| `CS9_DBCONFIG_SCHEMA_ANON`       | `anon`                  | Schema for anonymous data tables                                                                                  |
-| `CS9_DBCONFIG_DB_ANON`           | `cs9_surveillance`      | Database for surveillance data                                                                                    |
+| Variable                         | Example Value           | Description                                                                                                                                                               |
+|----------------------------------|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CS9_AUTO`                       | `0`                     | Set to 0 for interactive mode, 1 for automated mode                                                                                                                       |
+| `CS9_PATH`                       | `/home/myuser/cs9`      | Base path for cs9::path function. MUST be a real directory: an empty value counts as missing and fails validation                                                         |
+| `CS9_DBCONFIG_ACCESS`            | `config/anon`           | Database access levels (slash-separated)                                                                                                                                  |
+| `CS9_DBCONFIG_DRIVER`            | `PostgreSQL Unicode`    | Database driver name                                                                                                                                                      |
+| `CS9_DBCONFIG_SERVER`            | `localhost`             | Database server hostname or IP                                                                                                                                            |
+| `CS9_DBCONFIG_PORT`              | `5432`                  | Database server port                                                                                                                                                      |
+| `CS9_DBCONFIG_USER`              | `cs9_user`              | Database username                                                                                                                                                         |
+| `CS9_DBCONFIG_PASSWORD`          | `yourStrongPassword100` | Database password. Optional when a hook from [`csdb::csdb_set_password_hook()`](https://niphr.github.io/csdb/reference/csdb_set_password_hook.html) supplies the password |
+| `CS9_DBCONFIG_SSLMODE`           | `prefer`                | SSL connection preference                                                                                                                                                 |
+| `CS9_DBCONFIG_ROLE_CREATE_TABLE` | `x`                     | Role to take when creating tables. `x` means take no role                                                                                                                 |
+| `CS9_DBCONFIG_SCHEMA_CONFIG`     | `config`                | Schema for CS9 configuration tables                                                                                                                                       |
+| `CS9_DBCONFIG_DB_CONFIG`         | `cs9_surveillance`      | Database for configuration                                                                                                                                                |
+| `CS9_DBCONFIG_SCHEMA_ANON`       | `anon`                  | Schema for anonymous data tables                                                                                                                                          |
+| `CS9_DBCONFIG_DB_ANON`           | `cs9_surveillance`      | Database for surveillance data                                                                                                                                            |
 
 ## Package behavior without database configuration
 

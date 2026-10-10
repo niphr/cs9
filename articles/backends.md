@@ -32,6 +32,7 @@ CS9_DBCONFIG_DRIVER=PostgreSQL Unicode
 CS9_DBCONFIG_PORT=5432
 CS9_DBCONFIG_SERVER=localhost
 CS9_DBCONFIG_USER=cs9_user
+# Optional when csdb::csdb_set_password_hook() supplies the password
 CS9_DBCONFIG_PASSWORD=yourStrongPassword100
 CS9_DBCONFIG_SSLMODE=prefer
 CS9_DBCONFIG_ROLE_CREATE_TABLE=x
@@ -89,19 +90,19 @@ has no effect, rather than rejected.
 [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
 reports an error without it.
 
-| Variable                          | PostgreSQL                                                                                                                   | SQLite                                                                                          |
-|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `CS9_DBCONFIG_ACCESS`             | Required. A `/`-separated list of access levels.                                                                             | Required, and identical in meaning.                                                             |
-| `CS9_DBCONFIG_DRIVER`             | Required. `PostgreSQL Unicode`, matched exactly, because it MUST equal an `odbcinst.ini` entry.                              | Required. `SQLite`, matched case-insensitively.                                                 |
-| `CS9_DBCONFIG_SERVER`             | Required, and used to open the connection.                                                                                   | Not required. Recorded by CS9, ignored by the SQLite backend.                                   |
-| `CS9_DBCONFIG_PORT`               | Required, and used to open the connection.                                                                                   | Not required. Recorded, ignored.                                                                |
-| `CS9_DBCONFIG_USER`               | Required, and used to authenticate.                                                                                          | Not required. Recorded, ignored.                                                                |
-| `CS9_DBCONFIG_PASSWORD`           | Required, and used to authenticate.                                                                                          | Not required. Recorded, ignored.                                                                |
-| `CS9_DBCONFIG_TRUSTED_CONNECTION` | Not required. Recorded, and the PostgreSQL connection does not read it.                                                      | Not required. Recorded, ignored.                                                                |
-| `CS9_DBCONFIG_SSLMODE`            | Not required. Recorded, and used: `require` selects the encrypted connection.                                                | Not required. Recorded, ignored.                                                                |
-| `CS9_DBCONFIG_ROLE_CREATE_TABLE`  | Not required, but see the `SET ROLE ""` trap above. Recorded, and taken with `SET ROLE` before `CREATE TABLE`.               | Not required. Recorded, ignored. SQLite has no roles.                                           |
-| `CS9_DBCONFIG_SCHEMA_<ACCESS>`    | Required for the `config` and `anon` access levels, which the validator names one by one. Identifiers become `schema.table`. | Not required. Recorded, ignored. SQLite has no schemas, so identifiers are the bare table name. |
-| `CS9_DBCONFIG_DB_<ACCESS>`        | Required for `config` and `anon`. The database name.                                                                         | Required for every access level in `CS9_DBCONFIG_ACCESS`. The path to the file.                 |
+| Variable                          | PostgreSQL                                                                                                                                                                           | SQLite                                                                                          |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `CS9_DBCONFIG_ACCESS`             | Required. A `/`-separated list of access levels.                                                                                                                                     | Required, and identical in meaning.                                                             |
+| `CS9_DBCONFIG_DRIVER`             | Required. `PostgreSQL Unicode`, matched exactly, because it MUST equal an `odbcinst.ini` entry.                                                                                      | Required. `SQLite`, matched case-insensitively.                                                 |
+| `CS9_DBCONFIG_SERVER`             | Required, and used to open the connection.                                                                                                                                           | Not required. Recorded by CS9, ignored by the SQLite backend.                                   |
+| `CS9_DBCONFIG_PORT`               | Required, and used to open the connection.                                                                                                                                           | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_USER`               | Required, and used to authenticate.                                                                                                                                                  | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_PASSWORD`           | Not required. Used to authenticate, unless a hook from [`csdb::csdb_set_password_hook()`](https://niphr.github.io/csdb/reference/csdb_set_password_hook.html) supplies the password. | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_TRUSTED_CONNECTION` | Not required. Recorded, and the PostgreSQL connection does not read it.                                                                                                              | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_SSLMODE`            | Not required. Recorded, and used: `require` selects the encrypted connection.                                                                                                        | Not required. Recorded, ignored.                                                                |
+| `CS9_DBCONFIG_ROLE_CREATE_TABLE`  | Not required, but see the `SET ROLE ""` trap above. Recorded, and taken with `SET ROLE` before `CREATE TABLE`.                                                                       | Not required. Recorded, ignored. SQLite has no roles.                                           |
+| `CS9_DBCONFIG_SCHEMA_<ACCESS>`    | Required for the `config` and `anon` access levels, which the validator names one by one. Identifiers become `schema.table`.                                                         | Not required. Recorded, ignored. SQLite has no schemas, so identifiers are the bare table name. |
+| `CS9_DBCONFIG_DB_<ACCESS>`        | Required for `config` and `anon`. The database name.                                                                                                                                 | Required for every access level in `CS9_DBCONFIG_ACCESS`. The path to the file.                 |
 
 `CS9_AUTO` and `CS9_PATH` are required by both and neither is a database
 setting. `CS9_PATH` MUST be a non-empty directory path:
@@ -127,9 +128,16 @@ validates in tiers, and the driver decides which tiers apply.
   `CS9_DBCONFIG_PORT`.
 - SQLite: one `CS9_DBCONFIG_DB_<ACCESS>` per access level, and `config`
   among the access levels.
-- `PostgreSQL Unicode`: `CS9_DBCONFIG_USER`, `CS9_DBCONFIG_PASSWORD`,
+- `PostgreSQL Unicode`: `CS9_DBCONFIG_USER`,
   `CS9_DBCONFIG_SCHEMA_CONFIG`, `CS9_DBCONFIG_DB_CONFIG`,
   `CS9_DBCONFIG_SCHEMA_ANON` and `CS9_DBCONFIG_DB_ANON`.
+
+`CS9_DBCONFIG_PASSWORD` is optional for `PostgreSQL Unicode`. A hook set
+with
+[`csdb::csdb_set_password_hook()`](https://niphr.github.io/csdb/reference/csdb_set_password_hook.html)
+can supply the password for each connection, for example an access token
+that expires. Without a hook, the connection uses
+`CS9_DBCONFIG_PASSWORD`, and an unset value is an empty password.
 
 `config` is required among the access levels because CS9 builds its four
 configuration tables from that access unconditionally. An access list

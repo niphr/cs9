@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -315,7 +315,7 @@ that the work was complete. The last plan saw all 4.</p>
 <span><span class="co">#&gt;    &lt;int&gt; &lt;char&gt;           &lt;int&gt;</span></span>
 <span><span class="co">#&gt; 1:     1   main               0</span></span>
 <span><span class="co">#&gt; 2:     2 forked               2</span></span>
-<span><span class="co">#&gt; 3:     3 forked               0</span></span>
+<span><span class="co">#&gt; 3:     3 forked               1</span></span>
 <span><span class="co">#&gt; 4:     4 forked               3</span></span>
 <span><span class="co">#&gt; 5:     5 forked               2</span></span>
 <span><span class="co">#&gt; 6:     6   main               4</span></span></code></pre></div>
@@ -468,10 +468,10 @@ builds the plans.</p>
 <span><span class="va">seen_today</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">run</span>, <span class="va">plan</span>, <span class="va">today</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;       run  plan      today</span></span>
 <span><span class="co">#&gt;    &lt;char&gt; &lt;int&gt;     &lt;Date&gt;</span></span>
-<span><span class="co">#&gt; 1:  first     1 2026-10-08</span></span>
-<span><span class="co">#&gt; 2:  first     2 2026-10-08</span></span>
-<span><span class="co">#&gt; 3: second     1 2026-10-09</span></span>
-<span><span class="co">#&gt; 4: second     2 2026-10-09</span></span></code></pre></div>
+<span><span class="co">#&gt; 1:  first     1 2026-10-11</span></span>
+<span><span class="co">#&gt; 2:  first     2 2026-10-11</span></span>
+<span><span class="co">#&gt; 3: second     1 2026-10-12</span></span>
+<span><span class="co">#&gt; 4: second     2 2026-10-12</span></span></code></pre></div>
 <p>Do not edit <code>task$plans</code> by hand and then call
 <code>run_task()</code>. <code>run_task()</code> builds the plans again,
 and the edit is lost. Call <code>task$run()</code> instead. It runs the
@@ -496,9 +496,9 @@ edited plan still has the date of the second run. A later
 <span><span class="va">seen_today</span><span class="op">[</span><span class="va">run</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"edited"</span>, <span class="st">"run_task"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         run  plan      today</span></span>
 <span><span class="co">#&gt;      &lt;char&gt; &lt;int&gt;     &lt;Date&gt;</span></span>
-<span><span class="co">#&gt; 1:   edited     2 2026-10-09</span></span>
-<span><span class="co">#&gt; 2: run_task     1 2026-10-07</span></span>
-<span><span class="co">#&gt; 3: run_task     2 2026-10-07</span></span></code></pre></div>
+<span><span class="co">#&gt; 1:   edited     2 2026-10-12</span></span>
+<span><span class="co">#&gt; 2: run_task     1 2026-10-10</span></span>
+<span><span class="co">#&gt; 3: run_task     2 2026-10-10</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="rule-partitions">A completeness check covers every declared partition<a class="anchor" aria-label="anchor" href="#rule-partitions"></a>
