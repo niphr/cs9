@@ -404,10 +404,11 @@ validate_environment <- function() {
   }
 
   # Tier 3: PostgreSQL-specific variables (only if using PostgreSQL Unicode driver)
+  # CS9_DBCONFIG_PASSWORD is not required: csdb::csdb_set_password_hook() can
+  # supply a token per connection instead. An unset password reads as "".
   if (driver == "PostgreSQL Unicode") {
     postgresql_required <- c(
       "CS9_DBCONFIG_USER",
-      "CS9_DBCONFIG_PASSWORD",
       "CS9_DBCONFIG_SCHEMA_CONFIG",
       "CS9_DBCONFIG_DB_CONFIG",
       "CS9_DBCONFIG_SCHEMA_ANON",

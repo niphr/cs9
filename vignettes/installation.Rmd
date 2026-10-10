@@ -210,6 +210,7 @@ CS9_DBCONFIG_DRIVER=PostgreSQL Unicode
 CS9_DBCONFIG_PORT=5432
 CS9_DBCONFIG_SERVER=localhost
 CS9_DBCONFIG_USER=cs9_user
+# Optional when csdb::csdb_set_password_hook() supplies the password
 CS9_DBCONFIG_PASSWORD=yourStrongPassword100
 CS9_DBCONFIG_SSLMODE=prefer
 CS9_DBCONFIG_ROLE_CREATE_TABLE=x
@@ -242,7 +243,7 @@ substitutes the `x` sentinel only for a `NULL`. The PostgreSQL `create_table` in
 | `CS9_DBCONFIG_SERVER` | `localhost` | Database server hostname or IP |
 | `CS9_DBCONFIG_PORT` | `5432` | Database server port |
 | `CS9_DBCONFIG_USER` | `cs9_user` | Database username |
-| `CS9_DBCONFIG_PASSWORD` | `yourStrongPassword100` | Database password |
+| `CS9_DBCONFIG_PASSWORD` | `yourStrongPassword100` | Database password. Optional when a hook from `csdb::csdb_set_password_hook()` supplies the password |
 | `CS9_DBCONFIG_SSLMODE` | `prefer` | SSL connection preference |
 | `CS9_DBCONFIG_ROLE_CREATE_TABLE` | `x` | Role to take when creating tables. `x` means take no role |
 | `CS9_DBCONFIG_SCHEMA_CONFIG` | `config` | Schema for CS9 configuration tables |

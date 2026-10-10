@@ -1,3 +1,8 @@
+# Version 26.10.8
+
+- `check_environment_setup()` no longer requires `CS9_DBCONFIG_PASSWORD` for `PostgreSQL Unicode`, so CS9 loads when a hook from `csdb::csdb_set_password_hook()` supplies the password. An unset password is still an empty string.
+- `vignette("backends")` and `vignette("installation")` say when `CS9_DBCONFIG_PASSWORD` is optional.
+
 # Version 26.10.7
 
 - `add_task()` accepts `cores` as a function with no arguments. `Task$run()` calls it each time the task runs, so a cap that an environment variable sets after the package loads takes effect. A number works as before.
