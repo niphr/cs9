@@ -365,15 +365,19 @@ Call \code{task$run()} on the result to run plans that you edit by hand, because
   Execute a surveillance task by name.
 The task builds its plans once on every call, before any plan runs and before a worker forks.
 The plans do not change during the run, and \code{argset$today} is the date of the run.
+A run started with a \code{run_key}, as a scheduler does, stages its writes and changes the task's tables only after every plan succeeds.
+An interactive run writes directly, as before. See \code{vignette("rebuilding-a-table-safely")}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{SurveillanceSystem_v9$run_task(task_name)}
+    \preformatted{SurveillanceSystem_v9$run_task(task_name, run_key = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{task_name}}{Character string specifying the task name to run.}
+      \item{\code{run_key}}{A string that names the run, or NULL. With NULL the run writes the task's tables directly.
+A second call with the same \code{run_key} resumes a failed run. It skips each plan that the failed run finished, except plan 1.}
     }
     \if{html}{\out{</div>}}
   }

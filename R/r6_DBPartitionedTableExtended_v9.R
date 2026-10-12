@@ -23,6 +23,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
   "DBPartitionedTableExtended_v9",
   public = list(
     tables = list(),
+    # The name without the partition part. A task run names the staging table
+    # and the recorded operations of this table after it.
+    table_name_base = NULL,
     partitions = c(),
     column_name_partition = "",
     # A generated partition column goes into a copy of `newdata`. A write then
@@ -50,6 +53,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       validator_field_contents = validator_field_contents_blank
     ) {
       force(table_name_partitions)
+      self$table_name_base <- table_name_base
       # This runs before `csdb::DBConnection_v9$new()` below. A rejected
       # partition set therefore leaves no database connection open.
       private$check_for_correct_partition_set(table_name_partitions)
@@ -147,6 +151,12 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       confirm_insert_via_nrow = FALSE,
       verbose = TRUE
     ) {
+      # During a task run, every write goes to the ONE staging table of this
+      # table, and a destructive write is recorded as an operation. See
+      # R/run_staging.R.
+      if (run_stages(self$table_name_base)) {
+        return(private$stage_rows(newdata, isTRUE(confirm_insert_via_nrow)))
+      }
       if (!is.null(self$value_generator_partition)) {
         part <- do.call(self$value_generator_partition, newdata)
         newdata <- data.table::copy(newdata)
@@ -228,6 +238,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       drop_indexes = NULL,
       verbose = TRUE
     ) {
+      if (run_stages(self$table_name_base)) {
+        return(private$stage_rows(newdata, TRUE))
+      }
       if (!is.null(self$value_generator_partition)) {
         part <- do.call(self$value_generator_partition, newdata)
         newdata <- data.table::copy(newdata)
@@ -256,6 +269,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     # update_last_updated = FALSE. on.exit() records the completed children
     # when a later child fails too, and the error still propagates.
     drop_all_rows = function() {
+      if (run_stages(self$table_name_base)) {
+        return(private$stage_operation("empty"))
+      }
       completed <- character(0)
       on.exit(private$record_last_updated(completed), add = TRUE)
       for (i in self$partitions_randomized) {
@@ -266,6 +282,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       return(invisible(NULL))
     },
     drop_rows_where = function(condition, verbose = FALSE) {
+      if (run_stages(self$table_name_base)) {
+        return(private$stage_operation("delete", condition))
+      }
       completed <- character(0)
       on.exit(private$record_last_updated(completed), add = TRUE)
       partition <- 0
@@ -286,6 +305,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       return(invisible(NULL))
     },
     keep_rows_where = function(condition, verbose = FALSE) {
+      if (run_stages(self$table_name_base)) {
+        return(private$stage_operation("keep", condition))
+      }
       completed <- character(0)
       on.exit(private$record_last_updated(completed), add = TRUE)
       for (i in self$partitions_randomized) {
@@ -300,6 +322,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       drop_indexes = NULL,
       verbose = TRUE
     ) {
+      if (run_stages(self$table_name_base)) {
+        return(private$stage_replace(newdata, TRUE))
+      }
       if (!is.null(self$value_generator_partition)) {
         part <- do.call(self$value_generator_partition, newdata)
         newdata <- data.table::copy(newdata)
@@ -328,6 +353,9 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       confirm_insert_via_nrow = FALSE,
       verbose = TRUE
     ) {
+      if (run_stages(self$table_name_base)) {
+        return(private$stage_replace(newdata, isTRUE(confirm_insert_via_nrow)))
+      }
       if (!is.null(self$value_generator_partition)) {
         part <- do.call(self$value_generator_partition, newdata)
         newdata <- data.table::copy(newdata)
@@ -474,6 +502,20 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       }
       data.table::shouldPrint(table_rows)
       return(table_rows)
+    },
+    #' @description
+    #' The rows that the task run in progress staged for this table, with the
+    #' partition column, as a lazy dplyr table.
+    #'
+    #' @details
+    #' The publish at the end of the run moves them into the partitions. The
+    #' method stops outside a task run and while the run builds its plans.
+    staged_tbl = function() {
+      return(run_staged_tbl(
+        private$staging(),
+        self$table_name_base,
+        names(self$tables[[1]]$field_types)
+      ))
     }
   ),
   active = list(
@@ -487,6 +529,70 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
     }
   ),
   private = list(
+    staging_object = NULL,
+    # The ONE staging table of every partition, with the partition column in
+    # its key. It borrows the shared connection. See R/run_staging.R.
+    staging = function() {
+      if (is.null(private$staging_object)) {
+        first <- self$tables[[1]]
+        private$staging_object <- run_new_staging_table(
+          dbconfig = first$dbconfig,
+          live_name = self$table_name_base,
+          field_types = first$field_types,
+          keys = unique(c(first$keys, self$column_name_partition)),
+          dbconnection = self$dbconnection
+        )
+      }
+      return(private$staging_object)
+    },
+    # The partition column, generated when the table has a generator, and the
+    # checked route. A generated column goes into a copy, as in insert_data().
+    stage_prepare = function(newdata) {
+      if (!is.null(self$value_generator_partition)) {
+        part <- do.call(self$value_generator_partition, newdata)
+        newdata <- data.table::copy(newdata)
+        newdata[, (self$column_name_partition) := part]
+      }
+      route <- private$check_for_correct_partitions_in_data(newdata)
+      return(list(newdata = newdata, route = route))
+    },
+    # The publish inserts into each partition that has a staged row, so each of
+    # them MUST exist before the publish.
+    stage_rows = function(newdata, upsert) {
+      prepared <- private$stage_prepare(newdata)
+      for (i in unique(prepared$route)) {
+        run_create_live(self$tables[[as.character(i)]])
+      }
+      return(run_stage_rows(
+        private$staging(),
+        prepared$newdata,
+        upsert = upsert,
+        validator = self$tables[[1]]$validator_field_contents,
+        label = self$table_name_base,
+        stamp = TRUE
+      ))
+    },
+    # The publish runs an operation on every partition, so each of them MUST
+    # exist before the publish.
+    stage_operation = function(operation, condition = NULL) {
+      for (child in self$tables) {
+        run_create_live(child)
+      }
+      return(run_stage_operation(
+        private$staging(),
+        self$dbconnection,
+        self$table_name_base,
+        operation,
+        condition
+      ))
+    },
+    # A drop-and-write method: the route check before the recorded empty, as
+    # the live method checks before its first drop, then the staged rows.
+    stage_replace = function(newdata, upsert) {
+      private$stage_prepare(newdata)
+      private$stage_operation("empty")
+      return(private$stage_rows(newdata, upsert))
+    },
     # One upsert for every child that completed. Nothing is written when no
     # child completed.
     record_last_updated = function(table_names) {

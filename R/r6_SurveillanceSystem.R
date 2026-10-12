@@ -307,17 +307,22 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' Execute a surveillance task by name.
     #' The task builds its plans once on every call, before any plan runs and before a worker forks.
     #' The plans do not change during the run, and `argset$today` is the date of the run.
+    #' A run started with a `run_key`, as a scheduler does, stages its writes and changes the task's tables only after every plan succeeds.
+    #' An interactive run writes directly, as before. See `vignette("rebuilding-a-table-safely")`.
     #' @param task_name Character string specifying the task name to run.
+    #' @param run_key A string that names the run, or NULL. With NULL the run writes the task's tables directly.
+    #' A second call with the same `run_key` resumes a failed run. It skips each plan that the failed run finished, except plan 1.
     #' @return No return value. This method is called for its side effect of executing the task.
-    run_task = function(task_name) {
+    run_task = function(task_name, run_key = NULL) {
       # Not get_task(). get_task() builds the plans only when the task has
       # none, so a second run in one session reused the plans of the first.
       # A call to get_task() here would build the plans twice in the first run.
       # replan = TRUE also builds the fixed plans of a for_each_plan task
       # again, which sets argset$today and argset$yesterday to the run date.
+      # Task$run() builds them after it knows the run date, which a resumed
+      # run reads from the database.
       task <- self$tasks[[task_name]]
-      task$update_plans(replan = TRUE)
-      return(task$run())
+      return(task$run(run_key = run_key, replan = TRUE))
     },
     #' @description
     #' Get database tables associated with a task.
@@ -537,8 +542,9 @@ task_from_config_v9_list_plan <- function(
       "**automatic**" = "*",
       index = index
     )
-    argset$today <- lubridate::today()
-    argset$yesterday <- lubridate::today() - 1
+    # The run date. A resumed run uses the date of its first attempt.
+    argset$today <- run_today()
+    argset$yesterday <- run_today() - 1
 
     if (!is.null(data_selector_fn_name)) {
       list_plan[[length(list_plan)]]$add_data(
@@ -567,8 +573,8 @@ task_from_config_v9_list_plan <- function(
         "**automatic**" = "*",
         index = index
       )
-      argset$today <- lubridate::today()
-      argset$yesterday <- lubridate::today() - 1
+      argset$today <- run_today()
+      argset$yesterday <- run_today() - 1
 
       list_plan[[length(list_plan)]]$add_analysis_from_list(
         fn_name = action_fn_name,

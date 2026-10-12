@@ -1,3 +1,18 @@
+# Version 26.10.14
+
+- A run started with a `run_key`, as a scheduler does, stages its writes to the task's own tables. It publishes them in one transaction after the last plan. A failed run leaves the task's tables unchanged.
+- An interactive run writes directly, as before. `run_task()` and `Task$run()` take `run_key = NULL` by default, and a run without a key touches no staging table.
+- A second attempt with the same `run_key` skips each plan that the first attempt finished, except plan 1.
+- During a run with a `run_key`, `tbl()` and `nrow()` read the published table. `staged_tbl()` reads the rows that the run staged.
+- Such a run stops when two plans write one row, or when a plan deletes rows that another plan wrote.
+- A retry with a `run_key` stops when the plan list changed since the first attempt.
+- A plan analysis that calls `staged_tbl()` stops the run, because plans MAY read published tables only.
+- In a run with a `run_key`, `argset$today` is the date of the first attempt.
+- `config_tables_last_updated` gets one row per changed table, once per run with a `run_key`, at the publish.
+- On PostgreSQL a second run of a task with a `run_key` stops while the first is alive. Each such run holds one more connection, for its lock and its publish.
+- A staged table gets a staging table, `<table>_cs9stg`. The tables `cs9_run`, `cs9_run_plan_done` and `cs9_run_operation` hold the state of each run.
+- `vignette("rebuilding-a-table-safely")` shows what a reader sees during a run, a failed run and its retry.
+
 # Version 26.10.13
 
 - The `insert_data()` method of a partitioned table loads every partition with one call to `csdb::insert_data_many()`. On PostgreSQL an insert needs one `psql` login for the load, plus one for the last-updated bookkeeping, not one for each partition. With SQLite or SQL Server, csdb still loads one partition at a time.

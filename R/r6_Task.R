@@ -144,7 +144,14 @@ Task <- R6::R6Class(
       }
       return(retval)
     },
-    run = function(cores = self$cores) {
+    # `run_key` names the run. A run with a key stages its writes and
+    # publishes them after the last plan. A second call with the same key
+    # resumes the first: it skips each plan that the first call finished,
+    # except plan 1, and publishes once. NULL stages nothing: the run writes
+    # its tables directly, as before 26.10.14. `replan = TRUE` builds the
+    # plans again, after the run has its date. SurveillanceSystem_v9$run_task()
+    # passes it.
+    run = function(cores = self$cores, run_key = NULL, replan = FALSE) {
       # `cores` MAY be a function with no arguments. It is called here, so it
       # reads its settings when the task runs. A runner that sets
       # `self$cores <- 1` replaces the function.
@@ -183,7 +190,24 @@ Task <- R6::R6Class(
 
       upsert_at_end_of_each_plan <- self$upsert_at_end_of_each_plan
 
-      self$update_plans()
+      # A run with a run_key stages every write to the task's own tables, and
+      # publishes them after the last plan. See R/run_state.R.
+      run <- run_begin(self$name, self$tables, run_key)
+      on.exit(run_end(run), add = TRUE)
+      if (isTRUE(run$published)) {
+        message(glue::glue(
+          "Run '{run$run_key}' of task {self$name} is published. Nothing to do."
+        ))
+        ram_max_used_mb <- 0
+        status <- "succeeded"
+        return(invisible(NULL))
+      }
+      config$run <- run
+
+      # A plan MAY read published tables only, so staged_tbl() stops here.
+      config$planning <- TRUE
+      self$update_plans(replan = replan)
+      config$planning <- FALSE
 
       update_config_log(
         ss = self$ss,
@@ -195,6 +219,26 @@ Task <- R6::R6Class(
       if (self$num_analyses() == 0) {
         message("Quitting because there is nothing to do (0 analyses)")
         return()
+      }
+
+      # TRUE for each plan that this attempt runs. An attempt that resumes an
+      # earlier one skips the plans it finished, except plan 1.
+      to_run <- rep(TRUE, length(self$plans))
+      private$plan_ids <- NULL
+      if (!is.null(run)) {
+        private$plan_ids <- run_plan_ids(
+          self$plans,
+          private$injected_fields(),
+          self$name
+        )
+        config$run$first_plan <- private$plan_ids[1]
+        to_run <- run_prepare(config$run, private$plan_ids, self$tables)
+        if (!all(to_run)) {
+          message(glue::glue(
+            "Resuming run '{run$run_key}': {sum(!to_run)} of ",
+            "{length(to_run)} plans are done and are skipped"
+          ))
+        }
       }
 
       if (cores == 1 || (length(self$plans) >= 2 && length(self$plans) <= 3)) {
@@ -231,7 +275,7 @@ Task <- R6::R6Class(
           {
             pb <- progressr::progressor(steps = self$num_analyses())
             private$run_sequential(
-              plans_index = seq_along(self$plans),
+              plans_index = which(to_run),
               tables = self$tables,
               upsert_at_end_of_each_plan = self$upsert_at_end_of_each_plan,
               insert_at_end_of_each_plan = self$insert_at_end_of_each_plan,
@@ -289,13 +333,17 @@ Task <- R6::R6Class(
           " *****"
         )
 
-        private$run_parallel_plans(
-          plans_index = 2:(length(self$plans) - 1),
-          tables = self$tables,
-          upsert_at_end_of_each_plan = self$upsert_at_end_of_each_plan,
-          insert_at_end_of_each_plan = self$insert_at_end_of_each_plan,
-          cores = cores
-        )
+        middle <- 2:(length(self$plans) - 1)
+        middle <- middle[to_run[middle]]
+        if (length(middle) > 0) {
+          private$run_parallel_plans(
+            plans_index = middle,
+            tables = self$tables,
+            upsert_at_end_of_each_plan = self$upsert_at_end_of_each_plan,
+            insert_at_end_of_each_plan = self$insert_at_end_of_each_plan,
+            cores = cores
+          )
+        }
 
         message("\n*****")
         message("*****")
@@ -308,7 +356,7 @@ Task <- R6::R6Class(
         )
         a1 <- Sys.time()
         private$run_sequential(
-          plans_index = length(self$plans),
+          plans_index = which(to_run)[which(to_run) == length(self$plans)],
           tables = self$tables,
           upsert_at_end_of_each_plan = self$upsert_at_end_of_each_plan,
           insert_at_end_of_each_plan = self$insert_at_end_of_each_plan,
@@ -338,7 +386,17 @@ Task <- R6::R6Class(
 
       if (!is.null(self$action_after_fn)) {
         message("Running action_after_fn")
+        if (!is.null(run)) {
+          config$run$plan_id <- run_after_plans
+        }
         self$action_after_fn()
+      }
+
+      if (!is.null(run)) {
+        message(glue::glue(
+          "Publishing run '{run$run_key}' of task {self$name}"
+        ))
+        run_publish(config$run, self$tables)
       }
 
       status <- "succeeded"
@@ -348,6 +406,14 @@ Task <- R6::R6Class(
   private = list(
     plans_built = FALSE,
     fixed_plans_fn = NULL,
+    # The id of each plan in the run in progress. See R/run_state.R.
+    plan_ids = NULL,
+    # A task from add_task() gets index, today and yesterday from cs9.
+    injected_fields = function() {
+      return(run_injected_fields(
+        !is.null(self$update_plans_fn) || !is.null(private$fixed_plans_fn)
+      ))
+    },
     run_sequential = function(
       plans_index,
       tables,
@@ -362,6 +428,9 @@ Task <- R6::R6Class(
           self$plans[plans_index][[i]]$set_progressor(pb)
         }
         config$plan_attempt_index <- 1
+        if (!is.null(config$run)) {
+          config$run$plan_id <- private$plan_ids[plans_index[i]]
+        }
 
         if (length(plans_index) == 1 && is.null(pb)) {
           verbose <- TRUE
@@ -417,6 +486,11 @@ Task <- R6::R6Class(
           all_hash = hashes$current
         )
         rm("data")
+        # The done mark comes after every write of the plan.
+        if (!is.null(config$run)) {
+          run_mark_plan_done(config$run$plan_id, tables)
+          config$run$plan_id <- NULL
+        }
       }
       for (s in tables) {
         s$disconnect()
@@ -454,6 +528,10 @@ Task <- R6::R6Class(
 
           # Each plan runs once. The scheduler retries the whole task.
           config$plan_attempt_index <- 1
+          # The id from the argsets, as run_plan_ids() computed it.
+          if (!is.null(config$run)) {
+            config$run$plan_id <- run_plan_id(x, private$injected_fields())
+          }
 
           catch_result <- tryCatch(
             {
@@ -510,6 +588,9 @@ Task <- R6::R6Class(
                 all_hash = hashes$current
               )
               rm("data")
+              if (!is.null(config$run)) {
+                run_mark_plan_done(config$run$plan_id, tables)
+              }
 
               return(list(
                 error = FALSE,
@@ -554,6 +635,9 @@ Task <- R6::R6Class(
         mc.substyle = 2
       )
       config$in_parallel <- FALSE # this will allow TABLOCK in in/upserts
+      if (!is.null(config$run)) {
+        config$run$plan_id <- NULL
+      }
 
       # The error holds the message of every failed plan, in plan order.
       try_error_index <- vapply(
