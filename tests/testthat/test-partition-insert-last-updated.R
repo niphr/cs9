@@ -246,8 +246,8 @@ test_that("single insert_data() that falls back to upsert writes one row", {
 #
 # On SQLite, csdb::insert_data_many() calls each child's insert_data() in
 # turn, and each child that completes writes its own row. On PostgreSQL the
-# partitioned insert_data() records no partition after a failure; the real
-# server check of phase 20 covers that.
+# partitioned insert_data() by default records no partition after a failure;
+# the real server check of phase 20 covers that.
 for (method in names(partitioned_load_calls)) {
   test_that(
     paste0(

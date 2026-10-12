@@ -1,9 +1,9 @@
 # Version 26.10.13
 
 - The `insert_data()` method of a partitioned table loads every partition with one call to `csdb::insert_data_many()`. On PostgreSQL an insert needs one `psql` login for the load, plus one for the last-updated bookkeeping, not one for each partition. With SQLite or SQL Server, csdb still loads one partition at a time.
-- On PostgreSQL an insert that fails by default stores no row in any partition. The one exception is `confirm_insert_via_nrow = TRUE` after a duplicate key. csdb then inserts partition by partition, and upserts a partition that stops on the duplicate key.
+- On PostgreSQL, by default (`confirm_insert_via_nrow = FALSE`), an insert that fails stores no row in any partition. The exception is an error that says the connection broke, or that a row count differed after `psql` finished. The rows may then be stored, and the error says to count them. With `confirm_insert_via_nrow = TRUE`, a duplicate key makes csdb insert partition by partition, so a failure can leave some partitions stored.
 - When the last-updated bookkeeping fails after the rows are stored, `insert_data()` gives a warning that names the partitions and the error, and returns normally.
-- On PostgreSQL, a partitioned `insert_data()` that fails records no partition in `config_tables_last_updated`. Before, it recorded the partitions that it loaded before the failure.
+- A partitioned `insert_data()` that fails writes no row of its own to `config_tables_last_updated`. Before, it recorded the partitions that it loaded before the failure. With `confirm_insert_via_nrow = TRUE`, or with SQLite or SQL Server, each partition that loaded before the failure still records itself.
 - `vignette("how-a-task-runs")` says what a failed insert into a partitioned table stores, and when to count the rows.
 - cs9 needs csdb 2026.10.13.
 

@@ -162,9 +162,13 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       # One csdb::insert_data_many() call loads every partition. On
       # PostgreSQL that is one psql session and one transaction, so the
       # insert needs one psql login for the load, plus one for the
-      # last-updated bookkeeping below. By default a failure stores no row.
-      # The exception is a duplicate key with confirm_insert_via_nrow = TRUE:
-      # csdb then inserts partition by partition. Until 26.10.13 each
+      # last-updated bookkeeping below. By default (confirm_insert_via_nrow =
+      # FALSE) a failure stores no row, unless the error says the connection
+      # broke or a row count differed after psql finished. The rows may then
+      # be stored, and the error says to count them. With
+      # confirm_insert_via_nrow = TRUE, a duplicate key makes csdb insert
+      # partition by partition, so a failure can leave some partitions stored
+      # and recorded. Until 26.10.13 each
       # partition had its own psql login, and a failure kept the partitions
       # loaded before it.
       #
@@ -191,11 +195,11 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         confirm_insert_via_nrow = confirm_insert_via_nrow,
         verbose = verbose
       )
-      # Only an insert that succeeded reaches this line, so a failed insert
-      # records no partition. The rows are committed here. A failure of the
-      # bookkeeping write therefore becomes a warning: an error would report
-      # a failed insert, and a caller that ran the insert again would hit a
-      # duplicate key.
+      # Only an insert that succeeded reaches this line, so this write records
+      # no partition of a failed insert. The rows are committed here. A
+      # failure of the bookkeeping write therefore becomes a warning: an error
+      # would report a failed insert, and a caller that ran the insert again
+      # would hit a duplicate key.
       table_names <- vapply(
         children,
         function(child) {
