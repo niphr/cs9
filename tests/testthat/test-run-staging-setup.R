@@ -183,6 +183,77 @@ test_that("an output table and a config table with one name stop a keyed run", {
   expect_equal(live_rows(cfg), old_rows())
 })
 
+test_that("a keyed run with a table that cs9 cannot stage stops and writes nothing", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  # A plain csdb table in the anon database: not a cs9 table class, and not a
+  # table of the config access.
+  plain <- csdb::DBTable_v9$new(
+    dbconfig = db,
+    table_name = "anon_stage_csdb",
+    field_types = c(x = "TEXT", n = "INTEGER"),
+    keys = "x",
+    validator_field_types = csdb::validator_field_types_blank,
+    validator_field_contents = csdb::validator_field_contents_blank
+  )
+  withr::defer(plain$disconnect())
+  suppressMessages(invisible(plain$tbl()))
+  con <- DBI::dbConnect(RSQLite::SQLite(), db$db)
+  DBI::dbAppendTable(con, "anon_stage_csdb", data.frame(x = "old", n = 0L))
+  DBI::dbDisconnect(con)
+  ctl <- local_stage_ctl()
+  ctl$hooks[["1"]] <- function(tables, argset) {
+    tables$plain$insert_data(data.table::data.table(x = "new", n = 1L))
+    return(invisible(NULL))
+  }
+
+  err <- run_attempt(
+    new_stage_task(out, tables = list(out = out, plain = plain)),
+    run_key = "plain-csdb"
+  )
+
+  expect_match(error_text(err), "cannot stage its writes", fixed = TRUE)
+  expect_match(error_text(err), "anon_stage_csdb", fixed = TRUE)
+  expect_equal(stage_calls(ctl, 4), c(0L, 0L, 0L, 0L))
+  expect_equal(live_rows(out), old_rows())
+  expect_equal(dplyr::collect(plain$tbl())$x, "old")
+})
+
+test_that("Task$run() with a run_key builds its plans again on every attempt", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  ctl <- local_stage_ctl()
+  ctl$plans <- function() 1:4
+  task <- new_stage_task(out, planned = TRUE)
+  run_direct <- function() {
+    return(tryCatch(
+      {
+        suppressWarnings(suppressMessages(task$run(cores = 1, run_key = "k")))
+        NULL
+      },
+      error = function(e) e
+    ))
+  }
+
+  ctl$fail <- 3L
+  err1 <- run_direct()
+  expect_match(error_text(err1), "plan 3 failed on purpose", fixed = TRUE)
+
+  # The planner now gives other plans. The call passes no replan.
+  ctl$plans <- function() c(1L, 2L, 3L, 5L)
+  ctl$fail <- integer()
+  err2 <- run_direct()
+
+  expect_match(
+    error_text(err2),
+    "the plan list changed between attempts of one run",
+    fixed = TRUE
+  )
+  expect_equal(live_rows(out), old_rows())
+})
+
 test_that("run_task() passes its run_key to the task run", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")

@@ -385,13 +385,20 @@ run_targets <- function(tables) {
   }
   # A table of the config access is never staged, also when a task lists it.
   # It is written directly, as before 26.10.14.
-  staged <- vapply(
-    infos,
-    function(i) i$stageable && !run_is_config_table(i$dbconfig),
-    logical(1)
-  )
-  targets <- targets[staged]
-  infos <- infos[staged]
+  config_access <- vapply(infos, function(i) run_is_config_table(i$dbconfig), logical(1))
+  targets <- targets[!config_access]
+  infos <- infos[!config_access]
+  # Any other table that cs9 cannot stage stops a keyed run. A run that left
+  # it out would write it directly, outside the publish.
+  stageable <- vapply(infos, function(i) i$stageable, logical(1))
+  if (!all(stageable)) {
+    out$problem <- paste0(
+      "the table ",
+      names(targets)[!stageable][1],
+      " is not a cs9 table class that cs9 can stage"
+    )
+    return(out)
+  }
   if (length(targets) == 0) {
     return(out)
   }

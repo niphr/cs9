@@ -148,7 +148,9 @@ Task <- R6::R6Class(
     # publishes them after the last plan. A second call with the same key
     # resumes the first: it skips each plan that the first call finished,
     # except plan 1, and publishes once. NULL stages nothing: the run writes
-    # its tables directly, as before 26.10.14. `replan = TRUE` builds the
+    # its tables directly, as before 26.10.14. A run with a key always builds
+    # its plans again, so every attempt compares its plan list with the list
+    # of the first attempt. Without a key, `replan = TRUE` builds the
     # plans again, after the run has its date. SurveillanceSystem_v9$run_task()
     # passes it.
     run = function(cores = self$cores, run_key = NULL, replan = FALSE) {
@@ -205,8 +207,9 @@ Task <- R6::R6Class(
       config$run <- run
 
       # A plan MAY read published tables only, so staged_tbl() stops here.
+      # A keyed run always builds its plans again: see the comment above.
       config$planning <- TRUE
-      self$update_plans(replan = replan)
+      self$update_plans(replan = replan || !is.null(run_key))
       config$planning <- FALSE
 
       update_config_log(

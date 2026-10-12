@@ -3,11 +3,12 @@
 - A run started with a `run_key`, as a scheduler does, stages its writes to the task's own tables. It publishes them in one transaction after the last plan. A failed run leaves the task's tables unchanged.
 - An interactive run writes directly, as before. `run_task()` and `Task$run()` take `run_key = NULL` by default, and a run without a key touches no staging table.
 - A second attempt with the same `run_key` skips each plan that the first attempt finished, except plan 1.
+- `Task$run()` with a `run_key` builds the plans again on every attempt, as `run_task()` does.
 - During a run with a `run_key`, `tbl()` and `nrow()` read the published table. `staged_tbl()` reads the rows that the run staged.
 - Such a run stops when two plans write one row, or when a plan deletes rows that another plan wrote.
 - A retry with a `run_key` stops before any plan runs when its plans differ from the first attempt. The order of the plans counts.
 - A later attempt of a published `run_key` does nothing, also after a run with another key.
-- A run with a `run_key` that cannot stage its writes stops with an error, before any write. Two tables with one name are such a case. A table of the config access is never staged.
+- A run with a `run_key` that cannot stage its writes stops with an error, before any write. Two tables with one name are such a case, and so is a table that cs9 cannot stage. A table of the config access is never staged.
 - A plan analysis that calls `staged_tbl()` stops the run, because plans MAY read published tables only.
 - In a run with a `run_key`, `argset$today` is the date of the first attempt.
 - `config_tables_last_updated` gets one row per changed table, once per run with a `run_key`, at the publish.

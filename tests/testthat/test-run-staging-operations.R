@@ -76,7 +76,6 @@ for (kind in c("plain", "partitioned")) {
       expect_null(got$error)
       expect_equal(got$seen, 3)
       expect_equal(got$seen_x, old_rows()$x)
-      expect_equal(got$seen_x, old_rows()$x)
       expected <- rows(
         c("a", "b", "c", "old-2"),
         c("p1", "p2", "p3", "p2"),
@@ -173,7 +172,6 @@ for (kind in c("plain", "partitioned")) {
 
       expect_null(got$error)
       expect_equal(got$seen, 3)
-      expect_equal(got$seen_x, old_rows()$x)
       expect_equal(got$seen_x, old_rows()$x)
       expect_equal(got$live, rows(c("a", "b"), c("p1", "p2"), c(1, 2)))
     }
