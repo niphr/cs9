@@ -1,8 +1,10 @@
 # A partitioned insert_data() loads every partition with ONE call to
 # csdb::insert_data_many(). On PostgreSQL that call is one psql session and one
-# transaction, so one insert needs one login, and a failed insert stores no
-# row. Before 26.10.13 the method called insert_data() once for each
-# partition, and each call had its own psql login.
+# transaction, so one insert needs one psql login for the load, plus one for
+# the last-updated bookkeeping. By default a failed insert stores no row; the
+# exception is a duplicate key with confirm_insert_via_nrow = TRUE. Before
+# 26.10.13 the method called insert_data() once for each partition, and each
+# call had its own psql login.
 #
 # These tests run on SQLite. A recorder wraps csdb::insert_data_many() and
 # then calls the real function, so the rows still reach the database. The

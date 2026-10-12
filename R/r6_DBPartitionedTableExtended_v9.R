@@ -161,14 +161,18 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       ))]
       # One csdb::insert_data_many() call loads every partition. On
       # PostgreSQL that is one psql session and one transaction, so the
-      # insert needs one login and a failure stores no row. Until 26.10.13
-      # each partition had its own psql login, and a failure kept the
-      # partitions loaded before it.
+      # insert needs one psql login for the load, plus one for the
+      # last-updated bookkeeping below. By default a failure stores no row.
+      # The exception is a duplicate key with confirm_insert_via_nrow = TRUE:
+      # csdb then inserts partition by partition. Until 26.10.13 each
+      # partition had its own psql login, and a failure kept the partitions
+      # loaded before it.
       #
       # DBTableExtended_v9$insert_data() stamps auto_last_updated_datetime.
       # The psql session does not call that method, so the stamp is set here.
       # update_last_updated = FALSE reaches each child when csdb calls its
-      # insert_data() or upsert_data(), so no child writes its own row.
+      # insert_data() or upsert_data(), and it stops csdb from writing a
+      # record for each child after the commit. No child writes its own row.
       children <- vector("list", length(partitions_in_use))
       parts <- vector("list", length(partitions_in_use))
       for (k in seq_along(partitions_in_use)) {
