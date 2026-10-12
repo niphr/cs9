@@ -126,6 +126,7 @@ local_serial_pbmclapply <- function(record, envir = parent.frame()) {
       ...,
       ignore.interactive,
       mc.cores,
+      mc.preschedule,
       mc.style,
       mc.substyle
     ) {

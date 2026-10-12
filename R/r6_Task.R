@@ -452,94 +452,84 @@ Task <- R6::R6Class(
           set.seed(x$get_argset(1)$index)
           # for (s in tables) s$disconnect()
 
-          for (tries in 1:5) {
-            config$plan_attempt_index <- tries
+          # Each plan runs once. The scheduler retries the whole task.
+          config$plan_attempt_index <- 1
 
-            catch_result <- tryCatch(
-              {
-                # for (s in tables) s$connect()
-                data <- x$get_data()
-                hashes <- data$hash
-                last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(
-                  task = self$name,
-                  index_plan = x$get_argset(1)$index_plan,
-                  expected_element_tags = names(data$hash$current_elements)
+          catch_result <- tryCatch(
+            {
+              # for (s in tables) s$connect()
+              data <- x$get_data()
+              hashes <- data$hash
+              last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(
+                task = self$name,
+                index_plan = x$get_argset(1)$index_plan,
+                expected_element_tags = names(data$hash$current_elements)
+              )
+              data$hash$last_run <- last_run_hashes$last_run
+              data$hash$last_run_elements <- last_run_hashes$last_run_elements
+
+              retval <- x$run_all_with_data(data = data, tables = tables)
+
+              if (upsert_at_end_of_each_plan) {
+                retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
+                  retval,
+                  returned_name_when_dfs_are_not_nested = "output",
+                  use.names = TRUE,
+                  fill = TRUE
                 )
-                data$hash$last_run <- last_run_hashes$last_run
-                data$hash$last_run_elements <- last_run_hashes$last_run_elements
-
-                retval <- x$run_all_with_data(data = data, tables = tables)
-
-                if (upsert_at_end_of_each_plan) {
-                  retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
-                    retval,
-                    returned_name_when_dfs_are_not_nested = "output",
-                    use.names = TRUE,
-                    fill = TRUE
+                for (df_name in names(retval)) {
+                  tables[[df_name]]$upsert_data(
+                    retval[[df_name]],
+                    verbose = FALSE
                   )
-                  for (df_name in names(retval)) {
-                    tables[[df_name]]$upsert_data(
-                      retval[[df_name]],
-                      verbose = FALSE
-                    )
-                  }
                 }
-                if (insert_at_end_of_each_plan) {
-                  retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
-                    retval,
-                    returned_name_when_dfs_are_not_nested = "output",
-                    use.names = TRUE,
-                    fill = TRUE
-                  )
-                  for (df_name in names(retval)) {
-                    tables[[df_name]]$insert_data(
-                      retval[[df_name]],
-                      verbose = FALSE
-                    )
-                  }
-                }
-
-                rm("retval")
-
-                # this might break things!!!!!!
-                update_config_data_hash_for_each_plan(
-                  task = self$name,
-                  index_plan = x$get_argset(1)$index_plan,
-                  element_tag = names(hashes$current_elements),
-                  element_hash = unlist(hashes$current_elements),
-                  all_hash = hashes$current
-                )
-                rm("data")
-
-                return(list(
-                  error = FALSE,
-                  msg = "succeeded"
-                ))
-              },
-              error = function(e) {
-                return(list(
-                  error = TRUE,
-                  msg = paste0(
-                    "Error in index ",
-                    x$get_argset(1)$index,
-                    ".\n********\n",
-                    e$message,
-                    "\n********\n"
-                  )
-                ))
               }
-            )
-            # for (s in tables) s$disconnect()
+              if (insert_at_end_of_each_plan) {
+                retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
+                  retval,
+                  returned_name_when_dfs_are_not_nested = "output",
+                  use.names = TRUE,
+                  fill = TRUE
+                )
+                for (df_name in names(retval)) {
+                  tables[[df_name]]$insert_data(
+                    retval[[df_name]],
+                    verbose = FALSE
+                  )
+                }
+              }
 
-            # if the plan executed without any errors
-            # then break the loop
-            # otherwise sleep for 5 seconds and try again
-            if (!catch_result$error) {
-              break()
-            } else {
-              Sys.sleep(5)
+              rm("retval")
+
+              # this might break things!!!!!!
+              update_config_data_hash_for_each_plan(
+                task = self$name,
+                index_plan = x$get_argset(1)$index_plan,
+                element_tag = names(hashes$current_elements),
+                element_hash = unlist(hashes$current_elements),
+                all_hash = hashes$current
+              )
+              rm("data")
+
+              return(list(
+                error = FALSE,
+                msg = "succeeded"
+              ))
+            },
+            error = function(e) {
+              return(list(
+                error = TRUE,
+                msg = paste0(
+                  "Error in index ",
+                  x$get_argset(1)$index,
+                  ".\n********\n",
+                  e$message,
+                  "\n********\n"
+                )
+              ))
             }
-          }
+          )
+          # for (s in tables) s$disconnect()
           if (catch_result$error) {
             stop(catch_result$msg)
           }
@@ -557,16 +547,31 @@ Task <- R6::R6Class(
         insert_at_end_of_each_plan = insert_at_end_of_each_plan,
         ignore.interactive = TRUE,
         mc.cores = cores,
+        # Each plan gets its own fork. A prescheduled core stops at its first
+        # error, which skipped the other plans on that core.
+        mc.preschedule = FALSE,
         mc.style = "ETA",
         mc.substyle = 2
       )
       config$in_parallel <- FALSE # this will allow TABLOCK in in/upserts
 
-      try_error_index <- unlist(lapply(y, function(x) inherits(x, "try-error")))
-      if (sum(try_error_index) > 0) {
+      # The error holds the message of every failed plan, in plan order.
+      try_error_index <- vapply(
+        y,
+        function(x) inherits(x, "try-error"),
+        logical(1)
+      )
+      if (any(try_error_index)) {
         stop(
           "Error running in parallel: ",
-          y[try_error_index][1][[1]][1],
+          sum(try_error_index),
+          " of ",
+          length(y),
+          " parallel plans failed.\n",
+          paste(
+            vapply(y[try_error_index], function(x) x[1], character(1)),
+            collapse = "\n"
+          ),
           call. = FALSE
         )
       }

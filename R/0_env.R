@@ -7,8 +7,7 @@ config$verbose <- FALSE
 config$in_parallel <- FALSE
 config$tables <- list()
 
-# When running plans in parallel, if a plan fails it is retried five times.
-# This lets a user track which attempt they are on.
-# This is mostly useful so that emails and smses are only sent when
-# cs9::config$plan_attempt_index==1
+# cs9 runs each plan once since 26.10.12, so plan_attempt_index is always 1.
+# The scheduler retries the whole task. The value stays for callers that read
+# it, such as norsyss.cs9, which sends an email only when it is 1.
 config$plan_attempt_index <- 1

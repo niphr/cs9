@@ -1,3 +1,9 @@
+# Version 26.10.12
+
+- `Task$run()` runs each parallel plan once. Before, a failing plan ran up to 5 times, and only the error of the last try reached the log. The scheduler, for example Airflow, retries the whole task.
+- `Task$run()` sets `config$plan_attempt_index` to 1 for every plan. It stays for callers that read it.
+- When one parallel plan fails, the other parallel plans still run. Before, a failure skipped the plans that `pbmcapply::pbmclapply()` had scheduled on the same core. `Task$run()` then stops with one error that counts the failed plans and holds the message of each, in plan order. Before, it held the message of the first failed plan only.
+
 # Version 26.10.8
 
 - `check_environment_setup()` no longer requires `CS9_DBCONFIG_PASSWORD` for `PostgreSQL Unicode`, so CS9 loads when a hook from `csdb::csdb_set_password_hook()` supplies the password. An unset password is still an empty string.
