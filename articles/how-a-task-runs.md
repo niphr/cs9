@@ -242,10 +242,10 @@ runs[, .(plan, worker = fifelse(pid == Sys.getpid(), "main", "forked"), finished
 #>     plan worker finished_before
 #>    <int> <char>           <int>
 #> 1:     1   main               0
-#> 2:     2 forked               2
+#> 2:     2 forked               0
 #> 3:     3 forked               1
-#> 4:     4 forked               3
-#> 5:     5 forked               2
+#> 4:     4 forked               2
+#> 5:     5 forked               3
 #> 6:     6   main               4
 ```
 
@@ -403,10 +403,10 @@ stopifnot(
 seen_today[, .(run, plan, today)]
 #>       run  plan      today
 #>    <char> <int>     <Date>
-#> 1:  first     1 2026-10-11
-#> 2:  first     2 2026-10-11
-#> 3: second     1 2026-10-12
-#> 4: second     2 2026-10-12
+#> 1:  first     1 2026-10-13
+#> 2:  first     2 2026-10-13
+#> 3: second     1 2026-10-14
+#> 4: second     2 2026-10-14
 ```
 
 Do not edit `task$plans` by hand and then call `run_task()`.
@@ -435,9 +435,9 @@ stopifnot(
 seen_today[run %in% c("edited", "run_task")]
 #>         run  plan      today
 #>      <char> <int>     <Date>
-#> 1:   edited     2 2026-10-12
-#> 2: run_task     1 2026-10-10
-#> 3: run_task     2 2026-10-10
+#> 1:   edited     2 2026-10-14
+#> 2: run_task     1 2026-10-12
+#> 3: run_task     2 2026-10-12
 ```
 
 ## A completeness check covers every declared partition
