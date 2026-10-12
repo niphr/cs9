@@ -239,12 +239,21 @@ test_that("single insert_data() that falls back to upsert writes one row", {
 # The partition order is random, so the failure is set on the third child the
 # method reaches, not on a named partition. The failure is raised inside the
 # child's csdb call, by the child's own validator.
+#
+# insert_data() loads every partition with one csdb::insert_data_many() call,
+# and records the partitions only after that call succeeds. A failure
+# therefore records no partition. The other three methods still record the
+# children that completed before the failure.
 for (method in names(partitioned_load_calls)) {
   test_that(
     paste0(
       "partitioned ",
       method,
-      "() records the children completed before a failure"
+      if (method == "insert_data") {
+        "() records no child after a failure"
+      } else {
+        "() records the children completed before a failure"
+      }
     ),
     {
       spec <- partitioned_load_calls[[method]]
@@ -278,8 +287,13 @@ for (method in names(partitioned_load_calls)) {
         "cs9test partition failure"
       )
       expect_length(reached$names, 3L)
-      expect_equal(counter$n, 1L)
-      expect_equal(read_last_updated_names(), sort(reached$names[1:2]))
+      if (method == "insert_data") {
+        expect_equal(counter$n, 0L)
+        expect_length(read_last_updated_names(), 0L)
+      } else {
+        expect_equal(counter$n, 1L)
+        expect_equal(read_last_updated_names(), sort(reached$names[1:2]))
+      }
 
       # The failed child writes its own row again afterwards.
       names_by_part <- vapply(pt$tables, function(t) t$table_name, "")

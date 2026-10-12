@@ -159,19 +159,42 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       partitions_in_use <- partitions_in_use[sample.int(length(
         partitions_in_use
       ))]
-      completed <- character(0)
-      on.exit(private$record_last_updated(completed), add = TRUE)
-      for (i in partitions_in_use) {
+      # One csdb::insert_data_many() call loads every partition. On
+      # PostgreSQL that is one psql session and one transaction, so the
+      # insert needs one login and a failure stores no row. Until 26.10.13
+      # each partition had its own psql login, and a failure kept the
+      # partitions loaded before it.
+      #
+      # DBTableExtended_v9$insert_data() stamps auto_last_updated_datetime.
+      # The psql session does not call that method, so the stamp is set here.
+      # update_last_updated = FALSE reaches each child when csdb calls its
+      # insert_data() or upsert_data(), so no child writes its own row.
+      children <- vector("list", length(partitions_in_use))
+      parts <- vector("list", length(partitions_in_use))
+      for (k in seq_along(partitions_in_use)) {
+        i <- partitions_in_use[[k]]
         index <- route == as.character(i)
-        child <- self$tables[[as.character(i)]]
-        child$insert_data(
-          newdata[index, ],
-          confirm_insert_via_nrow,
-          verbose,
-          update_last_updated = FALSE
-        )
-        completed <- c(completed, child$table_name)
+        children[[k]] <- self$tables[[as.character(i)]]
+        rows <- newdata[index, ]
+        rows[, auto_last_updated_datetime := cstime::now_c()]
+        parts[[k]] <- rows
       }
+      csdb::insert_data_many(
+        children,
+        parts,
+        confirm_insert_via_nrow = confirm_insert_via_nrow,
+        verbose = verbose,
+        update_last_updated = FALSE
+      )
+      # Only an insert that succeeded reaches this line, so a failed insert
+      # records no partition.
+      private$record_last_updated(vapply(
+        children,
+        function(child) {
+          return(child$table_name)
+        },
+        character(1)
+      ))
       return(invisible(NULL))
     },
     upsert_data = function(

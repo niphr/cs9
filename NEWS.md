@@ -1,3 +1,10 @@
+# Version 26.10.13
+
+- The `insert_data()` method of a partitioned table loads every partition with one call to `csdb::insert_data_many()`. On PostgreSQL that is one login for each insert, not one for each partition, and an insert that fails stores no row in any partition. With SQLite or SQL Server, csdb still loads one partition at a time.
+- A partitioned `insert_data()` that fails records no partition in `config_tables_last_updated`. Before, it recorded the partitions that it loaded before the failure.
+- `vignette("how-a-task-runs")` says that a failed insert into a partitioned table on PostgreSQL stores nothing, so you run it again.
+- cs9 needs csdb 2026.10.13.
+
 # Version 26.10.12
 
 - `Task$run()` runs each parallel plan once. Before, a failing plan ran up to 5 times, and only the error of the last try reached the log. The scheduler, for example Airflow, retries the whole task.

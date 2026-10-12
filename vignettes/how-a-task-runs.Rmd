@@ -530,6 +530,8 @@ partition_rows <- pt$nrow(collapse = FALSE)
 partition_rows
 ```
 
+On PostgreSQL, one `insert_data()` into a partitioned table stores all of its rows or none of them. So when an insert fails, nothing needs cleaning up. Run the same insert again.
+
 `nrow(collapse = FALSE)` has one row for each partition whose table exists. csdb creates the table of a partition at its first use, so `rsv` has no row here. Use `names(pt$tables)` for the declared partitions.
 
 The `partition` column holds the partition tag. Never parse the tag from `table_name`. The separator in the name depends on the database driver.
