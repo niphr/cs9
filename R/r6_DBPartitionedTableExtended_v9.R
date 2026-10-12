@@ -170,9 +170,11 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       #
       # DBTableExtended_v9$insert_data() stamps auto_last_updated_datetime.
       # The psql session does not call that method, so the stamp is set here.
-      # update_last_updated = FALSE reaches each child when csdb calls its
-      # insert_data() or upsert_data(), and it stops csdb from writing a
-      # record for each child after the commit. No child writes its own row.
+      # When csdb calls a child's insert_data() or upsert_data() (another
+      # driver, a duplicate key with confirm_insert_via_nrow = TRUE, or the
+      # upsert of confirm_insert_via_nrow), that child also writes its own
+      # last-updated row. The row below then writes the same table again,
+      # which changes nothing.
       children <- vector("list", length(partitions_in_use))
       parts <- vector("list", length(partitions_in_use))
       for (k in seq_along(partitions_in_use)) {
@@ -187,8 +189,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         children,
         parts,
         confirm_insert_via_nrow = confirm_insert_via_nrow,
-        verbose = verbose,
-        update_last_updated = FALSE
+        verbose = verbose
       )
       # Only an insert that succeeded reaches this line, so a failed insert
       # records no partition. The rows are committed here. A failure of the
