@@ -147,6 +147,42 @@ test_that("two tables with one name stop a keyed run before any write", {
   expect_equal(live_rows(twin), old_rows())
 })
 
+test_that("an output table and a config table with one name stop a keyed run", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  # A table of the config access with the name of the output table.
+  cfg <- DBTableExtended_v9$new(
+    dbconfig = config$dbconfigs$config,
+    table_name = "anon_stage_plain",
+    field_types = c(x = "TEXT", part = "TEXT", n = "INTEGER"),
+    keys = "x",
+    validator_field_types = csdb::validator_field_types_blank,
+    validator_field_contents = csdb::validator_field_contents_blank
+  )
+  withr::defer(cfg$disconnect())
+  seed_old_rows(cfg)
+  ctl <- local_stage_ctl()
+  ctl$hooks[["1"]] <- function(tables, argset) {
+    tables$cfg$insert_data(stage_rows_of(argset$plan))
+    return(invisible(NULL))
+  }
+
+  err <- run_attempt(
+    new_stage_task(out, tables = list(out = out, cfg = cfg)),
+    run_key = "config-twin"
+  )
+
+  expect_match(
+    error_text(err),
+    "two tables share the name anon_stage_plain",
+    fixed = TRUE
+  )
+  expect_equal(stage_calls(ctl, 4), c(0L, 0L, 0L, 0L))
+  expect_equal(live_rows(out), old_rows())
+  expect_equal(live_rows(cfg), old_rows())
+})
+
 test_that("run_task() passes its run_key to the task run", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")
@@ -226,4 +262,21 @@ test_that("a staging name stays within 63 bytes and stays unique", {
   expect_true(endsWith(name_1, "_cs9stg"))
   expect_false(identical(name_1, name_2))
   expect_identical(run_staging_name(long_1), name_1)
+})
+
+test_that("a staging name is cut by bytes and keeps whole characters", {
+  # "\u00f8" is 1 character and 2 bytes in UTF-8. Each live name is 60 bytes.
+  live_1 <- paste0("anon_", strrep("\u00f8", 25), "_one_")
+  live_2 <- paste0("anon_", strrep("\u00f8", 25), "_two_")
+  expect_equal(nchar(live_1, type = "bytes"), 60L)
+  name_1 <- run_staging_name(live_1)
+  name_2 <- run_staging_name(live_2)
+
+  expect_lte(nchar(name_1, type = "bytes"), 63L)
+  expect_lte(nchar(name_2, type = "bytes"), 63L)
+  expect_true(validUTF8(name_1))
+  expect_true(validUTF8(name_2))
+  expect_true(endsWith(name_1, "_cs9stg"))
+  expect_false(identical(name_1, name_2))
+  expect_identical(run_staging_name(live_1), name_1)
 })

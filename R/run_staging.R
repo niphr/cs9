@@ -28,11 +28,22 @@ run_staging_name <- function(live_name) {
   writeLines(live_name, f, useBytes = TRUE)
   hash <- substr(unname(tools::md5sum(f)), 1, 8)
   return(paste0(
-    strtrim(live_name, 63L - nchar(suffix) - 9L),
+    run_cut_bytes(live_name, 63L - nchar(suffix) - 9L),
     "_",
     hash,
     suffix
   ))
+}
+
+# The first characters of `x` that fit in `max_bytes` bytes of UTF-8. It cuts
+# whole characters, so it never leaves half of a multibyte character.
+# strtrim() cuts by display width, and one "\u00f8" is 1 column but 2 bytes.
+run_cut_bytes <- function(x, max_bytes) {
+  x <- enc2utf8(x)
+  while (nchar(x, type = "bytes") > max_bytes) {
+    x <- substr(x, 1L, nchar(x, type = "chars") - 1L)
+  }
+  return(x)
 }
 
 # The staging table of a live table. It borrows the live table's connection, so

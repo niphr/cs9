@@ -312,16 +312,14 @@ run_driver_supported <- function(driver) {
 run_target_info <- function(x) {
   if (inherits(x, "DBPartitionedTableExtended_v9")) {
     info <- list(name = x$table_name_base, dbconfig = x$tables[[1]]$dbconfig)
-  } else if (inherits(x, "DBTableExtended_v9")) {
+  } else if (inherits(x, "DBTable_v9")) {
     info <- list(name = x$table_name, dbconfig = x$dbconfig)
   } else {
     return(NULL)
   }
-  # A table of the config access is never staged, also when a task lists it.
-  # It is written directly, as before 26.10.14.
-  if (run_is_config_table(info$dbconfig)) {
-    return(NULL)
-  }
+  # Only the cs9 table classes stage. A plain csdb::DBTable_v9, such as a
+  # config table, takes part in the name check only.
+  info$stageable <- inherits(x, c("DBPartitionedTableExtended_v9", "DBTableExtended_v9"))
   return(info)
 }
 
@@ -366,8 +364,9 @@ run_targets <- function(tables) {
     return(out)
   }
   # One table can appear twice in a task's tables. Two different tables with
-  # one name, in two databases or schemas, cannot: cs9 names a staged table
-  # by its live name.
+  # one name, in two databases or schemas, cannot: cs9 tells staged tables
+  # apart by their names. The check covers every table of the task, the
+  # config tables included, so it runs before they are left out.
   same <- vapply(
     infos,
     function(i) paste(i$name, run_database_id(i$dbconfig), i$dbconfig$schema, sep = "|"),
@@ -382,6 +381,18 @@ run_targets <- function(tables) {
       "two tables share the name ",
       table_names[duplicated(table_names)][1]
     )
+    return(out)
+  }
+  # A table of the config access is never staged, also when a task lists it.
+  # It is written directly, as before 26.10.14.
+  staged <- vapply(
+    infos,
+    function(i) i$stageable && !run_is_config_table(i$dbconfig),
+    logical(1)
+  )
+  targets <- targets[staged]
+  infos <- infos[staged]
+  if (length(targets) == 0) {
     return(out)
   }
   drivers <- vapply(
