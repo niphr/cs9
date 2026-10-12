@@ -307,7 +307,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' Execute a surveillance task by name.
     #' The task builds its plans once on every call, before any plan runs and before a worker forks.
     #' The plans do not change during the run, and `argset$today` is the date of the run.
-    #' A run started with a `run_key`, as a scheduler does, stages its writes and changes the task's tables only after every plan succeeds.
+    #' A run started with a `run_key`, which a scheduler can pass, stages its writes and changes the task's tables only after every plan succeeds.
     #' An interactive run writes directly, as before. See `vignette("rebuilding-a-table-safely")`.
     #' @param task_name Character string specifying the task name to run.
     #' @param run_key A string that names the run, or NULL. With NULL the run writes the task's tables directly.

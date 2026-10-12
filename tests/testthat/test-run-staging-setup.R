@@ -220,6 +220,69 @@ test_that("a keyed run with a table that cs9 cannot stage stops and writes nothi
   expect_equal(dplyr::collect(plain$tbl())$x, "old")
 })
 
+test_that("a plain csdb wrapper of a staged table stops a keyed run", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  # A second object for the same live table: same name, database and schema,
+  # but a plain csdb::DBTable_v9 that cs9 cannot stage. It has the fields of
+  # the live table, so csdb keeps the table as it is.
+  wrapper <- csdb::DBTable_v9$new(
+    dbconfig = db,
+    table_name = "anon_stage_plain",
+    field_types = c(x = "TEXT", part = "TEXT", n = "INTEGER", auto_last_updated_datetime = "DATETIME"),
+    keys = "x",
+    validator_field_types = csdb::validator_field_types_blank,
+    validator_field_contents = csdb::validator_field_contents_blank
+  )
+  withr::defer(wrapper$disconnect())
+  ctl <- local_stage_ctl()
+  ctl$drop <- FALSE
+  ctl$rows <- function(plan) NULL
+  ctl$hooks[["1"]] <- function(tables, argset) {
+    tables$wrapper$insert_data(data.table::data.table(
+      x = "direct",
+      part = "p1",
+      n = 1L,
+      auto_last_updated_datetime = "2026-01-01 00:00:00"
+    ))
+    return(invisible(NULL))
+  }
+
+  # The cs9 table comes first, so a deduplication by live table would keep it
+  # and drop the wrapper.
+  err <- run_attempt(
+    new_stage_task(out, tables = list(out = out, wrapper = wrapper)),
+    run_key = "wrapper"
+  )
+
+  expect_match(error_text(err), "cannot stage its writes", fixed = TRUE)
+  expect_match(error_text(err), "anon_stage_plain", fixed = TRUE)
+  expect_equal(stage_calls(ctl, 4), c(0L, 0L, 0L, 0L))
+  expect_equal(live_rows(out), old_rows())
+})
+
+test_that("an object that is not a table stops a keyed run", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  ctl <- local_stage_ctl()
+  # Not a table, but with a disconnect(), which Task$run() calls on every
+  # object of the task's tables after the plans. Without the check the run
+  # would then go on and publish.
+  junk <- list(disconnect = function() invisible(NULL))
+
+  err <- run_attempt(
+    new_stage_task(out, tables = list(out = out, junk = junk)),
+    run_key = "junk"
+  )
+
+  expect_match(error_text(err), "cannot stage its writes", fixed = TRUE)
+  expect_match(error_text(err), "'junk' (an object of class list)", fixed = TRUE)
+  expect_equal(stage_calls(ctl, 4), c(0L, 0L, 0L, 0L))
+  expect_equal(live_rows(out), old_rows())
+})
+
 test_that("Task$run() with a run_key builds its plans again on every attempt", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")

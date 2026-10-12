@@ -365,7 +365,7 @@ Call \code{task$run()} on the result to run plans that you edit by hand, because
   Execute a surveillance task by name.
 The task builds its plans once on every call, before any plan runs and before a worker forks.
 The plans do not change during the run, and \code{argset$today} is the date of the run.
-A run started with a \code{run_key}, as a scheduler does, stages its writes and changes the task's tables only after every plan succeeds.
+A run started with a \code{run_key}, which a scheduler can pass, stages its writes and changes the task's tables only after every plan succeeds.
 An interactive run writes directly, as before. See \code{vignette("rebuilding-a-table-safely")}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}

@@ -1,6 +1,6 @@
 # Version 26.10.14
 
-- A run started with a `run_key`, as a scheduler does, stages its writes to the task's own tables. It publishes them in one transaction after the last plan. A failed run leaves the task's tables unchanged.
+- A run started with a `run_key`, which a scheduler can pass, stages its writes to the task's own tables. It publishes them in one transaction after the last plan. A failed run leaves the task's tables unchanged.
 - An interactive run writes directly, as before. `run_task()` and `Task$run()` take `run_key = NULL` by default, and a run without a key touches no staging table.
 - A second attempt with the same `run_key` skips each plan that the first attempt finished, except plan 1.
 - `Task$run()` with a `run_key` builds the plans again on every attempt, as `run_task()` does.

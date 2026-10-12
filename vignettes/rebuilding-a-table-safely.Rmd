@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 A task often rebuilds its output table: plan 1 empties the table, and each plan then adds its rows. cs9 keeps every change in a staging table until the last plan succeeds. It then copies the changes into the table in one step. A reader therefore sees the complete old table or the complete new table, never a part of one.
 
-cs9 stages a run only when the run has a `run_key`, as a scheduler such as Airflow gives it. A run without a `run_key`, for example an interactive run, writes to the table at once, as before.
+cs9 stages a run only when the run has a `run_key`. A scheduler can pass one to `run_task()`. A run without a `run_key` writes to the table at once, as before.
 
 This vignette runs a small task against SQLite and draws what a reader sees. A chunk calls `stopifnot()` on each claim, so the vignette fails to build when cs9 stops keeping it.
 
@@ -157,7 +157,7 @@ draw(run_a, data.table(attempt = "A run that succeeds", x = 4.5, label = "publis
 
 Here plan 3 stops with an error. The run publishes nothing, so a reader still sees the 5 old rows.
 
-The retry runs the task again with the same `run_key`, as a scheduler such as Airflow does. That attempt resumes the run. Plan 1 runs again, because it can set values that later plans read. Plan 2 finished on the first attempt, so it is skipped. Plan 3 runs again, and its rows from the first attempt are removed first, so each row is published once.
+The retry runs the task again with the same `run_key`. That attempt resumes the run. Plan 1 runs again, because it can set values that later plans read. Plan 2 finished on the first attempt, so it is skipped. Plan 3 runs again, and its rows from the first attempt are removed first, so each row is published once.
 
 ```{r failure, results = "hide"}
 counts$drop_all_rows()

@@ -355,18 +355,29 @@ run_database_id <- function(dbconfig) {
 # The tables of a task that its run stages, named by their live names, and the
 # dbconfig of the run database. `problem` names why the run stages nothing.
 run_targets <- function(tables) {
-  infos <- lapply(tables, run_target_info)
-  keep <- !vapply(infos, is.null, logical(1))
-  infos <- infos[keep]
-  targets <- tables[keep]
   out <- list(targets = list(), dbconfig = NULL, problem = NULL)
+  # First pass, over every object in the order the task lists it, before any
+  # filter or deduplication: each MUST be a cs9 table class that stages, or a
+  # table of the config access. Anything else stops a keyed run, because the
+  # run would write it outside the publish.
+  checked <- run_targets_check(tables)
+  if (!is.null(checked$problem)) {
+    out$problem <- checked$problem
+    return(out)
+  }
+  # After the first pass every object is a known table. Leaving out the
+  # objects without info keeps the steps below safe, whatever the pass let
+  # through.
+  known <- !vapply(checked$infos, is.null, logical(1))
+  infos <- checked$infos[known]
+  targets <- tables[known]
   if (length(targets) == 0) {
     return(out)
   }
   # One table can appear twice in a task's tables. Two different tables with
   # one name, in two databases or schemas, cannot: cs9 tells staged tables
   # apart by their names. The check covers every table of the task, the
-  # config tables included, so it runs before they are left out.
+  # config tables included, so it runs before they are set aside.
   same <- vapply(
     infos,
     function(i) paste(i$name, run_database_id(i$dbconfig), i$dbconfig$schema, sep = "|"),
@@ -383,22 +394,16 @@ run_targets <- function(tables) {
     )
     return(out)
   }
-  # A table of the config access is never staged, also when a task lists it.
-  # It is written directly, as before 26.10.14.
-  config_access <- vapply(infos, function(i) run_is_config_table(i$dbconfig), logical(1))
-  targets <- targets[!config_access]
-  infos <- infos[!config_access]
-  # Any other table that cs9 cannot stage stops a keyed run. A run that left
-  # it out would write it directly, outside the publish.
-  stageable <- vapply(infos, function(i) i$stageable, logical(1))
-  if (!all(stageable)) {
-    out$problem <- paste0(
-      "the table ",
-      names(targets)[!stageable][1],
-      " is not a cs9 table class that cs9 can stage"
-    )
-    return(out)
-  }
+  # Set aside every table that this run does not stage. After the first pass
+  # these are the tables of the config access only. They are never staged,
+  # also when a task lists them, and are written directly, as before 26.10.14.
+  aside <- vapply(
+    infos,
+    function(i) !i$stageable || run_is_config_table(i$dbconfig),
+    logical(1)
+  )
+  targets <- targets[!aside]
+  infos <- infos[!aside]
   if (length(targets) == 0) {
     return(out)
   }
@@ -421,6 +426,40 @@ run_targets <- function(tables) {
     out$dbconfig <- infos[[1]]$dbconfig
   }
   return(out)
+}
+
+# The first pass of run_targets(): the info of every object of a task's
+# tables, or the problem with the first object that is neither a cs9 table
+# class that stages nor a table of the config access.
+run_targets_check <- function(tables) {
+  labels <- names(tables)
+  if (is.null(labels)) {
+    labels <- rep("", length(tables))
+  }
+  infos <- vector("list", length(tables))
+  for (k in seq_along(tables)) {
+    info <- run_target_info(tables[[k]])
+    if (is.null(info) || !(info$stageable || run_is_config_table(info$dbconfig))) {
+      return(list(problem = paste0(
+        "the table ",
+        run_object_label(info, labels[k], k, tables[[k]]),
+        " is not a cs9 table class that cs9 can stage"
+      )))
+    }
+    # `[<-` keeps the position. `[[<-` with NULL would drop the element.
+    infos[k] <- list(info)
+  }
+  return(list(infos = infos, problem = NULL))
+}
+
+# The name of a table for an error message: its table name, else the name it
+# has in the task's tables, else its position, with the class of the object.
+run_object_label <- function(info, label, k, x) {
+  if (!is.null(info)) {
+    return(info$name)
+  }
+  where <- if (nzchar(label)) paste0("'", label, "'") else paste0("number ", k)
+  return(paste0(where, " (an object of class ", class(x)[1], ")"))
 }
 
 # The table names of the partitions of the staged partitioned tables.

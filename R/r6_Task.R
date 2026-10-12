@@ -235,7 +235,12 @@ Task <- R6::R6Class(
           self$name
         )
         config$run$first_plan <- private$plan_ids[1]
-        to_run <- run_prepare(config$run, private$plan_ids, self$tables)
+        # The staged tables only: a table that is set aside has no staging.
+        to_run <- run_prepare(
+          config$run,
+          private$plan_ids,
+          run_targets(self$tables)$targets
+        )
         if (!all(to_run)) {
           message(glue::glue(
             "Resuming run '{run$run_key}': {sum(!to_run)} of ",
