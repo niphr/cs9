@@ -406,17 +406,28 @@ A Task R6 object representing the surveillance task.
 
 Execute a surveillance task by name. The task builds its plans once on
 every call, before any plan runs and before a worker forks. The plans do
-not change during the run, and `argset$today` is the date of the run.
+not change during the run, and `argset$today` is the date of the run. A
+run started with a `run_key`, which a scheduler can pass, stages its
+writes and changes the task's tables only after every plan succeeds. An
+interactive run writes directly, as before. See
+[`vignette("rebuilding-a-table-safely")`](https://niphr.github.io/cs9/articles/rebuilding-a-table-safely.md).
 
 #### Usage
 
-    SurveillanceSystem_v9$run_task(task_name)
+    SurveillanceSystem_v9$run_task(task_name, run_key = NULL)
 
 #### Arguments
 
 - `task_name`:
 
   Character string specifying the task name to run.
+
+- `run_key`:
+
+  A string that names the run, or NULL. With NULL the run writes the
+  task's tables directly. A second call with the same `run_key` resumes
+  a failed run. It skips each plan that the failed run finished, except
+  plan 1.
 
 #### Returns
 

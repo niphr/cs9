@@ -11,7 +11,7 @@ epidemiological monitoring and public health surveillance."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -28,6 +28,7 @@ epidemiological monitoring and public health surveillance."><meta property="og:i
     <li><a class="dropdown-item" href="../articles/file-layout.html">File Layout</a></li>
     <li><a class="dropdown-item" href="../articles/creating-a-task.html">Creating a task</a></li>
     <li><a class="dropdown-item" href="../articles/how-a-task-runs.html">How a task runs</a></li>
+    <li><a class="dropdown-item" href="../articles/rebuilding-a-table-safely.html">Rebuilding a table safely</a></li>
     <li><a class="dropdown-item" href="../articles/task-shapes.html">Task shapes</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -37,6 +38,7 @@ epidemiological monitoring and public health surveillance."><meta property="og:i
     <li><a class="external-link dropdown-item" href="https://niphr.github.io/csalert/">csalert — surveillance alerts</a></li>
     <li><a class="external-link dropdown-item" href="https://niphr.github.io/csdata/">csdata — structural data</a></li>
     <li><a class="external-link dropdown-item" href="https://niphr.github.io/csdb/">csdb — database access</a></li>
+    <li><a class="external-link dropdown-item" href="https://niphr.github.io/csdocs/">csdocs — package documentation</a></li>
     <li><a class="external-link dropdown-item" href="https://niphr.github.io/csmaps/">csmaps — maps of Norway</a></li>
     <li><a class="external-link dropdown-item" href="https://niphr.github.io/csstyle/">csstyle — output styling</a></li>
     <li><a class="external-link dropdown-item" href="https://niphr.github.io/cstidy/">cstidy — tidy surveillance data</a></li>
@@ -392,13 +394,19 @@ Call <code>task$run()</code> on the result to run plans that you edit by hand, b
 <h3 id="surveillancesystem-v-run-task-"><code>SurveillanceSystem_v9$run_task()</code><a class="anchor" aria-label="anchor" href="#surveillancesystem-v-run-task-"></a></h3>
 <p>Execute a surveillance task by name.
 The task builds its plans once on every call, before any plan runs and before a worker forks.
-The plans do not change during the run, and <code>argset$today</code> is the date of the run.</p><div class="section">
+The plans do not change during the run, and <code>argset$today</code> is the date of the run.
+A run started with a <code>run_key</code>, which a scheduler can pass, stages its writes and changes the task's tables only after every plan succeeds.
+An interactive run writes directly, as before. See <code><a href="../articles/rebuilding-a-table-safely.html">vignette("rebuilding-a-table-safely")</a></code>.</p><div class="section">
 <h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="va">task_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SurveillanceSystem_v9</span><span class="op">$</span><span class="fu">run_task</span><span class="op">(</span><span class="va">task_name</span>, run_key <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-5">Arguments<a class="anchor" aria-label="anchor" href="#arguments-5"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_name</code></dt>
 <dd><p>Character string specifying the task name to run.</p></dd>
+
+      <dt><code>run_key</code></dt>
+<dd><p>A string that names the run, or NULL. With NULL the run writes the task's tables directly.
+A second call with the same <code>run_key</code> resumes a failed run. It skips each plan that the failed run finished, except plan 1.</p></dd>
 
 
 </dl><p></p></div>
@@ -621,7 +629,7 @@ The plans do not change during the run, and <code>argset$today</code> is the dat
 
     <footer><div class="pkgdown-footer-left">
   <p>Crafted by <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a>.
-<nav class="cs-family" aria-label="cs* family"><a class="external-link cs-family-label" href="https://niphr.github.io/">cs* family ↗</a> <a href="https://niphr.github.io/cs9/">cs9</a> <a href="https://niphr.github.io/csalert/" class="external-link">csalert</a> <a href="https://niphr.github.io/csdata/" class="external-link">csdata</a> <a href="https://niphr.github.io/csdb/" class="external-link">csdb</a> <a href="https://niphr.github.io/csmaps/" class="external-link">csmaps</a> <a href="https://niphr.github.io/csstyle/" class="external-link">csstyle</a> <a href="https://niphr.github.io/cstidy/" class="external-link">cstidy</a> <a href="https://niphr.github.io/cstime/" class="external-link">cstime</a> <a href="https://niphr.github.io/csutil/" class="external-link">csutil</a>
+<nav class="cs-family" aria-label="cs* family"><a class="external-link cs-family-label" href="https://niphr.github.io/">cs* family ↗</a> <a href="https://niphr.github.io/cs9/">cs9</a> <a href="https://niphr.github.io/csalert/" class="external-link">csalert</a> <a href="https://niphr.github.io/csdata/" class="external-link">csdata</a> <a href="https://niphr.github.io/csdb/" class="external-link">csdb</a> <a href="https://niphr.github.io/csdocs/" class="external-link">csdocs</a> <a href="https://niphr.github.io/csmaps/" class="external-link">csmaps</a> <a href="https://niphr.github.io/csstyle/" class="external-link">csstyle</a> <a href="https://niphr.github.io/cstidy/" class="external-link">cstidy</a> <a href="https://niphr.github.io/cstime/" class="external-link">cstime</a> <a href="https://niphr.github.io/csutil/" class="external-link">csutil</a>
 </nav></p>
 </div>
 

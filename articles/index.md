@@ -10,4 +10,6 @@
   task](https://niphr.github.io/cs9/articles/creating-a-task.md):
 - [How a task
   runs](https://niphr.github.io/cs9/articles/how-a-task-runs.md):
+- [Rebuilding a table
+  safely](https://niphr.github.io/cs9/articles/rebuilding-a-table-safely.md):
 - [Task shapes](https://niphr.github.io/cs9/articles/task-shapes.md):

@@ -474,6 +474,11 @@ partition_rows
 #> 2:   anon_rules_cases_xxpxx_flu     2       flu
 ```
 
+On PostgreSQL, one `insert_data()` into a partitioned table by default
+stores all of its rows or none of them. If the error message of a failed
+insert asks you to count the rows, do that before you insert again.
+After any other error, by default the insert stored nothing.
+
 `nrow(collapse = FALSE)` has one row for each partition whose table
 exists. csdb creates the table of a partition at its first use, so `rsv`
 has no row here. Use `names(pt$tables)` for the declared partitions.

@@ -1,5 +1,87 @@
 # Changelog
 
+## Version 26.10.14
+
+- A run started with a `run_key`, which a scheduler can pass, stages its
+  writes to the task’s own tables. It publishes them in one transaction
+  after the last plan. A failed run leaves the task’s tables unchanged.
+- An interactive run writes directly, as before. `run_task()` and
+  `Task$run()` take `run_key = NULL` by default, and a run without a key
+  touches no staging table.
+- A second attempt with the same `run_key` skips each plan that the
+  first attempt finished, except plan 1.
+- `Task$run()` with a `run_key` builds the plans again on every attempt,
+  as `run_task()` does.
+- During a run with a `run_key`, `tbl()` and
+  [`nrow()`](https://rdrr.io/r/base/nrow.html) read the published table.
+  `staged_tbl()` reads the rows that the run staged.
+- Such a run stops when two plans write one row, or when a plan deletes
+  rows that another plan wrote.
+- A retry with a `run_key` stops before any plan runs when its plans
+  differ from the first attempt. The order of the plans counts.
+- A later attempt of a published `run_key` does nothing, also after a
+  run with another key.
+- A run with a `run_key` that cannot stage its writes stops with an
+  error, before any write. Two tables with one name are such a case, and
+  so is a table that cs9 cannot stage. A table of the config access is
+  never staged.
+- A plan analysis that calls `staged_tbl()` stops the run, because plans
+  MAY read published tables only.
+- In a run with a `run_key`, `argset$today` is the date of the first
+  attempt.
+- `config_tables_last_updated` gets one row per changed table, once per
+  run with a `run_key`, at the publish.
+- On PostgreSQL a second run of a task with a `run_key` stops while the
+  first is alive. Each such run holds one more connection, for its lock
+  and its publish.
+- A staged table gets a staging table, `<table>_cs9stg`. The tables
+  `cs9_run`, `cs9_run_plan_list`, `cs9_run_plan_done` and
+  `cs9_run_operation` hold the state of each run.
+- [`vignette("rebuilding-a-table-safely")`](https://niphr.github.io/cs9/articles/rebuilding-a-table-safely.md)
+  shows what a reader sees during a run, a failed run and its retry.
+
+## Version 26.10.13
+
+- The `insert_data()` method of a partitioned table loads every
+  partition with one call to
+  [`csdb::insert_data_many()`](https://niphr.github.io/csdb/reference/insert_data_many.html).
+  On PostgreSQL an insert needs one `psql` login for the load, plus one
+  for the last-updated bookkeeping, not one for each partition. With
+  SQLite or SQL Server, csdb still loads one partition at a time.
+- On PostgreSQL, by default (`confirm_insert_via_nrow = FALSE`), an
+  insert that fails stores no row in any partition. The exception is an
+  error that says the connection broke, or that a row count differed
+  after `psql` finished. The rows may then be stored, and the error says
+  to count them. With `confirm_insert_via_nrow = TRUE`, a duplicate key
+  makes csdb insert partition by partition, so a failure can leave some
+  partitions stored.
+- When the last-updated bookkeeping fails after the rows are stored,
+  `insert_data()` gives a warning that names the partitions and the
+  error, and returns normally.
+- A partitioned `insert_data()` that fails writes no row of its own to
+  `config_tables_last_updated`. Before, it recorded the partitions that
+  it loaded before the failure. With `confirm_insert_via_nrow = TRUE`,
+  or with SQLite or SQL Server, each partition that loaded before the
+  failure still records itself.
+- [`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
+  says what a failed insert into a partitioned table stores, and when to
+  count the rows.
+- cs9 needs csdb 2026.10.13.
+
+## Version 26.10.12
+
+- `Task$run()` runs each parallel plan once. Before, a failing plan ran
+  up to 5 times, and only the error of the last try reached the log. The
+  scheduler, for example Airflow, retries the whole task.
+- `Task$run()` sets `config$plan_attempt_index` to 1 for every plan. It
+  stays for callers that read it.
+- When one parallel plan fails, the other parallel plans still run.
+  Before, a failure skipped the plans that
+  [`pbmcapply::pbmclapply()`](https://rdrr.io/pkg/pbmcapply/man/pbmclapply.html)
+  had scheduled on the same core. `Task$run()` then stops with one error
+  that counts the failed plans and holds the message of each, in plan
+  order. Before, it held the message of the first failed plan only.
+
 ## Version 26.10.8
 
 - [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
