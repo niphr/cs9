@@ -177,6 +177,31 @@ for (kind in c("plain", "partitioned")) {
     }
   )
 
+  test_that(paste0("drop_all_rows_and_then_upsert_data() gives the end state of a live run (", kind, ")"), {
+    db <- local_staging_db()
+    out <- new_stage_out(db, kind)
+    seed_old_rows(out)
+    ctl <- local_stage_ctl()
+    hooks <- list(
+      "1" = function(tables, argset) {
+        tables$out$drop_all_rows_and_then_upsert_data(rows(c("a", "b"), c("p1", "p2"), c(1, 2)))
+        return(invisible(NULL))
+      },
+      "2" = function(tables, argset) {
+        tables$out$insert_data(rows("c", "p3", 3))
+        return(invisible(NULL))
+      }
+    )
+
+    got <- run_hooks(out, hooks, ctl, run_key = "drop-then-upsert")
+
+    expect_null(got$error)
+    # Plan 4 read the old rows: the drop and the upsert of plan 1 were staged.
+    expect_equal(got$seen, 3)
+    expect_equal(got$seen_x, old_rows()$x)
+    expect_equal(got$live, rows(c("a", "b", "c"), c("p1", "p2", "p3"), c(1, 2, 3)))
+  })
+
   test_that(
     paste0(
       "a publish that fails changes no live table and no mark (",

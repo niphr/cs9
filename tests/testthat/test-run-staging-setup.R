@@ -283,6 +283,43 @@ test_that("an object that is not a table stops a keyed run", {
   expect_equal(live_rows(out), old_rows())
 })
 
+test_that("a task table with the name of a staging table stops a keyed run", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  # A live table with the name of the staging table of `out`.
+  clash <- DBTableExtended_v9$new(
+    dbconfig = db,
+    table_name = "anon_stage_plain_cs9stg",
+    field_types = c(x = "TEXT", part = "TEXT", n = "INTEGER"),
+    keys = "x",
+    validator_field_types = csdb::validator_field_types_blank,
+    validator_field_contents = csdb::validator_field_contents_blank
+  )
+  withr::defer(clash$disconnect())
+  seed_old_rows(clash)
+  ctl <- local_stage_ctl()
+  ctl$hooks[["2"]] <- function(tables, argset) {
+    tables$clash$insert_data(stage_rows_of(argset$plan))
+    return(invisible(NULL))
+  }
+
+  err <- run_attempt(
+    new_stage_task(out, tables = list(out = out, clash = clash)),
+    run_key = "clash"
+  )
+
+  expect_match(error_text(err), "cannot stage its writes", fixed = TRUE)
+  expect_match(
+    error_text(err),
+    "anon_stage_plain_cs9stg collides with the staging table of anon_stage_plain",
+    fixed = TRUE
+  )
+  expect_equal(stage_calls(ctl, 4), c(0L, 0L, 0L, 0L))
+  expect_equal(live_rows(out), old_rows())
+  expect_equal(live_rows(clash), old_rows())
+})
+
 test_that("Task$run() with a run_key builds its plans again on every attempt", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")

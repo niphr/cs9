@@ -449,7 +449,38 @@ run_targets_check <- function(tables) {
     # `[<-` keeps the position. `[[<-` with NULL would drop the element.
     infos[k] <- list(info)
   }
+  problem <- run_reserved_names(vapply(infos, function(i) i$name, character(1)))
+  if (!is.null(problem)) {
+    return(list(problem = problem))
+  }
   return(list(infos = infos, problem = NULL))
+}
+
+# A staging table is named after its live table, with the suffix "_cs9stg".
+# A live table MUST NOT use such a name: it would be the staging table of
+# another table, or look like one. Every staging name ends with the suffix,
+# also a cut one, so the suffix check also covers a cut name.
+run_reserved_names <- function(table_names) {
+  staging_names <- vapply(table_names, run_staging_name, character(1))
+  for (k in seq_along(table_names)) {
+    owner <- table_names[staging_names == table_names[k]]
+    if (length(owner) > 0) {
+      return(paste0(
+        "the table ",
+        table_names[k],
+        " collides with the staging table of ",
+        owner[1]
+      ))
+    }
+    if (endsWith(table_names[k], "_cs9stg")) {
+      return(paste0(
+        "the table ",
+        table_names[k],
+        " uses a name reserved for staging"
+      ))
+    }
+  }
+  return(NULL)
 }
 
 # The name of a table for an error message: its table name, else the name it
