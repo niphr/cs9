@@ -210,12 +210,12 @@ run_store_definitions <- list(
     "plan_id VARCHAR NOT NULL, table_name VARCHAR NOT NULL,",
     "operation VARCHAR NOT NULL, sql_condition VARCHAR"
   ),
-  # The plan ids of the first attempt. Every later attempt MUST build the same
-  # set, or it stops before any plan runs.
-  cs9_run_plan = paste(
+  # The plan ids of the first attempt, in plan order. Every later attempt MUST
+  # build the same list, in the same order, or it stops before any plan runs.
+  cs9_run_plan_list = paste(
     "task VARCHAR NOT NULL, run_key VARCHAR NOT NULL,",
-    "plan_id VARCHAR NOT NULL,",
-    "PRIMARY KEY (task, run_key, plan_id)"
+    "plan_position INTEGER NOT NULL, plan_id VARCHAR NOT NULL,",
+    "PRIMARY KEY (task, run_key, plan_position)"
   )
 )
 
@@ -365,9 +365,25 @@ run_targets <- function(tables) {
   if (length(targets) == 0) {
     return(out)
   }
-  names(targets) <- vapply(infos, function(i) i$name, character(1))
-  targets <- targets[!duplicated(names(targets))]
-  infos <- infos[!duplicated(vapply(infos, function(i) i$name, character(1)))]
+  # One table can appear twice in a task's tables. Two different tables with
+  # one name, in two databases or schemas, cannot: cs9 names a staged table
+  # by its live name.
+  same <- vapply(
+    infos,
+    function(i) paste(i$name, run_database_id(i$dbconfig), i$dbconfig$schema, sep = "|"),
+    character(1)
+  )
+  targets <- targets[!duplicated(same)]
+  infos <- infos[!duplicated(same)]
+  table_names <- vapply(infos, function(i) i$name, character(1))
+  names(targets) <- table_names
+  if (anyDuplicated(table_names) > 0) {
+    out$problem <- paste0(
+      "two tables share the name ",
+      table_names[duplicated(table_names)][1]
+    )
+    return(out)
+  }
   drivers <- vapply(
     infos,
     function(i) as.character(i$dbconfig$driver),

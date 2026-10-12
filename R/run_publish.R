@@ -251,26 +251,29 @@ run_prepare <- function(state, ids, targets) {
   return(!ids %in% keep)
 }
 
-# The first attempt of a run stores the set of its plan ids. Every later
-# attempt MUST build the same set, in any order. A plan that is new, gone or
-# changed stops the attempt before any plan runs, also when the changed plan
-# never started.
+# The first attempt of a run stores the list of its plan ids, in plan order.
+# Every later attempt MUST build the identical list. A plan that is new, gone,
+# changed or moved stops the attempt before any plan runs, also when the
+# changed plan never started.
 run_check_plan_set <- function(con, state, ids) {
   stored <- DBI::dbGetQuery(
     con,
     paste0(
-      "SELECT plan_id FROM ",
-      run_store_ident(con, "cs9_run_plan", state),
+      "SELECT plan_position, plan_id FROM ",
+      run_store_ident(con, "cs9_run_plan_list", state),
       " WHERE ",
-      run_where_store(con, state)
+      run_where_store(con, state),
+      " ORDER BY plan_position"
     )
-  )$plan_id
-  if (length(stored) == 0) {
+  )
+  if (nrow(stored) == 0) {
     rows <- paste0(
       "(",
       run_q(con, state$task),
       ", ",
       run_q(con, state$run_key),
+      ", ",
+      seq_along(ids),
       ", ",
       run_q(con, ids),
       ")"
@@ -279,25 +282,25 @@ run_check_plan_set <- function(con, state, ids) {
       con,
       paste0(
         "INSERT INTO ",
-        run_store_ident(con, "cs9_run_plan", state),
-        " (task, run_key, plan_id) VALUES ",
+        run_store_ident(con, "cs9_run_plan_list", state),
+        " (task, run_key, plan_position, plan_id) VALUES ",
         paste(rows, collapse = ", ")
       )
     )
     return(invisible(NULL))
   }
-  if (!setequal(stored, ids)) {
+  if (!identical(as.character(stored$plan_id), as.character(ids))) {
     stop(
       "cs9: the plan list changed between attempts of one run; a planner read ",
       "something other than its settings and published tables. Task ",
       state$task,
       ", run '",
       state$run_key,
-      "': ",
-      length(setdiff(ids, stored)),
-      " plan(s) are new and ",
-      length(setdiff(stored, ids)),
-      " plan(s) of the first attempt are gone or changed. ",
+      "': the first attempt built ",
+      nrow(stored),
+      " plans, this attempt built ",
+      length(ids),
+      ", and the lists differ in their plans or their order. ",
       "Start a new run with a new run_key.",
       call. = FALSE
     )
@@ -393,7 +396,7 @@ run_publish <- function(state, tables) {
       con,
       paste0(
         "DELETE FROM ",
-        run_store_ident(con, "cs9_run_plan", state),
+        run_store_ident(con, "cs9_run_plan_list", state),
         " WHERE ",
         run_where_store(con, state)
       )

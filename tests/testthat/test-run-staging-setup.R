@@ -108,6 +108,79 @@ test_that("a keyed run that cannot stage stops and writes nothing", {
   expect_equal(live_rows(other), old_rows())
 })
 
+test_that("two tables with one name stop a keyed run before any write", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  # A table with the same name in another SQLite file.
+  twin_config <- db
+  twin_config$db <- file.path(dirname(db$db), "twin.sqlite")
+  twin <- DBTableExtended_v9$new(
+    dbconfig = twin_config,
+    table_name = "anon_stage_plain",
+    field_types = c(x = "TEXT", part = "TEXT", n = "INTEGER"),
+    keys = "x",
+    validator_field_types = csdb::validator_field_types_blank,
+    validator_field_contents = csdb::validator_field_contents_blank
+  )
+  withr::defer(twin$disconnect())
+  seed_old_rows(twin)
+  ctl <- local_stage_ctl()
+  ctl$hooks[["1"]] <- function(tables, argset) {
+    tables$twin$insert_data(stage_rows_of(argset$plan))
+    return(invisible(NULL))
+  }
+
+  err <- run_attempt(
+    new_stage_task(out, tables = list(out = out, twin = twin)),
+    run_key = "twins"
+  )
+
+  expect_match(error_text(err), "cannot stage its writes", fixed = TRUE)
+  expect_match(
+    error_text(err),
+    "two tables share the name anon_stage_plain",
+    fixed = TRUE
+  )
+  expect_equal(stage_calls(ctl, 4), c(0L, 0L, 0L, 0L))
+  expect_equal(live_rows(out), old_rows())
+  expect_equal(live_rows(twin), old_rows())
+})
+
+test_that("run_task() passes its run_key to the task run", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  ctl <- local_stage_ctl()
+  ctl$hooks[["2"]] <- record_live_nrow(ctl)
+  ss <- SurveillanceSystem_v9$new(name = "cs9test")
+  ss$add_task(
+    name_grouping = "stage",
+    name_action = "viass",
+    for_each_plan = plnr::expand_list(plan = 1:4),
+    action_fn_name = "cs9stage_action",
+    data_selector_fn_name = "cs9stage_data",
+    tables = list(out = out)
+  )
+
+  err <- tryCatch(
+    {
+      suppressWarnings(suppressMessages(ss$run_task("stage_viass", run_key = "k")))
+      NULL
+    },
+    error = function(e) e
+  )
+
+  expect_null(err)
+  # The run staged: plan 2 read the old rows, and the run with key "k" is
+  # marked as published.
+  expect_equal(seen_x(ctl, 2), old_rows()$x)
+  run_row <- store_rows("cs9_run", "k")
+  expect_equal(nrow(run_row), 1L)
+  expect_true(all(!is.na(run_row$published_datetime)))
+  expect_equal(live_rows(out), expected_rows(1:4))
+})
+
 for (mode in c("insert", "upsert")) {
   test_that(
     paste0("a keyed run stages the ", mode, " at the end of each plan"),

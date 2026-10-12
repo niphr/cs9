@@ -204,6 +204,33 @@ test_that("a planner that adds a plan between attempts stops the retry", {
   expect_equal(live_rows(out), old_rows())
 })
 
+test_that("a planner that reorders the plans between attempts stops the retry", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  ctl <- local_stage_ctl()
+  ctl$plans <- function() 1:4
+  task <- new_stage_task(out, planned = TRUE)
+
+  ctl$fail <- 3L
+  err1 <- run_attempt(task, run_key = "reordered")
+  expect_s3_class(err1, "error")
+
+  # The same plans, but plan 2 now comes first, so it is the plan that runs
+  # again on every attempt.
+  ctl$plans <- function() c(2L, 1L, 3L, 4L)
+  ctl$fail <- integer()
+  err2 <- run_attempt(task, run_key = "reordered")
+
+  expect_match(
+    error_text(err2),
+    "the plan list changed between attempts of one run",
+    fixed = TRUE
+  )
+  expect_equal(stage_calls(ctl, 4), c(1L, 1L, 1L, 0L))
+  expect_equal(live_rows(out), old_rows())
+})
+
 test_that("a plan whose settings change before it ever ran stops the retry", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")

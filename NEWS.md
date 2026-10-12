@@ -5,14 +5,14 @@
 - A second attempt with the same `run_key` skips each plan that the first attempt finished, except plan 1.
 - During a run with a `run_key`, `tbl()` and `nrow()` read the published table. `staged_tbl()` reads the rows that the run staged.
 - Such a run stops when two plans write one row, or when a plan deletes rows that another plan wrote.
-- A retry with a `run_key` stops before any plan runs when its set of plans differs from the first attempt.
+- A retry with a `run_key` stops before any plan runs when its plans differ from the first attempt. The order of the plans counts.
 - A later attempt of a published `run_key` does nothing, also after a run with another key.
-- A run with a `run_key` that cannot stage its writes stops with an error, before any write. A table of the config access is never staged.
+- A run with a `run_key` that cannot stage its writes stops with an error, before any write. Two tables with one name are such a case. A table of the config access is never staged.
 - A plan analysis that calls `staged_tbl()` stops the run, because plans MAY read published tables only.
 - In a run with a `run_key`, `argset$today` is the date of the first attempt.
 - `config_tables_last_updated` gets one row per changed table, once per run with a `run_key`, at the publish.
 - On PostgreSQL a second run of a task with a `run_key` stops while the first is alive. Each such run holds one more connection, for its lock and its publish.
-- A staged table gets a staging table, `<table>_cs9stg`. The tables `cs9_run`, `cs9_run_plan_done` and `cs9_run_operation` hold the state of each run.
+- A staged table gets a staging table, `<table>_cs9stg`. The tables `cs9_run`, `cs9_run_plan_list`, `cs9_run_plan_done` and `cs9_run_operation` hold the state of each run.
 - `vignette("rebuilding-a-table-safely")` shows what a reader sees during a run, a failed run and its retry.
 
 # Version 26.10.13
