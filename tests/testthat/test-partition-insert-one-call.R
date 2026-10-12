@@ -143,7 +143,12 @@ test_that("partitioned insert_data() makes one csdb::insert_data_many() call wit
   suppressMessages(pt$insert_data(new_rows(1:6, c("a", "c", "e"))))
 
   expect_length(rec$calls, 1L)
-  call <- rec$calls[[1]]
+  # No call leaves an empty record, so the checks below fail and do not error.
+  call <- if (length(rec$calls) > 0) {
+    rec$calls[[1]]
+  } else {
+    list(tables = list(), newdata = list(), columns = list(), args = list())
+  }
   names_sent <- vapply(
     call$tables,
     function(t) {
@@ -231,6 +236,43 @@ test_that("a partitioned insert_data() with zero rows calls csdb with no table",
   counter$n <- 0L
   suppressMessages(pt$insert_data(new_rows(integer(0), character(0))))
   expect_length(rec$calls, 1L)
-  expect_length(rec$calls[[1]]$tables, 0L)
+  expect_length(unlist(lapply(rec$calls, `[[`, "tables")), 0L)
   expect_equal(counter$n, 0L)
+})
+
+# The rows are committed before cs9 records the insert. A failure of that
+# bookkeeping write MUST NOT report a failed insert, because a caller that
+# ran the insert again would hit a duplicate key.
+test_that("a failed last-updated write after a successful insert gives a warning, and the insert returns", {
+  dbconfig <- local_sqlite_dbconfig()
+  pt <- new_partition_table(dbconfig)
+  withr::defer(pt$disconnect())
+  local_mocked_bindings(
+    update_config_tables_last_updated = function(...) {
+      stop("cs9test bookkeeping failure", call. = FALSE)
+    }
+  )
+  warnings <- character()
+  result <- withCallingHandlers(
+    tryCatch(
+      suppressMessages(pt$insert_data(new_rows(1:6, c("a", "c", "e")))),
+      error = function(e) e
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_null(result)
+  expect_length(warnings, 1L)
+  expect_match(
+    warnings,
+    "succeeded, but recording it in config_tables_last_updated failed: cs9test bookkeeping failure",
+    fixed = TRUE,
+    all = FALSE
+  )
+  for (p in c("a", "c", "e")) {
+    expect_match(warnings, pt$tables[[p]]$table_name, fixed = TRUE, all = FALSE)
+  }
+  expect_equal(pt$nrow(), 6)
 })

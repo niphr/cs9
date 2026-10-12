@@ -187,14 +187,31 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         update_last_updated = FALSE
       )
       # Only an insert that succeeded reaches this line, so a failed insert
-      # records no partition.
-      private$record_last_updated(vapply(
+      # records no partition. The rows are committed here. A failure of the
+      # bookkeeping write therefore becomes a warning: an error would report
+      # a failed insert, and a caller that ran the insert again would hit a
+      # duplicate key.
+      table_names <- vapply(
         children,
         function(child) {
           return(child$table_name)
         },
         character(1)
-      ))
+      )
+      tryCatch(
+        private$record_last_updated(table_names),
+        error = function(e) {
+          warning(
+            "cs9: the insert into ",
+            paste0(table_names, collapse = ", "),
+            " succeeded, but recording it in config_tables_last_updated ",
+            "failed: ",
+            conditionMessage(e),
+            call. = FALSE
+          )
+          return(invisible(NULL))
+        }
+      )
       return(invisible(NULL))
     },
     upsert_data = function(
