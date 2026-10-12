@@ -31,7 +31,8 @@ for (kind in c("plain", "partitioned")) {
       } else {
         paste0("anon_stage_part_xxpxx_", c("p1", "p2", "p3"))
       }
-      expect_setequal(rec$calls[[1]], expected_names)
+      first_call <- if (length(rec$calls) > 0) rec$calls[[1]] else character()
+    expect_setequal(first_call, expected_names)
     }
   )
 
@@ -192,8 +193,43 @@ test_that("a task without a table of its own runs without staging", {
     tables = list()
   )
 
-  err <- run_attempt(task)
+  # A key: the run would stage, but the task has no table to stage.
+  err <- run_attempt(task, run_key = "no-tables")
 
   expect_null(err)
   expect_equal(stage_calls(ctl, 2), c(1L, 1L))
+  expect_equal(made_tables(), character())
 })
+
+# A published run_key MUST stay published. Before the fix in round 2 of phase
+# 21, the run with key B removed the cs9_run row of key A, so a later retry of
+# key A ran every plan again and published again.
+for (b_fails in c(FALSE, TRUE)) {
+  label <- if (b_fails) "fails" else "publishes"
+  test_that(paste0("a published run_key does nothing after a run with another key ", label), {
+    db <- local_staging_db()
+    out <- new_stage_out(db, "partitioned")
+    seed_old_rows(out)
+    ctl <- local_stage_ctl()
+    task <- new_stage_task(out)
+
+    err_a <- run_attempt(task, run_key = "key A")
+    expect_null(err_a)
+    ctl$rows <- function(plan) stage_rows_of(plan, n = 50L + plan)
+    ctl$fail <- if (b_fails) 3L else integer()
+    err_b <- run_attempt(task, run_key = "key B")
+    expect_equal(is.null(err_b), !b_fails)
+    after_b <- live_rows(out)
+    calls_after_b <- stage_calls(ctl, 4)
+
+    # A retry of key A would write n = 99 in every row.
+    ctl$fail <- integer()
+    ctl$rows <- function(plan) stage_rows_of(plan, n = 99L)
+    err_retry <- run_attempt(task, run_key = "key A")
+
+    expect_null(err_retry)
+    expect_equal(stage_calls(ctl, 4), calls_after_b)
+    expect_equal(live_rows(out), after_b)
+    expect_false(any(live_rows(out)$n == 99L))
+  })
+}

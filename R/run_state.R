@@ -209,6 +209,13 @@ run_store_definitions <- list(
     "task VARCHAR NOT NULL, run_key VARCHAR NOT NULL,",
     "plan_id VARCHAR NOT NULL, table_name VARCHAR NOT NULL,",
     "operation VARCHAR NOT NULL, sql_condition VARCHAR"
+  ),
+  # The plan ids of the first attempt. Every later attempt MUST build the same
+  # set, or it stops before any plan runs.
+  cs9_run_plan = paste(
+    "task VARCHAR NOT NULL, run_key VARCHAR NOT NULL,",
+    "plan_id VARCHAR NOT NULL,",
+    "PRIMARY KEY (task, run_key, plan_id)"
   )
 )
 
@@ -304,12 +311,37 @@ run_driver_supported <- function(driver) {
 # The live name and the dbconfig of a table that cs9 can stage, or NULL.
 run_target_info <- function(x) {
   if (inherits(x, "DBPartitionedTableExtended_v9")) {
-    return(list(name = x$table_name_base, dbconfig = x$tables[[1]]$dbconfig))
+    info <- list(name = x$table_name_base, dbconfig = x$tables[[1]]$dbconfig)
+  } else if (inherits(x, "DBTableExtended_v9")) {
+    info <- list(name = x$table_name, dbconfig = x$dbconfig)
+  } else {
+    return(NULL)
   }
-  if (inherits(x, "DBTableExtended_v9")) {
-    return(list(name = x$table_name, dbconfig = x$dbconfig))
+  # A table of the config access is never staged, also when a task lists it.
+  # It is written directly, as before 26.10.14.
+  if (run_is_config_table(info$dbconfig)) {
+    return(NULL)
   }
-  return(NULL)
+  return(info)
+}
+
+# Is a table in the database and schema of the config access? The config
+# tables themselves are csdb::DBTable_v9 objects, which are never staged.
+run_is_config_table <- function(dbconfig) {
+  cfg <- config$dbconfigs$config
+  if (is.null(cfg)) {
+    return(FALSE)
+  }
+  schema <- function(d) {
+    if (is.null(d$schema)) {
+      return("")
+    }
+    return(as.character(d$schema))
+  }
+  return(
+    run_database_id(dbconfig) == run_database_id(cfg) &&
+      schema(dbconfig) == schema(cfg)
+  )
 }
 
 run_database_id <- function(dbconfig) {

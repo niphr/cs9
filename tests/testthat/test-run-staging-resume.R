@@ -177,6 +177,60 @@ test_that("a planner that changes the plan list between attempts stops the retry
   expect_equal(live_rows(out), old_rows())
 })
 
+test_that("a planner that adds a plan between attempts stops the retry", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  ctl <- local_stage_ctl()
+  ctl$plans <- function() 1:4
+  task <- new_stage_task(out, planned = TRUE)
+
+  ctl$fail <- 3L
+  err1 <- run_attempt(task, run_key = "added")
+  expect_s3_class(err1, "error")
+
+  ctl$plans <- function() 1:5
+  ctl$fail <- integer()
+  err2 <- run_attempt(task, run_key = "added")
+
+  expect_match(
+    error_text(err2),
+    "the plan list changed between attempts of one run",
+    fixed = TRUE
+  )
+  # The check runs before any plan: attempt 1 ran plans 1 to 3, and no plan
+  # ran again.
+  expect_equal(stage_calls(ctl, 5), c(1L, 1L, 1L, 0L, 0L))
+  expect_equal(live_rows(out), old_rows())
+})
+
+test_that("a plan whose settings change before it ever ran stops the retry", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  ctl <- local_stage_ctl()
+  ctl$plans <- function() 1:4
+  task <- new_stage_task(out, planned = TRUE)
+
+  # Plan 2 fails, so plans 3 and 4 never start and leave no trace.
+  ctl$fail <- 2L
+  err1 <- run_attempt(task, run_key = "changed-not-started")
+  expect_s3_class(err1, "error")
+
+  # Plan 4 now has other settings.
+  ctl$plans <- function() c(1L, 2L, 3L, 40L)
+  ctl$fail <- integer()
+  err2 <- run_attempt(task, run_key = "changed-not-started")
+
+  expect_match(
+    error_text(err2),
+    "the plan list changed between attempts of one run",
+    fixed = TRUE
+  )
+  expect_equal(stage_calls(ctl, 4), c(1L, 1L, 0L, 0L))
+  expect_equal(live_rows(out), old_rows())
+})
+
 test_that("a planner that reads staged rows stops the run", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")

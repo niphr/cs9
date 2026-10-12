@@ -216,6 +216,6 @@ You do not change your task code. A run with a `run_key` stages the writes of ev
 
 A run with a new `run_key` removes what a failed run of the same task left in the staging table.
 
-Staging works on PostgreSQL and SQLite, when all tables of the task are in one database. Otherwise a task writes to its tables at once, and cs9 gives a warning.
+Staging works on PostgreSQL and SQLite, when all tables of the task are in one database. Otherwise a run with a `run_key` stops with an error before it writes. A table of the config access is never staged.
 
 On PostgreSQL, two runs of one task with a `run_key` cannot overlap. The second run stops with an error while the first run is alive.

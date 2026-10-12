@@ -85,8 +85,26 @@ old_rows <- function() {
 }
 
 # Writes the old rows, outside any task run.
+# Writes the old rows with DBI, outside any task run. Not through
+# insert_data(), so a fixture never depends on the write path under test.
 seed_old_rows <- function(out) {
-  suppressMessages(out$insert_data(old_rows()))
+  if (inherits(out, "DBPartitionedTableExtended_v9")) {
+    live <- out$tables
+    db <- out$tables[[1]]$dbconfig$db
+  } else {
+    live <- list(out)
+    db <- out$dbconfig$db
+  }
+  rows <- old_rows()
+  rows[, auto_last_updated_datetime := "2026-01-01 00:00:00"]
+  con <- DBI::dbConnect(RSQLite::SQLite(), db)
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  for (t in live) {
+    # tbl() creates the table at its first use.
+    suppressMessages(invisible(t$tbl()))
+    part <- if (length(live) > 1) rows[part == sub(".*_xxpxx_", "", t$table_name)] else rows
+    DBI::dbAppendTable(con, t$table_name, as.data.frame(part))
+  }
   return(invisible(NULL))
 }
 
@@ -157,6 +175,7 @@ local_stage_ctl <- function(envir = parent.frame()) {
   ctl$hooks <- list()
   ctl$rows <- stage_rows_of
   ctl$plans <- NULL
+  ctl$return_rows <- FALSE
   assign("cs9stage_ctl", ctl, envir = globalenv())
   fns <- list(
     cs9stage_data = function(argset, tables) {
@@ -164,13 +183,12 @@ local_stage_ctl <- function(envir = parent.frame()) {
     },
     cs9stage_action = function(data, argset, tables) {
       ctl <- get("cs9stage_ctl", envir = globalenv())
-      cat(
-        argset$plan,
-        "\n",
-        sep = "",
-        file = file.path(ctl$dir, "calls"),
-        append = TRUE
-      )
+      # One file per call. Forked workers that append to one shared file can
+      # interleave their writes, which garbled a line in round 2 of phase 21.
+      file.create(file.path(
+        ctl$dir,
+        paste0("call-", argset$plan, "-", Sys.getpid(), "-", basename(tempfile("")))
+      ))
       if (isTRUE(argset$first_analysis) && isTRUE(ctl$drop)) {
         tables$out$drop_all_rows()
       }
@@ -179,6 +197,11 @@ local_stage_ctl <- function(envir = parent.frame()) {
         hook(tables, argset)
       }
       rows <- ctl$rows(argset$plan)
+      # With return_rows, cs9 writes the rows at the end of the plan, through
+      # insert_at_end_of_each_plan or upsert_at_end_of_each_plan.
+      if (isTRUE(ctl$return_rows)) {
+        return(rows)
+      }
       if (!is.null(rows)) {
         tables$out$insert_data(rows)
       }
@@ -207,14 +230,22 @@ local_stage_ctl <- function(envir = parent.frame()) {
 
 # How many times each plan ran, as a vector over plans 1 to n.
 stage_calls <- function(ctl, n_plans) {
-  f <- file.path(ctl$dir, "calls")
-  got <- if (file.exists(f)) as.integer(readLines(f)) else integer()
+  files <- list.files(ctl$dir, pattern = "^call-")
+  got <- as.integer(vapply(strsplit(files, "-"), function(x) x[2], character(1)))
   return(vapply(seq_len(n_plans), function(i) sum(got == i), integer(1)))
 }
 
 # A task from add_task(): fixed plans 1 to n_plans, or plans from
 # cs9stage_plan_analysis when `planned` is TRUE.
-new_stage_task <- function(out, n_plans = 4, cores = 1, planned = FALSE) {
+new_stage_task <- function(
+  out,
+  n_plans = 4,
+  cores = 1,
+  planned = FALSE,
+  tables = list(out = out),
+  insert_at_end = FALSE,
+  upsert_at_end = FALSE
+) {
   return(task_from_config_v9(
     name_grouping = "stage",
     name_action = if (planned) "planned" else "fixed",
@@ -227,7 +258,9 @@ new_stage_task <- function(out, n_plans = 4, cores = 1, planned = FALSE) {
     },
     action_fn_name = "cs9stage_action",
     data_selector_fn_name = "cs9stage_data",
-    tables = list(out = out)
+    tables = tables,
+    insert_at_end_of_each_plan = insert_at_end,
+    upsert_at_end_of_each_plan = upsert_at_end
   ))
 }
 
@@ -310,4 +343,15 @@ seen_x <- function(ctl, plan) {
     return(NA_character_)
   }
   return(readLines(f))
+}
+
+# The cs9_run* and *_cs9stg tables in the anon and config SQLite files.
+made_tables <- function() {
+  made <- character()
+  for (f in c(config$dbconfigs$anon$db, config$dbconfigs$config$db)) {
+    con <- DBI::dbConnect(RSQLite::SQLite(), f)
+    made <- c(made, DBI::dbListTables(con))
+    DBI::dbDisconnect(con)
+  }
+  return(grep("^cs9_run|_cs9stg$", made, value = TRUE))
 }

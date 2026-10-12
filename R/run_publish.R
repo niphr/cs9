@@ -23,14 +23,15 @@ run_begin <- function(task, tables, run_key) {
   }
   run_key <- run_check_key(run_key)
   found <- run_targets(tables)
+  # A run with a key promises to stage. When it cannot, it stops before any
+  # write, rather than write directly.
   if (!is.null(found$problem)) {
-    warning(
+    stop(
       "cs9: task ",
       task,
-      " writes its tables directly, without staging, ",
-      "because ",
+      " cannot stage its writes, because ",
       found$problem,
-      ".",
+      ". Run it without a run_key to write its tables directly.",
       call. = FALSE
     )
   }
@@ -67,7 +68,6 @@ run_begin <- function(task, tables, run_key) {
     run_lock_task(con, task)
   }
   run_store_create(con, state)
-  run_fence(con, state, found$targets)
   row <- DBI::dbGetQuery(
     con,
     paste0(
@@ -77,6 +77,14 @@ run_begin <- function(task, tables, run_key) {
       run_where_store(con, state)
     )
   )
+  # An attempt of a published run does nothing, so it does not fence either.
+  if (nrow(row) > 0 && !is.na(row$published_datetime[1])) {
+    state$today <- as.Date(row$run_date[1])
+    state$published <- TRUE
+    started <- TRUE
+    return(state)
+  }
+  run_fence(con, state, found$targets)
   if (nrow(row) == 0) {
     state$today <- run_clock_today()
     DBI::dbExecute(
@@ -94,7 +102,6 @@ run_begin <- function(task, tables, run_key) {
     )
   } else {
     state$today <- as.Date(row$run_date[1])
-    state$published <- !is.na(row$published_datetime[1])
   }
   started <- TRUE
   return(state)
@@ -142,14 +149,29 @@ run_lock_task <- function(con, task) {
 # Removes what other runs of this task left behind: staged rows, operations,
 # done marks and run rows. Only a run that holds the lock of the task reaches
 # this point, so no other run of the task is alive.
+#
+# A published run keeps its row in cs9_run, so a later attempt with its key
+# still does nothing. Only the rows of other keys that are not published are
+# removed. A published run has no staged row, operation or done mark left.
 run_fence <- function(con, state, targets) {
+  published <- paste0(
+    "SELECT run_key FROM ",
+    run_store_ident(con, "cs9_run", state),
+    " WHERE task = ",
+    run_q(con, state$task),
+    " AND published_datetime IS NOT NULL"
+  )
   other <- paste0(
     "task = ",
     run_q(con, state$task),
     " AND run_key <> ",
-    run_q(con, state$run_key)
+    run_q(con, state$run_key),
+    " AND run_key NOT IN (",
+    published,
+    ")"
   )
-  for (name in names(run_store_definitions)) {
+  # cs9_run goes last, because `other` reads it.
+  for (name in rev(names(run_store_definitions))) {
     DBI::dbExecute(
       con,
       paste0(
@@ -175,7 +197,12 @@ run_fence <- function(con, state, targets) {
           " AND ",
           run_qi(con, "cs9_run_key"),
           " <> ",
-          run_q(con, state$run_key)
+          run_q(con, state$run_key),
+          " AND ",
+          run_qi(con, "cs9_run_key"),
+          " NOT IN (",
+          published,
+          ")"
         )
       )
     }
@@ -209,22 +236,7 @@ run_end <- function(state) {
 # plan that runs first loses the rows and operations that it staged before.
 run_prepare <- function(state, ids, targets) {
   con <- state$conn$autoconnection
-  seen <- run_seen_plans(con, state, targets)
-  gone <- setdiff(seen, c(ids, run_before_plans, run_after_plans))
-  if (length(gone) > 0) {
-    stop(
-      "cs9: the plan list changed between attempts of one run; a planner read ",
-      "something other than its settings and published tables. Task ",
-      state$task,
-      ", run '",
-      state$run_key,
-      "': ",
-      length(gone),
-      " plan(s) of an earlier attempt are not in the plan list now. ",
-      "Start a new run with a new run_key.",
-      call. = FALSE
-    )
-  }
+  run_check_plan_set(con, state, ids)
   done <- DBI::dbGetQuery(
     con,
     paste0(
@@ -239,43 +251,58 @@ run_prepare <- function(state, ids, targets) {
   return(!ids %in% keep)
 }
 
-# The plan ids that an earlier attempt of this run left anywhere.
-run_seen_plans <- function(con, state, targets) {
-  sql <- c(
+# The first attempt of a run stores the set of its plan ids. Every later
+# attempt MUST build the same set, in any order. A plan that is new, gone or
+# changed stops the attempt before any plan runs, also when the changed plan
+# never started.
+run_check_plan_set <- function(con, state, ids) {
+  stored <- DBI::dbGetQuery(
+    con,
     paste0(
-      "SELECT DISTINCT plan_id AS p FROM ",
-      run_store_ident(con, "cs9_run_plan_done", state),
-      " WHERE ",
-      run_where_store(con, state)
-    ),
-    paste0(
-      "SELECT DISTINCT plan_id AS p FROM ",
-      run_store_ident(con, "cs9_run_operation", state),
+      "SELECT plan_id FROM ",
+      run_store_ident(con, "cs9_run_plan", state),
       " WHERE ",
       run_where_store(con, state)
     )
-  )
-  for (x in targets) {
-    staging <- x$.__enclos_env__$private$staging()
-    if (run_staging_exists(con, staging)) {
-      sql <- c(
-        sql,
-        paste0(
-          "SELECT DISTINCT ",
-          run_qi(con, "cs9_plan"),
-          " AS p FROM ",
-          run_table_ident(con, staging),
-          " WHERE ",
-          run_where_run(con, state)
-        )
+  )$plan_id
+  if (length(stored) == 0) {
+    rows <- paste0(
+      "(",
+      run_q(con, state$task),
+      ", ",
+      run_q(con, state$run_key),
+      ", ",
+      run_q(con, ids),
+      ")"
+    )
+    DBI::dbExecute(
+      con,
+      paste0(
+        "INSERT INTO ",
+        run_store_ident(con, "cs9_run_plan", state),
+        " (task, run_key, plan_id) VALUES ",
+        paste(rows, collapse = ", ")
       )
-    }
+    )
+    return(invisible(NULL))
   }
-  out <- character()
-  for (s in sql) {
-    out <- c(out, DBI::dbGetQuery(con, s)$p)
+  if (!setequal(stored, ids)) {
+    stop(
+      "cs9: the plan list changed between attempts of one run; a planner read ",
+      "something other than its settings and published tables. Task ",
+      state$task,
+      ", run '",
+      state$run_key,
+      "': ",
+      length(setdiff(ids, stored)),
+      " plan(s) are new and ",
+      length(setdiff(stored, ids)),
+      " plan(s) of the first attempt are gone or changed. ",
+      "Start a new run with a new run_key.",
+      call. = FALSE
+    )
   }
-  return(unique(out))
+  return(invisible(NULL))
 }
 
 # Removes every row of this run that belongs to a plan outside `keep`.
@@ -362,6 +389,15 @@ run_publish <- function(state, tables) {
       )
     }
     run_clear_plans(con, state, targets, keep = character())
+    DBI::dbExecute(
+      con,
+      paste0(
+        "DELETE FROM ",
+        run_store_ident(con, "cs9_run_plan", state),
+        " WHERE ",
+        run_where_store(con, state)
+      )
+    )
     DBI::dbExecute(
       con,
       paste0(
