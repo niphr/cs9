@@ -246,7 +246,9 @@ run_prepare <- function(state, ids, targets) {
       run_where_store(con, state)
     )
   )$plan_id
-  keep <- setdiff(intersect(done, ids), ids[1])
+  # Plan 1 and the last plan run on every attempt. A check in the last plan
+  # therefore runs again after a publish that failed.
+  keep <- setdiff(intersect(done, ids), c(ids[1], ids[length(ids)]))
   run_clear_plans(con, state, targets, keep)
   return(!ids %in% keep)
 }

@@ -157,7 +157,7 @@ draw(run_a, data.table(attempt = "A run that succeeds", x = 4.5, label = "publis
 
 Here plan 3 stops with an error. The run publishes nothing, so a reader still sees the 5 old rows.
 
-The retry runs the task again with the same `run_key`. That attempt resumes the run. Plan 1 runs again, because it can set values that later plans read. Plan 2 finished on the first attempt, so it is skipped. Plan 3 runs again, and its rows from the first attempt are removed first, so each row is published once.
+The retry runs the task again with the same `run_key`. That attempt resumes the run. Plan 1 runs again, because it can set values that later plans read. The last plan, here plan 3, also runs on every attempt, so a check in it cannot be skipped. Plan 2 finished on the first attempt, so it is skipped. The rows that plan 3 staged on the first attempt are removed first, so each row is published once.
 
 ```{r failure, results = "hide"}
 counts$drop_all_rows()
@@ -210,7 +210,8 @@ You do not change your task code. A run with a `run_key` stages the writes of ev
 - `tbl()` and `nrow()` read the published table. `staged_tbl()` reads the rows that the run staged.
 - A run MUST write each row once. Two writes of one row stop the run, also when both are upserts.
 - A plan MUST NOT delete rows that another plan wrote in the same run. Plan 1 MAY delete, because it runs before every other plan.
-- Plan 1 runs on every attempt. A plan that finished on an earlier attempt is skipped.
+- Plan 1 and the last plan run on every attempt. Any other plan that finished on an earlier attempt is skipped.
+- Use `run_today()` in a planner instead of `Sys.Date()`. On a retry after midnight it still gives the date of the first attempt.
 - Write to a partitioned table through the table, not through one of its partitions.
 - SQL that a task sends on the connection of a table goes to the table at once. cs9 does not stage it.
 

@@ -41,6 +41,62 @@ for (kind in c("plain", "partitioned")) {
   )
 }
 
+test_that("the last plan runs again after a publish that failed", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  ctl <- local_stage_ctl()
+  ctl$drop <- FALSE
+  # On attempt 1 the last plan stages a row with the key of an old row. Every
+  # plan is done, and the publish fails on that key.
+  ctl$rows <- function(plan) {
+    if (plan == 4 && isTRUE(ctl$bad_last)) {
+      return(data.table::data.table(x = "old-1", part = "p1", n = 4L))
+    }
+    return(stage_rows_of(plan))
+  }
+  ctl$bad_last <- TRUE
+  task <- new_stage_task(out)
+
+  err1 <- run_attempt(task, run_key = "last")
+  expect_s3_class(err1, "error")
+  expect_equal(live_rows(out), old_rows())
+
+  # The last plan is fixed. A retry MUST run it again rather than skip it.
+  ctl$bad_last <- FALSE
+  err2 <- run_attempt(task, run_key = "last")
+
+  expect_null(err2)
+  expect_equal(stage_calls(ctl, 4), c(2L, 1L, 1L, 2L))
+  expected <- rbind(old_rows(), expected_rows(1:4))
+  data.table::setorderv(expected, "x")
+  expect_equal(live_rows(out), expected)
+})
+
+test_that("a one-plan task runs its plan again on a retry", {
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  seed_old_rows(out)
+  ctl <- local_stage_ctl()
+  ctl$drop <- FALSE
+  ctl$rows <- function(plan) {
+    if (isTRUE(ctl$bad_last)) {
+      return(data.table::data.table(x = "old-1", part = "p1", n = 1L))
+    }
+    return(stage_rows_of(plan))
+  }
+  ctl$bad_last <- TRUE
+  task <- new_stage_task(out, n_plans = 1)
+
+  err1 <- run_attempt(task, run_key = "one-plan")
+  ctl$bad_last <- FALSE
+  err2 <- run_attempt(task, run_key = "one-plan")
+
+  expect_s3_class(err1, "error")
+  expect_null(err2)
+  expect_equal(stage_calls(ctl, 1), 2L)
+})
+
 test_that("an operation of a failed plan is not published", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")

@@ -12,6 +12,7 @@ DBTableExtended_v9 <- R6::R6Class(
       validator_field_contents = validator_field_contents_blank,
       dbconnection = NULL
     ) {
+      run_check_live_name(table_name)
       field_types <- c(field_types, "DATETIME")
       names(field_types)[length(field_types)] <- "auto_last_updated_datetime"
 

@@ -1,3 +1,9 @@
+# Version 26.10.15
+
+- A retry with a `run_key` runs the last plan again, like plan 1. A check in the last plan therefore runs again after a publish that failed.
+- `add_table()`, `add_partitionedtable()` and the cs9 table classes refuse a table name that ends in `_cs9stg`. Such names are reserved for staging.
+- `run_today()` is exported. It returns the date of the first attempt of the run with a `run_key` in progress, or today's date outside such a run.
+
 # Version 26.10.14
 
 - A run started with a `run_key`, which a scheduler can pass, stages its writes to the task's own tables. It publishes them in one transaction after the last plan. A failed run leaves the task's tables unchanged.

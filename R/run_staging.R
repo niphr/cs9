@@ -46,6 +46,23 @@ run_cut_bytes <- function(x, max_bytes) {
   return(x)
 }
 
+# A live table MUST NOT end in the staging suffix. Its name could then be the
+# staging name of a table of another task, and a run of that task would use it
+# as staging. The cs9 table constructors call this, so add_table() and
+# add_partitionedtable() refuse such a name. A partition table name ends in
+# its tag, so a partition tagged "cs9stg" is refused through its constructor.
+run_check_live_name <- function(table_name) {
+  if (endsWith(table_name, "_cs9stg")) {
+    stop(
+      "cs9: the table name ",
+      table_name,
+      " is not allowed: names ending in _cs9stg are reserved for staging.",
+      call. = FALSE
+    )
+  }
+  return(invisible(NULL))
+}
+
 # The staging table of a live table. It borrows the live table's connection, so
 # it opens no connection of its own. csdb creates it at its first use.
 run_new_staging_table <- function(

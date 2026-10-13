@@ -53,6 +53,7 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       validator_field_contents = validator_field_contents_blank
     ) {
       force(table_name_partitions)
+      run_check_live_name(table_name_base)
       self$table_name_base <- table_name_base
       # This runs before `csdb::DBConnection_v9$new()` below. A rejected
       # partition set therefore leaves no database connection open.

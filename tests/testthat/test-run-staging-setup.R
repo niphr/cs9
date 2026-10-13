@@ -287,9 +287,11 @@ test_that("a task table with the name of a staging table stops a keyed run", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")
   seed_old_rows(out)
-  # A live table with the name of the staging table of `out`.
-  clash <- DBTableExtended_v9$new(
-    dbconfig = db,
+  # A table with the name of the staging table of `out`. Since 26.10.15 a cs9
+  # table class refuses such a name, so the task lists a csdb table of the
+  # config access, which the first pass of a keyed run accepts.
+  clash <- csdb::DBTable_v9$new(
+    dbconfig = config$dbconfigs$config,
     table_name = "anon_stage_plain_cs9stg",
     field_types = c(x = "TEXT", part = "TEXT", n = "INTEGER"),
     keys = "x",
@@ -297,7 +299,10 @@ test_that("a task table with the name of a staging table stops a keyed run", {
     validator_field_contents = csdb::validator_field_contents_blank
   )
   withr::defer(clash$disconnect())
-  seed_old_rows(clash)
+  suppressMessages(invisible(clash$tbl()))
+  con <- DBI::dbConnect(RSQLite::SQLite(), config$dbconfigs$config$db)
+  DBI::dbAppendTable(con, "anon_stage_plain_cs9stg", as.data.frame(old_rows()))
+  DBI::dbDisconnect(con)
   ctl <- local_stage_ctl()
   ctl$hooks[["2"]] <- function(tables, argset) {
     tables$clash$insert_data(stage_rows_of(argset$plan))
@@ -318,6 +323,95 @@ test_that("a task table with the name of a staging table stops a keyed run", {
   expect_equal(stage_calls(ctl, 4), c(0L, 0L, 0L, 0L))
   expect_equal(live_rows(out), old_rows())
   expect_equal(live_rows(clash), old_rows())
+})
+
+test_that("a cs9 table refuses a name that ends in the staging suffix", {
+  db <- local_staging_db()
+  ss <- SurveillanceSystem_v9$new(name = "cs9test")
+  refused <- function(fn) {
+    return(tryCatch(
+      {
+        fn()
+        ""
+      },
+      error = function(e) conditionMessage(e)
+    ))
+  }
+  fields <- c(x = "TEXT", n = "INTEGER")
+  plain <- refused(function() {
+    ss$add_table(
+      name_access = "anon",
+      name_grouping = "other",
+      name_variant = "cs9stg",
+      field_types = fields,
+      keys = "x"
+    )
+  })
+  partitioned <- refused(function() {
+    ss$add_partitionedtable(
+      name_access = "anon",
+      name_grouping = "other",
+      name_variant = "cs9stg",
+      name_partitions = c("p1", "p2"),
+      column_name_partition = "part",
+      field_types = fields,
+      keys = "x"
+    )
+  })
+  partition <- refused(function() {
+    ss$add_partitionedtable(
+      name_access = "anon",
+      name_grouping = "other",
+      name_variant = "data",
+      name_partitions = c("p1", "cs9stg"),
+      column_name_partition = "part",
+      field_types = fields,
+      keys = "x"
+    )
+  })
+
+  reserved <- "names ending in _cs9stg are reserved for staging"
+  expect_match(plain, reserved, fixed = TRUE)
+  expect_match(partitioned, reserved, fixed = TRUE)
+  expect_match(partition, reserved, fixed = TRUE)
+  expect_null(ss$tables$anon_other_cs9stg)
+  expect_null(ss$partitionedtables$anon_other_cs9stg)
+})
+
+test_that("run_today() is exported, and is the date of the first attempt in a keyed run", {
+  expect_true("run_today" %in% getNamespaceExports("cs9"))
+  # Outside a run with a run_key it is today's date.
+  expect_equal(run_today(), Sys.Date())
+
+  db <- local_staging_db()
+  out <- new_stage_out(db, "plain")
+  ctl <- local_stage_ctl()
+  ctl$hooks[["2"]] <- function(tables, argset) {
+    cat(format(run_today()), "\n", file = file.path(ctl$dir, "run-today"), append = TRUE)
+    return(invisible(NULL))
+  }
+  task <- new_stage_task(out)
+  day <- as.Date("2026-03-01")
+  testthat::local_mocked_bindings(
+    today = function(tzone = "") {
+      return(day)
+    },
+    .package = "lubridate"
+  )
+  ctl$fail <- 3L
+  err1 <- run_attempt(task, run_key = "run-today")
+  day <- as.Date("2026-03-02")
+  ctl$fail <- integer()
+  # Plan 2 is done after attempt 1, so make it run again: a new key would
+  # start a new run, so plan 1 records the date instead.
+  ctl$hooks[["1"]] <- ctl$hooks[["2"]]
+  err2 <- run_attempt(task, run_key = "run-today")
+
+  expect_s3_class(err1, "error")
+  expect_null(err2)
+  seen <- readLines(file.path(ctl$dir, "run-today"))
+  # Attempt 1 on 2026-03-01 (plan 2), attempt 2 on 2026-03-02 (plan 1).
+  expect_equal(trimws(seen), c("2026-03-01", "2026-03-01"))
 })
 
 test_that("Task$run() with a run_key builds its plans again on every attempt", {

@@ -31,9 +31,21 @@ run_clock_today <- function() {
   return(lubridate::today())
 }
 
-# The date that cs9 injects as argset$today. During a run it is the date that
-# the first attempt of the run stored, so a retry after midnight builds the same
-# plans.
+#' The date of the task run
+#'
+#' @description
+#' Returns the date of the run with a `run_key` in progress: the date of its
+#' first attempt, also on a retry after midnight. Outside such a run it returns
+#' today's date, as `Sys.Date()` does.
+#'
+#' @details
+#' cs9 sets `argset$today` to this date. Use `run_today()` in a planner instead
+#' of `Sys.Date()`, so that every attempt of a run builds the same plans.
+#'
+#' @return A `Date`.
+#' @export
+#' @examples
+#' run_today()
 run_today <- function() {
   if (!is.null(config$run$today)) {
     return(config$run$today)
