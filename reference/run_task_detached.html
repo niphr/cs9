@@ -11,7 +11,7 @@ ends."><meta property="og:image" content="https://niphr.github.io/cs9/logo.png">
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,8 @@ ends.</p>
 <span>  <span class="va">task_name</span>,</span>
 <span>  package_dir <span class="op">=</span> <span class="st">"."</span>,</span>
 <span>  ss_prefix <span class="op">=</span> <span class="st">"global$ss"</span>,</span>
-<span>  run_dir <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  run_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  run_key <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -101,6 +102,13 @@ surveillance system object in the child process. Defaults to
 <dd><p>Character string or <code>NULL</code>. Where to write the log,
 status and lock files. <code>NULL</code> uses the <code class="env">CS9_RUN_DIR</code> environment
 variable, and <code class="file">~/.cs9/task-runs</code> when that is unset.</p></dd>
+
+
+<dt id="arg-run-key">run_key<a class="anchor" aria-label="anchor" href="#arg-run-key"></a></dt>
+<dd><p>A string that names the run, or <code>NULL</code>. The child
+process passes it to <code>run_task()</code>. Pass a key to stage the run, as a
+scheduler does. With <code>NULL</code> the task writes its tables directly.
+See <code><a href="../articles/rebuilding-a-table-safely.html">vignette("rebuilding-a-table-safely")</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

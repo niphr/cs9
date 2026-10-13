@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,6 +57,15 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.16" id="version-261016">Version 26.10.16<a class="anchor" aria-label="anchor" href="#version-261016"></a></h2>
+<ul><li>
+<code><a href="../reference/run_task_detached.html">run_task_detached()</a></code>, <code><a href="../reference/run_task_sequentially_as_callr_bg_using_load_all.html">run_task_sequentially_as_callr_bg_using_load_all()</a></code>, <code><a href="../reference/run_task_sequentially_as_rstudio_job_using_load_all.html">run_task_sequentially_as_rstudio_job_using_load_all()</a></code> and <code>TaskJob$new()</code> take <code>run_key = NULL</code>. They pass it to <code>run_task()</code> in the child process, so a developer can start a staged run.</li>
+<li>The key reaches the child as an argument: a literal in the child’s call to <code>run_task()</code>, or a command-line argument of the detached <code>Rscript</code>. <code>run-task.sh</code> takes <code>--key</code>.</li>
+<li>
+<code>run-task.sh</code> takes <code>--rscript</code>. <code><a href="../reference/run_task_detached.html">run_task_detached()</a></code> passes the <code>Rscript</code> of the calling R by its full path, so the child runs the same R, also under <code>R CMD check</code>.</li>
+<li>A runner checks the key before it starts the child.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.10.15" id="version-261015">Version 26.10.15<a class="anchor" aria-label="anchor" href="#version-261015"></a></h2>
 <ul><li>A retry with a <code>run_key</code> runs the last plan again, like plan 1. A check in the last plan therefore runs again after a publish that failed.</li>

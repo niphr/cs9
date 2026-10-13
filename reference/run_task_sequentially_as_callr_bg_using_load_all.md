@@ -8,7 +8,8 @@ Positron-friendly counterpart to
 ``` r
 run_task_sequentially_as_callr_bg_using_load_all(
   task_name,
-  ss_prefix = "global$ss"
+  ss_prefix = "global$ss",
+  run_key = NULL
 )
 ```
 
@@ -22,6 +23,12 @@ run_task_sequentially_as_callr_bg_using_load_all(
 
   Character string. R expression that resolves to the surveillance
   system object in the child process. Defaults to `"global$ss"`.
+
+- run_key:
+
+  A string that names the run, or `NULL`. The child process passes it to
+  `run_task()`. Pass a key to stage the run, as a scheduler does. With
+  `NULL` the task writes its tables directly.
 
 ## Value
 

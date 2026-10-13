@@ -10,7 +10,8 @@ sequentially (cores = 1).
 ``` r
 run_task_sequentially_as_rstudio_job_using_load_all(
   task_name,
-  ss_prefix = "global$ss"
+  ss_prefix = "global$ss",
+  run_key = NULL
 )
 ```
 
@@ -24,6 +25,12 @@ run_task_sequentially_as_rstudio_job_using_load_all(
 
   Character string specifying the prefix used to access the surveillance
   system object. Defaults to "global\$ss".
+
+- run_key:
+
+  A string that names the run, or `NULL`. The job passes it to
+  `run_task()`. Pass a key to stage the run, as a scheduler does. With
+  `NULL` the task writes its tables directly.
 
 ## Value
 

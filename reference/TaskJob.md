@@ -54,6 +54,11 @@ Methods:
 
   POSIXct. Time at which the background process exited.
 
+- `run_key`:
+
+  Character string or `NULL`. The run_key that the script passes to
+  `run_task()`.
+
 ## Methods
 
 ### Public methods
@@ -85,7 +90,8 @@ Create a new TaskJob.
     TaskJob$new(
       task_name,
       ss_prefix = "global$ss",
-      log_dir = tempdir(check = TRUE)
+      log_dir = tempdir(check = TRUE),
+      run_key = NULL
     )
 
 #### Arguments
@@ -105,6 +111,12 @@ Create a new TaskJob.
   Character string. Directory where the temporary script and log file
   are written. Defaults to
   [`tempdir()`](https://rdrr.io/r/base/tempfile.html).
+
+- `run_key`:
+
+  A string that names the run, or `NULL`. The script passes it to
+  `run_task()` in the child process. Pass a key to stage the run, as a
+  scheduler does. With `NULL` the task writes its tables directly.
 
 #### Returns
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## Version 26.10.16
+
+- [`run_task_detached()`](https://niphr.github.io/cs9/reference/run_task_detached.md),
+  [`run_task_sequentially_as_callr_bg_using_load_all()`](https://niphr.github.io/cs9/reference/run_task_sequentially_as_callr_bg_using_load_all.md),
+  [`run_task_sequentially_as_rstudio_job_using_load_all()`](https://niphr.github.io/cs9/reference/run_task_sequentially_as_rstudio_job_using_load_all.md)
+  and `TaskJob$new()` take `run_key = NULL`. They pass it to
+  `run_task()` in the child process, so a developer can start a staged
+  run.
+- The key reaches the child as an argument: a literal in the child’s
+  call to `run_task()`, or a command-line argument of the detached
+  `Rscript`. `run-task.sh` takes `--key`.
+- `run-task.sh` takes `--rscript`.
+  [`run_task_detached()`](https://niphr.github.io/cs9/reference/run_task_detached.md)
+  passes the `Rscript` of the calling R by its full path, so the child
+  runs the same R, also under `R CMD check`.
+- A runner checks the key before it starts the child.
+
 ## Version 26.10.15
 
 - A retry with a `run_key` runs the last plan again, like plan 1. A

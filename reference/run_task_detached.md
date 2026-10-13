@@ -11,7 +11,8 @@ run_task_detached(
   task_name,
   package_dir = ".",
   ss_prefix = "global$ss",
-  run_dir = NULL
+  run_dir = NULL,
+  run_key = NULL
 )
 ```
 
@@ -36,6 +37,13 @@ run_task_detached(
   Character string or `NULL`. Where to write the log, status and lock
   files. `NULL` uses the `CS9_RUN_DIR` environment variable, and
   `~/.cs9/task-runs` when that is unset.
+
+- run_key:
+
+  A string that names the run, or `NULL`. The child process passes it to
+  `run_task()`. Pass a key to stage the run, as a scheduler does. With
+  `NULL` the task writes its tables directly. See
+  [`vignette("rebuilding-a-table-safely")`](https://niphr.github.io/cs9/articles/rebuilding-a-table-safely.md).
 
 ## Value
 

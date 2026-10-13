@@ -33,7 +33,7 @@ $kill() terminates the background process.
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -128,6 +128,11 @@ process output is written.</p></dd>
 <dd><p>POSIXct. Time at which the background process exited.</p></dd>
 
 
+    <dt><code>run_key</code></dt>
+<dd><p>Character string or <code>NULL</code>. The run_key that the script
+passes to <code>run_task()</code>.</p></dd>
+
+
 </dl><p></p></div>
     </div>
     <div class="section level2">
@@ -150,7 +155,8 @@ process output is written.</p></dd>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va"><a href="../reference/TaskJob.html">TaskJob</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
 <span>  <span class="va">task_name</span>,</span>
 <span>  ss_prefix <span class="op">=</span> <span class="st">"global$ss"</span>,</span>
-<span>  log_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span>check <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  log_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span>check <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  run_key <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h4>
@@ -166,6 +172,12 @@ surveillance system object in the child process. Defaults to
       <dt><code>log_dir</code></dt>
 <dd><p>Character string. Directory where the temporary script and
 log file are written. Defaults to <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>.</p></dd>
+
+      <dt><code>run_key</code></dt>
+<dd><p>A string that names the run, or <code>NULL</code>. The script
+passes it to <code>run_task()</code> in the child process. Pass a key to stage
+the run, as a scheduler does. With <code>NULL</code> the task writes its
+tables directly.</p></dd>
 
 
 </dl><p></p></div>

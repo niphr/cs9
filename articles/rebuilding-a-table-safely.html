@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -276,6 +276,10 @@ at once. cs9 does not stage it.</li>
 </ul>
 <p>A run with a new <code>run_key</code> removes what a failed run of
 the same task left in the staging table.</p>
+<p>The task runners, such as <code><a href="../reference/run_task_detached.html">run_task_detached()</a></code> and
+<code><a href="../reference/run_task_sequentially_as_callr_bg_using_load_all.html">run_task_sequentially_as_callr_bg_using_load_all()</a></code>, also
+take a <code>run_key</code>. Pass run_key to stage the run, as a
+scheduler does.</p>
 <p>Staging works on PostgreSQL and SQLite, when all tables of the task
 are in one database. Otherwise a run with a <code>run_key</code> stops
 with an error before it writes. A table of the config access is never

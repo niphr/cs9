@@ -214,6 +214,13 @@ goes to the table at once. These rules apply during a run with a
 A run with a new `run_key` removes what a failed run of the same task
 left in the staging table.
 
+The task runners, such as
+[`run_task_detached()`](https://niphr.github.io/cs9/reference/run_task_detached.md)
+and
+[`run_task_sequentially_as_callr_bg_using_load_all()`](https://niphr.github.io/cs9/reference/run_task_sequentially_as_callr_bg_using_load_all.md),
+also take a `run_key`. Pass run_key to stage the run, as a scheduler
+does.
+
 Staging works on PostgreSQL and SQLite, when all tables of the task are
 in one database. Otherwise a run with a `run_key` stops with an error
 before it writes. A table of the config access is never staged.
