@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -211,9 +211,10 @@ rows, and a reader sees the new table.</p>
 reader still sees the 5 old rows.</p>
 <p>The retry runs the task again with the same <code>run_key</code>.
 That attempt resumes the run. Plan 1 runs again, because it can set
-values that later plans read. Plan 2 finished on the first attempt, so
-it is skipped. Plan 3 runs again, and its rows from the first attempt
-are removed first, so each row is published once.</p>
+values that later plans read. The last plan, here plan 3, also runs on
+every attempt, so a check in it cannot be skipped. Plan 2 finished on
+the first attempt, so it is skipped. The rows that plan 3 staged on the
+first attempt are removed first, so each row is published once.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">counts</span><span class="op">$</span><span class="fu">drop_all_rows</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">counts</span><span class="op">$</span><span class="fu">insert_data</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>week <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, n <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span><span class="op">)</span></span>
@@ -263,8 +264,11 @@ during a run with a <code>run_key</code>:</p>
 also when both are upserts.</li>
 <li>A plan MUST NOT delete rows that another plan wrote in the same run.
 Plan 1 MAY delete, because it runs before every other plan.</li>
-<li>Plan 1 runs on every attempt. A plan that finished on an earlier
-attempt is skipped.</li>
+<li>Plan 1 and the last plan run on every attempt. Any other plan that
+finished on an earlier attempt is skipped.</li>
+<li>Use <code><a href="../reference/run_today.html">run_today()</a></code> in a planner instead of
+<code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date()</a></code>. On a retry after midnight it still gives the
+date of the first attempt.</li>
 <li>Write to a partitioned table through the table, not through one of
 its partitions.</li>
 <li>SQL that a task sends on the connection of a table goes to the table

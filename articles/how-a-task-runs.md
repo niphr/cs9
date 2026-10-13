@@ -403,10 +403,10 @@ stopifnot(
 seen_today[, .(run, plan, today)]
 #>       run  plan      today
 #>    <char> <int>     <Date>
-#> 1:  first     1 2026-10-13
-#> 2:  first     2 2026-10-13
-#> 3: second     1 2026-10-14
-#> 4: second     2 2026-10-14
+#> 1:  first     1 2026-10-14
+#> 2:  first     2 2026-10-14
+#> 3: second     1 2026-10-15
+#> 4: second     2 2026-10-15
 ```
 
 Do not edit `task$plans` by hand and then call `run_task()`.
@@ -435,9 +435,9 @@ stopifnot(
 seen_today[run %in% c("edited", "run_task")]
 #>         run  plan      today
 #>      <char> <int>     <Date>
-#> 1:   edited     2 2026-10-14
-#> 2: run_task     1 2026-10-12
-#> 3: run_task     2 2026-10-12
+#> 1:   edited     2 2026-10-15
+#> 2: run_task     1 2026-10-13
+#> 3: run_task     2 2026-10-13
 ```
 
 ## A completeness check covers every declared partition
