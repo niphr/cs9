@@ -2,6 +2,7 @@
 
 - `run_task_detached()`, `run_task_sequentially_as_callr_bg_using_load_all()`, `run_task_sequentially_as_rstudio_job_using_load_all()` and `TaskJob$new()` take `run_key = NULL`. They pass it to `run_task()` in the child process, so a developer can start a staged run.
 - The key reaches the child as an argument: a literal in the child's call to `run_task()`, or a command-line argument of the detached `Rscript`. `run-task.sh` takes `--key`.
+- `run-task.sh` takes `--rscript`. `run_task_detached()` passes the `Rscript` of the calling R by its full path, so the child runs the same R, also under `R CMD check`.
 - A runner checks the key before it starts the child.
 
 # Version 26.10.15

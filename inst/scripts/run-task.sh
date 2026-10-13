@@ -24,6 +24,9 @@
 #     -k, --key <run_key>  the run_key of the run, passed to run_task(). A key
 #                          stages the run, as a scheduler does. Default: no key,
 #                          and the task writes its tables directly.
+#     -R, --rscript <path> the Rscript that runs the task. Default "Rscript" on
+#                          PATH. run_task_detached() passes the Rscript of the
+#                          R that calls it.
 #     -h, --help           print this usage and exit.
 #
 # THE CONTRACT
@@ -74,6 +77,7 @@ PKG="."
 SS_PREFIX='global$ss'
 RUN_DIR=${CS9_RUN_DIR:-$HOME/.cs9/task-runs}
 RUN_KEY=""
+RSCRIPT="Rscript"
 TASK=""
 
 while [ $# -gt 0 ]; do
@@ -82,6 +86,7 @@ while [ $# -gt 0 ]; do
     -s|--ss)   SS_PREFIX=${2:-}; shift 2 ;;
     -r|--runs) RUN_DIR=${2:-}; shift 2 ;;
     -k|--key)  RUN_KEY=${2:-}; shift 2 ;;
+    -R|--rscript) RSCRIPT=${2:-}; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     -*)        echo "unknown option: $1" >&2; exit 2 ;;
     *)         if [ -n "$TASK" ]; then echo "unexpected argument: $1" >&2; exit 2; fi
@@ -146,6 +151,7 @@ fi
   echo "source:   $GIT_DESC"
   echo "system:   $SS_PREFIX"
   echo "run_key:  ${RUN_KEY:-none}"
+  echo "rscript:  $RSCRIPT"
   echo "started:  $(date '+%Y-%m-%d %H:%M:%S %z')"
   echo "host:     $(hostname)"
   echo "---"
@@ -172,15 +178,15 @@ EOF
 setsid bash -c '
   echo $$ > "$5"
   if [ -n "$6" ]; then
-    Rscript "$1" "$6" >> "$2" 2>&1
+    "$7" "$1" "$6" >> "$2" 2>&1
   else
-    Rscript "$1" >> "$2" 2>&1
+    "$7" "$1" >> "$2" 2>&1
   fi
   code=$?
   grep -cE "ERROR:|Error in |FATAL:|Execution halted" "$2" > "$4" || echo 0 > "$4"
   echo $code > "$3"
   rm -f "$5"
-' _ "$DRIVER" "$LOG" "$STATUS" "$ERRORS" "$LOCK" "$RUN_KEY" < /dev/null > /dev/null 2>&1 &
+' _ "$DRIVER" "$LOG" "$STATUS" "$ERRORS" "$LOCK" "$RUN_KEY" "$RSCRIPT" < /dev/null > /dev/null 2>&1 &
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do
   [ -f "$LOCK" ] && break

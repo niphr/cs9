@@ -93,6 +93,9 @@ run_task_detached <- function(
   if (!is.null(run_dir)) {
     args <- c(args, "--runs", shQuote(path.expand(run_dir)))
   }
+  # The Rscript of this R, by its full path. R CMD check refuses an Rscript
+  # found on PATH, and the child then runs the same R version as the caller.
+  args <- c(args, "--rscript", shQuote(file.path(R.home("bin"), "Rscript")))
   # The key reaches the child R process as a command-line argument.
   if (!is.null(run_key)) {
     args <- c(args, "--key", shQuote(run_key))

@@ -222,56 +222,102 @@ for (keyed in c(TRUE, FALSE)) {
   })
 }
 
-# run-task.sh starts Rscript detached. A fake Rscript first on PATH records
-# its arguments, so the test sees what the child would receive.
+# run-task.sh passes the key to the Rscript that --rscript names. A fake
+# Rscript records its arguments, so the test sees what the child receives. The
+# real runs below cover run_task_detached() end to end.
 for (keyed in c(TRUE, FALSE)) {
   label <- if (keyed) {
-    "passes its run_key to the child Rscript"
+    "passes --key to the child Rscript"
   } else {
-    "passes no key without a run_key"
+    "passes no key without --key"
   }
-  test_that(paste("run_task_detached()", label), {
+  test_that(paste("run-task.sh", label), {
     skip_on_os("windows")
     skip_if(Sys.which("setsid") == "", "run-task.sh needs setsid")
     pkg <- withr::local_tempdir()
-    writeLines(
-      c("Package: cs9detachedpkg", "Version: 0.0.1"),
-      file.path(pkg, "DESCRIPTION")
-    )
+    writeLines(c("Package: cs9detachedpkg", "Version: 0.0.1"), file.path(pkg, "DESCRIPTION"))
     runs <- withr::local_tempdir()
     bin <- withr::local_tempdir()
+    fake <- file.path(bin, "Rscript")
     writeLines(
       c("#!/bin/sh", "printf '%s\\n' \"$@\" > \"$(dirname \"$0\")/args.txt\""),
-      file.path(bin, "Rscript")
+      fake
     )
-    Sys.chmod(file.path(bin, "Rscript"), "0755")
-    withr::local_envvar(PATH = paste(bin, Sys.getenv("PATH"), sep = ":"))
+    Sys.chmod(fake, "0755")
+    script <- system.file("scripts", "run-task.sh", package = "cs9")
+    args <- c(script, "--dir", pkg, "--runs", runs, "--rscript", fake)
+    if (keyed) {
+      args <- c(args, "--key", "detached key")
+    }
+
+    out <- system2("bash", shQuote(c(args, "t1")), stdout = TRUE, stderr = TRUE)
+    field <- function(name) {
+      return(sub(paste0("^", name, "="), "", grep(paste0("^", name, "="), out, value = TRUE)))
+    }
+    for (i in 1:50) {
+      if (file.exists(field("STATUS"))) break
+      Sys.sleep(0.2)
+    }
+    driver_path <- sub("[.]log$", ".R", field("LOG"))
+    recorded <- readLines(file.path(bin, "args.txt"))
+    driver <- readLines(driver_path)
+
+    expect_true(file.exists(field("STATUS")))
+    expect_true(any(grepl("run_task(\"t1\", run_key = run_key)", driver, fixed = TRUE)))
+    if (keyed) {
+      expect_equal(recorded, c(driver_path, "detached key"))
+      expect_true(any(readLines(field("LOG")) == "run_key:  detached key"))
+    } else {
+      expect_equal(recorded, driver_path)
+      expect_true(any(readLines(field("LOG")) == "run_key:  none"))
+    }
+  })
+}
+
+# A real detached run: run-task.sh starts a real Rscript child, which loads
+# the fixture package and the installed cs9 under test.
+for (keyed in c(TRUE, FALSE)) {
+  label <- if (keyed) {
+    "stages a real detached run with a run_key"
+  } else {
+    "writes directly in a real detached run without a run_key"
+  }
+  test_that(paste("run_task_detached()", label), {
+    skip_on_cran()
+    skip_on_os("windows")
+    skip_if(Sys.which("setsid") == "", "run-task.sh needs setsid")
+    skip_without_child_cs9()
+    db <- local_staging_db()
+    seed_runner_out(db)
+    pkg <- local_runner_pkg()
+    runs <- withr::local_tempdir()
     key <- if (keyed) "detached key" else NULL
 
     run <- suppressMessages(
-      run_task_detached("t1", package_dir = pkg, run_dir = runs, run_key = key)
+      run_task_detached("runner_rebuild", package_dir = pkg, run_dir = runs, run_key = key)
     )
-    for (i in 1:50) {
-      if (file.exists(run$status)) {
-        break
-      }
-      Sys.sleep(0.2)
+    # The status file appears only when the child ends. At most 300 s.
+    for (i in 1:600) {
+      if (file.exists(run$status)) break
+      Sys.sleep(0.5)
     }
-    args <- readLines(file.path(bin, "args.txt"))
-    driver <- readLines(sub("[.]log$", ".R", run$log))
+    log <- paste(readLines(run$log, warn = FALSE), collapse = "\n")
 
-    expect_true(file.exists(run$status))
-    expect_true(any(grepl(
-      "run_task(\"t1\", run_key = run_key)",
-      driver,
-      fixed = TRUE
-    )))
+    expect_true(file.exists(run$status), info = log)
+    expect_equal(trimws(readLines(run$status)), "0", info = log)
+    expect_equal(runner_live_x(db), c("new-1", "new-2"), info = log)
+    seen_file <- file.path(pkg, "seen-in-plan-2.txt")
+    seen <- if (file.exists(seen_file)) readLines(seen_file) else NA
     if (keyed) {
-      expect_equal(args, c(sub("[.]log$", ".R", run$log), "detached key"))
-      expect_true(any(readLines(run$log) == "run_key:  detached key"))
+      # Plan 2 read the old rows, and the run with the key is published.
+      expect_equal(seen, c("old-1", "old-2"), info = log)
+      run_row <- store_rows("cs9_run", "detached key")
+      expect_equal(nrow(run_row), 1L)
+      expect_true(all(!is.na(run_row$published_datetime)))
     } else {
-      expect_equal(args, sub("[.]log$", ".R", run$log))
-      expect_true(any(readLines(run$log) == "run_key:  none"))
+      # Plan 2 read the row that plan 1 wrote directly. No staging table.
+      expect_equal(seen, c("new-1", "new-2"), info = log)
+      expect_equal(made_tables(), character())
     }
   })
 }
