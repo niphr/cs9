@@ -1,3 +1,9 @@
+# Version 26.10.17
+
+- A config table is one of cs9's own config tables, the objects in `config$tables`. Before, cs9 counted every table in the database and schema of the config access as a config table.
+- In production the config and anon accesses share the database and the schema. There a run with a `run_key` staged nothing and wrote its tables directly.
+- A run with a `run_key` whose task has tables but stages none of them stops with an error. A task whose every table is a config table, and a task without tables, still run unstaged.
+
 # Version 26.10.16
 
 - `run_task_detached()`, `run_task_sequentially_as_callr_bg_using_load_all()`, `run_task_sequentially_as_rstudio_job_using_load_all()` and `TaskJob$new()` take `run_key = NULL`. They pass it to `run_task()` in the child process, so a developer can start a staged run.

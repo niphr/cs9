@@ -11,15 +11,19 @@
 
 # A SQLite dbconfig for the "anon" access, plus the configuration tables.
 # `.local_envir = envir` ties the cleanup to the caller's frame.
-local_staging_db <- function(envir = parent.frame()) {
+#
+# `shared = TRUE` gives the production layout: the config and the anon access
+# share one database and one schema. In SQLite that is one file.
+local_staging_db <- function(envir = parent.frame(), shared = FALSE) {
   d <- withr::local_tempdir(.local_envir = envir)
+  config_db <- if (shared) "anon.sqlite" else "config.sqlite"
   withr::local_envvar(
     c(
       CS9_AUTO = "0",
       CS9_PATH = d,
       CS9_DBCONFIG_ACCESS = "config/anon",
       CS9_DBCONFIG_DRIVER = "SQLite",
-      CS9_DBCONFIG_DB_CONFIG = file.path(d, "config.sqlite"),
+      CS9_DBCONFIG_DB_CONFIG = file.path(d, config_db),
       CS9_DBCONFIG_DB_ANON = file.path(d, "anon.sqlite"),
       CS9_DBCONFIG_PORT = NA,
       CS9_DBCONFIG_SERVER = NA,
@@ -354,4 +358,20 @@ made_tables <- function() {
     DBI::dbDisconnect(con)
   }
   return(grep("^cs9_run|_cs9stg$", made, value = TRUE))
+}
+
+# One row for cs9's own config table config_log.
+config_log_row <- function(message) {
+  return(data.table::data.table(
+    auto_interactive = "test",
+    ss = "test",
+    task = "cs9stage",
+    date = as.Date("2026-01-01"),
+    datetime = paste0("2026-01-01 00:00:", formatC(nchar(message), width = 2, flag = "0"), ".", message),
+    message = message
+  ))
+}
+
+config_log_messages <- function() {
+  return(sort(dplyr::collect(config$tables$config_log$tbl())$message))
 }

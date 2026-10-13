@@ -335,23 +335,23 @@ run_target_info <- function(x) {
   return(info)
 }
 
-# Is a table in the database and schema of the config access? The config
-# tables themselves are csdb::DBTable_v9 objects, which are never staged.
-run_is_config_table <- function(dbconfig) {
-  cfg <- config$dbconfigs$config
-  if (is.null(cfg)) {
-    return(FALSE)
-  }
-  schema <- function(d) {
-    if (is.null(d$schema)) {
-      return("")
-    }
-    return(as.character(d$schema))
-  }
-  return(
-    run_database_id(dbconfig) == run_database_id(cfg) &&
-      schema(dbconfig) == schema(cfg)
+# Is a table one of cs9's own config tables, the objects in config$tables? A
+# table is identified by its name, its database and its schema. Sharing the
+# database and the schema of the config access is NOT enough: in production
+# the config and the anon accesses share both, and every task table then
+# counted as a config table, so a keyed run ran unstaged (2026-10-13).
+run_is_config_table <- function(info) {
+  config_ids <- vapply(
+    config$tables,
+    function(t) run_table_identity(t$table_name, t$dbconfig),
+    character(1)
   )
+  return(run_table_identity(info$name, info$dbconfig) %in% config_ids)
+}
+
+run_table_identity <- function(name, dbconfig) {
+  schema <- if (is.null(dbconfig$schema)) "" else as.character(dbconfig$schema)
+  return(paste(name, run_database_id(dbconfig), schema, sep = "|"))
 }
 
 run_database_id <- function(dbconfig) {
@@ -407,13 +407,17 @@ run_targets <- function(tables) {
     return(out)
   }
   # Set aside every table that this run does not stage. After the first pass
-  # these are the tables of the config access only. They are never staged,
-  # also when a task lists them, and are written directly, as before 26.10.14.
+  # these are cs9's own config tables only. They are never staged, also when
+  # a task lists them, and are written directly, as before 26.10.14.
   aside <- vapply(
     infos,
-    function(i) !i$stageable || run_is_config_table(i$dbconfig),
+    function(i) !i$stageable || run_is_config_table(i),
     logical(1)
   )
+  # A task whose every table is a config table stages nothing, and that is
+  # allowed. run_begin() stops on any other way to no staged table.
+  out$config_only <- all(vapply(infos[aside], run_is_config_table, logical(1))) &&
+    all(aside)
   targets <- targets[!aside]
   infos <- infos[!aside]
   if (length(targets) == 0) {
@@ -451,7 +455,7 @@ run_targets_check <- function(tables) {
   infos <- vector("list", length(tables))
   for (k in seq_along(tables)) {
     info <- run_target_info(tables[[k]])
-    if (is.null(info) || !(info$stageable || run_is_config_table(info$dbconfig))) {
+    if (is.null(info) || !(info$stageable || run_is_config_table(info))) {
       return(list(problem = paste0(
         "the table ",
         run_object_label(info, labels[k], k, tables[[k]]),

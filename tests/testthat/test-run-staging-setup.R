@@ -9,67 +9,37 @@
 #
 # The fixtures are in helper-run-staging.R.
 
-test_that("a table of the config access is written directly while the others are staged", {
+test_that("a cs9 config table in a task's tables is written directly while the others are staged", {
   db <- local_staging_db()
   out <- new_stage_out(db, "plain")
   seed_old_rows(out)
-  cfg <- DBTableExtended_v9$new(
-    dbconfig = config$dbconfigs$config,
-    table_name = "config_stage_direct",
-    field_types = c(x = "TEXT", part = "TEXT", n = "INTEGER"),
-    keys = "x",
-    validator_field_types = csdb::validator_field_types_blank,
-    validator_field_contents = csdb::validator_field_contents_blank
-  )
-  withr::defer(cfg$disconnect())
   ctl <- local_stage_ctl()
   for (p in as.character(1:4)) {
     ctl$hooks[[p]] <- function(tables, argset) {
-      tables$cfg$insert_data(data.table::data.table(
-        x = paste0("cfg-", argset$plan),
-        part = "p1",
-        n = argset$plan
-      ))
+      tables$cfg$insert_data(config_log_row(paste0("cfg-", argset$plan)))
+      if (argset$plan == 2) {
+        record_live_nrow(ctl)(tables, argset)
+        writeLines(config_log_messages(), file.path(ctl$dir, "cfg-seen-2"))
+      }
       return(invisible(NULL))
     }
   }
-  ctl$hooks[["2"]] <- function(tables, argset) {
-    tables$cfg$insert_data(data.table::data.table(
-      x = "cfg-2",
-      part = "p1",
-      n = 2L
-    ))
-    record_live_nrow(ctl)(tables, argset)
-    cat(
-      nrow(dplyr::collect(tables$cfg$tbl())),
-      "\n",
-      file = file.path(ctl$dir, "cfg-seen-2")
-    )
-    return(invisible(NULL))
-  }
 
   err <- run_attempt(
-    new_stage_task(out, tables = list(out = out, cfg = cfg)),
+    new_stage_task(out, tables = list(out = out, cfg = config$tables$config_log)),
     run_key = "with-config"
   )
 
   expect_null(err)
-  # In plan 2 the config table already held the rows of plans 1 and 2, while
-  # the staged table still held the old rows.
+  # In plan 2 config_log already held the rows of plans 1 and 2, while the
+  # staged table still held the old rows.
   seen_file <- file.path(ctl$dir, "cfg-seen-2")
-  cfg_seen <- if (file.exists(seen_file)) {
-    as.numeric(readLines(seen_file))
-  } else {
-    NA
-  }
-  expect_equal(cfg_seen, 2)
+  cfg_seen <- if (file.exists(seen_file)) readLines(seen_file) else NA
+  expect_equal(grep("^cfg-", cfg_seen, value = TRUE), c("cfg-1", "cfg-2"))
   expect_equal(seen_x(ctl, 2), old_rows()$x)
   expect_equal(live_rows(out), expected_rows(1:4))
-  expect_equal(
-    sort(dplyr::collect(cfg$tbl())$x),
-    paste0("cfg-", 1:4)
-  )
-  expect_false(any(grepl("config_stage_direct_cs9stg", made_tables())))
+  expect_equal(grep("^cfg-", config_log_messages(), value = TRUE), paste0("cfg-", 1:4))
+  expect_false(any(grepl("config_log_cs9stg", made_tables())))
 })
 
 test_that("a keyed run that cannot stage stops and writes nothing", {
@@ -288,8 +258,9 @@ test_that("a task table with the name of a staging table stops a keyed run", {
   out <- new_stage_out(db, "plain")
   seed_old_rows(out)
   # A table with the name of the staging table of `out`. Since 26.10.15 a cs9
-  # table class refuses such a name, so the task lists a csdb table of the
-  # config access, which the first pass of a keyed run accepts.
+  # table class refuses such a name, and since 26.10.17 only cs9's own config
+  # tables pass the first pass besides the cs9 classes. The test therefore
+  # adds the clash to config$tables for its duration.
   clash <- csdb::DBTable_v9$new(
     dbconfig = config$dbconfigs$config,
     table_name = "anon_stage_plain_cs9stg",
@@ -299,6 +270,8 @@ test_that("a task table with the name of a staging table stops a keyed run", {
     validator_field_contents = csdb::validator_field_contents_blank
   )
   withr::defer(clash$disconnect())
+  config$tables$clash <- clash
+  withr::defer(config$tables$clash <- NULL)
   suppressMessages(invisible(clash$tbl()))
   con <- DBI::dbConnect(RSQLite::SQLite(), config$dbconfigs$config$db)
   DBI::dbAppendTable(con, "anon_stage_plain_cs9stg", as.data.frame(old_rows()))

@@ -1,6 +1,33 @@
 # The start of a task run, the resume of an earlier attempt, and the publish.
 # See R/run_state.R for the design.
 
+# Does a run with a key stage? A run with a key promises to stage. When it
+# cannot, it stops before any write, rather than write directly.
+#
+# No staged table: a task without tables, such as an export, and a task whose
+# every table is a config table run unstaged. Any other way to no staged table
+# stops, so a keyed run never runs unstaged by surprise.
+run_will_stage <- function(task, tables, found) {
+  problem <- found$problem
+  if (is.null(problem) && length(found$targets) == 0) {
+    if (length(tables) == 0 || isTRUE(found$config_only)) {
+      return(FALSE)
+    }
+    problem <- "none of its tables can be staged"
+  }
+  if (!is.null(problem)) {
+    stop(
+      "cs9: task ",
+      task,
+      " cannot stage its writes, because ",
+      problem,
+      ". Run it without a run_key to write its tables directly.",
+      call. = FALSE
+    )
+  }
+  return(TRUE)
+}
+
 # Starts the run of a task, before Task$run() builds the plans. Returns the run
 # state, or NULL when the run stages nothing. The run then writes its tables
 # directly, as it did before 26.10.14, and touches no bookkeeping table.
@@ -23,19 +50,7 @@ run_begin <- function(task, tables, run_key) {
   }
   run_key <- run_check_key(run_key)
   found <- run_targets(tables)
-  # A run with a key promises to stage. When it cannot, it stops before any
-  # write, rather than write directly.
-  if (!is.null(found$problem)) {
-    stop(
-      "cs9: task ",
-      task,
-      " cannot stage its writes, because ",
-      found$problem,
-      ". Run it without a run_key to write its tables directly.",
-      call. = FALSE
-    )
-  }
-  if (length(found$targets) == 0) {
+  if (!run_will_stage(task, tables, found)) {
     return(NULL)
   }
   dbconfig <- found$dbconfig
