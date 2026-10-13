@@ -21,6 +21,9 @@
 #                          child process. Default "global$ss".
 #     -r, --runs <path>    where to write the log, status and lock files.
 #                          Default "$CS9_RUN_DIR", else "$HOME/.cs9/task-runs".
+#     -k, --key <run_key>  the run_key of the run, passed to run_task(). A key
+#                          stages the run, as a scheduler does. Default: no key,
+#                          and the task writes its tables directly.
 #     -h, --help           print this usage and exit.
 #
 # THE CONTRACT
@@ -70,6 +73,7 @@ usage() {
 PKG="."
 SS_PREFIX='global$ss'
 RUN_DIR=${CS9_RUN_DIR:-$HOME/.cs9/task-runs}
+RUN_KEY=""
 TASK=""
 
 while [ $# -gt 0 ]; do
@@ -77,6 +81,7 @@ while [ $# -gt 0 ]; do
     -d|--dir)  PKG=${2:-}; shift 2 ;;
     -s|--ss)   SS_PREFIX=${2:-}; shift 2 ;;
     -r|--runs) RUN_DIR=${2:-}; shift 2 ;;
+    -k|--key)  RUN_KEY=${2:-}; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     -*)        echo "unknown option: $1" >&2; exit 2 ;;
     *)         if [ -n "$TASK" ]; then echo "unexpected argument: $1" >&2; exit 2; fi
@@ -140,16 +145,21 @@ fi
   echo "package:  $PKG_NAME $PKG_VER at $PKG_ABS"
   echo "source:   $GIT_DESC"
   echo "system:   $SS_PREFIX"
+  echo "run_key:  ${RUN_KEY:-none}"
   echo "started:  $(date '+%Y-%m-%d %H:%M:%S %z')"
   echo "host:     $(hostname)"
   echo "---"
 } > "$LOG"
 
+# The run_key reaches the driver as its first command-line argument, not as a
+# string pasted into R code, so no quoting rule of R applies to it.
 cat > "$DRIVER" <<EOF
 setwd("$PKG_ABS")
 cat("cs9:     ", as.character(utils::packageVersion("cs9")), "\n", sep = "")
 devtools::load_all("$PKG_ABS")
-$SS_PREFIX\$run_task("$TASK")
+run_key <- commandArgs(trailingOnly = TRUE)
+run_key <- if (length(run_key) > 0) run_key[[1]] else NULL
+$SS_PREFIX\$run_task("$TASK", run_key = run_key)
 EOF
 
 # setsid detaches the worker into its own session, so closing the calling shell
@@ -161,12 +171,16 @@ EOF
 # second wait. ERROR_PATTERN catches psql's "ERROR:" and R's "Error in ".
 setsid bash -c '
   echo $$ > "$5"
-  Rscript "$1" >> "$2" 2>&1
+  if [ -n "$6" ]; then
+    Rscript "$1" "$6" >> "$2" 2>&1
+  else
+    Rscript "$1" >> "$2" 2>&1
+  fi
   code=$?
   grep -cE "ERROR:|Error in |FATAL:|Execution halted" "$2" > "$4" || echo 0 > "$4"
   echo $code > "$3"
   rm -f "$5"
-' _ "$DRIVER" "$LOG" "$STATUS" "$ERRORS" "$LOCK" < /dev/null > /dev/null 2>&1 &
+' _ "$DRIVER" "$LOG" "$STATUS" "$ERRORS" "$LOCK" "$RUN_KEY" < /dev/null > /dev/null 2>&1 &
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do
   [ -f "$LOCK" ] && break

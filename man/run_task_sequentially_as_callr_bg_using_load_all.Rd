@@ -6,7 +6,8 @@
 \usage{
 run_task_sequentially_as_callr_bg_using_load_all(
   task_name,
-  ss_prefix = "global$ss"
+  ss_prefix = "global$ss",
+  run_key = NULL
 )
 }
 \arguments{
@@ -15,6 +16,10 @@ run_task_sequentially_as_callr_bg_using_load_all(
 \item{ss_prefix}{Character string. R expression that resolves to the
 surveillance system object in the child process. Defaults to
 \code{"global$ss"}.}
+
+\item{run_key}{A string that names the run, or \code{NULL}. The child process
+passes it to \code{run_task()}. Pass a key to stage the run, as a scheduler
+does. With \code{NULL} the task writes its tables directly.}
 }
 \value{
 Invisibly returns the \link{TaskJob} R6 object (already started).

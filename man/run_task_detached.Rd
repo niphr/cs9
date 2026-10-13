@@ -8,7 +8,8 @@ run_task_detached(
   task_name,
   package_dir = ".",
   ss_prefix = "global$ss",
-  run_dir = NULL
+  run_dir = NULL,
+  run_key = NULL
 )
 }
 \arguments{
@@ -24,6 +25,11 @@ surveillance system object in the child process. Defaults to
 \item{run_dir}{Character string or \code{NULL}. Where to write the log,
 status and lock files. \code{NULL} uses the \env{CS9_RUN_DIR} environment
 variable, and \file{~/.cs9/task-runs} when that is unset.}
+
+\item{run_key}{A string that names the run, or \code{NULL}. The child
+process passes it to \code{run_task()}. Pass a key to stage the run, as a
+scheduler does. With \code{NULL} the task writes its tables directly.
+See \code{vignette("rebuilding-a-table-safely")}.}
 }
 \value{
 Invisibly, a list with elements \code{task}, \code{log},

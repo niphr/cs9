@@ -395,6 +395,9 @@ analyses_to_dt <- function(analyses) {
 #' @param task_name Character string specifying the name of the task to run.
 #' @param ss_prefix Character string specifying the prefix used to access the
 #'   surveillance system object. Defaults to "global$ss".
+#' @param run_key A string that names the run, or \code{NULL}. The job passes it
+#'   to \code{run_task()}. Pass a key to stage the run, as a scheduler does. With
+#'   \code{NULL} the task writes its tables directly.
 #'
 #' @return No return value. This function is called for its side effect of
 #'   launching an RStudio job that executes the surveillance task.
@@ -423,8 +426,13 @@ analyses_to_dt <- function(analyses) {
 #' @export
 run_task_sequentially_as_rstudio_job_using_load_all <- function(
   task_name,
-  ss_prefix = "global$ss"
+  ss_prefix = "global$ss",
+  run_key = NULL
 ) {
+  # A wrong key stops here, in the calling session, and not in the job.
+  if (!is.null(run_key)) {
+    run_check_key(run_key)
+  }
   tempfile <- fs::path(tempdir(check = TRUE), paste0(task_name, ".R"))
 
   cat(
@@ -434,7 +442,7 @@ run_task_sequentially_as_rstudio_job_using_load_all <- function(
         devtools::load_all('.')
         {ss_prefix}$tasks[['{task_name}']]$cores <- 1
         cat('\n**run_task**\n\n')
-        {ss_prefix}$run_task('{task_name}')
+        {ss_prefix}$run_task('{task_name}', run_key = {paste(deparse(run_key), collapse = '')})
     "
     ),
     file = tempfile

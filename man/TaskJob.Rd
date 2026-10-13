@@ -47,6 +47,9 @@ process output is written.}
     \item{\code{started_at}}{POSIXct. Time at which \code{$start()} was called.}
 
     \item{\code{finished_at}}{POSIXct. Time at which the background process exited.}
+
+    \item{\code{run_key}}{Character string or \code{NULL}. The run_key that the script
+passes to \code{run_task()}.}
   }
   \if{html}{\out{</div>}}
 }
@@ -73,7 +76,8 @@ process output is written.}
     \preformatted{TaskJob$new(
   task_name,
   ss_prefix = "global$ss",
-  log_dir = tempdir(check = TRUE)
+  log_dir = tempdir(check = TRUE),
+  run_key = NULL
 )}
     \if{html}{\out{</div>}}
   }
@@ -87,6 +91,10 @@ surveillance system object in the child process. Defaults to
 \code{"global$ss"}.}
       \item{\code{log_dir}}{Character string. Directory where the temporary script and
 log file are written. Defaults to \code{tempdir()}.}
+      \item{\code{run_key}}{A string that names the run, or \code{NULL}. The script
+passes it to \code{run_task()} in the child process. Pass a key to stage
+the run, as a scheduler does. With \code{NULL} the task writes its
+tables directly.}
     }
     \if{html}{\out{</div>}}
   }

@@ -1,3 +1,9 @@
+# Version 26.10.16
+
+- `run_task_detached()`, `run_task_sequentially_as_callr_bg_using_load_all()`, `run_task_sequentially_as_rstudio_job_using_load_all()` and `TaskJob$new()` take `run_key = NULL`. They pass it to `run_task()` in the child process, so a developer can start a staged run.
+- The key reaches the child as an argument: a literal in the child's call to `run_task()`, or a command-line argument of the detached `Rscript`. `run-task.sh` takes `--key`.
+- A runner checks the key before it starts the child.
+
 # Version 26.10.15
 
 - A retry with a `run_key` runs the last plan again, like plan 1. A check in the last plan therefore runs again after a publish that failed.

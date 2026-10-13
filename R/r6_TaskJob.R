@@ -24,6 +24,8 @@
 #'   process output is written.
 #' @field started_at POSIXct. Time at which \code{$start()} was called.
 #' @field finished_at POSIXct. Time at which the background process exited.
+#' @field run_key Character string or \code{NULL}. The run_key that the script
+#'   passes to \code{run_task()}.
 #'
 #' @examples
 #' \dontrun{
@@ -44,6 +46,7 @@ TaskJob <- R6::R6Class(
     log_path = NULL,
     started_at = NULL,
     finished_at = NULL,
+    run_key = NULL,
 
     #' @description
     #' Create a new TaskJob.
@@ -54,13 +57,23 @@ TaskJob <- R6::R6Class(
     #'   \code{"global$ss"}.
     #' @param log_dir Character string. Directory where the temporary script and
     #'   log file are written. Defaults to \code{tempdir()}.
+    #' @param run_key A string that names the run, or \code{NULL}. The script
+    #'   passes it to \code{run_task()} in the child process. Pass a key to stage
+    #'   the run, as a scheduler does. With \code{NULL} the task writes its
+    #'   tables directly.
     #' @return A new \code{TaskJob} object. Call \code{$start()} to launch the
     #'   background process.
     initialize = function(
       task_name,
       ss_prefix = "global$ss",
-      log_dir = tempdir(check = TRUE)
+      log_dir = tempdir(check = TRUE),
+      run_key = NULL
     ) {
+      # A wrong key stops here, in the calling session, and not in the child.
+      if (!is.null(run_key)) {
+        run_check_key(run_key)
+      }
+      self$run_key <- run_key
       self$task_name <- task_name
       self$ss_prefix <- ss_prefix
       ts <- format(Sys.time(), "%Y%m%d_%H%M%S")
@@ -73,7 +86,7 @@ TaskJob <- R6::R6Class(
 devtools::load_all('.')
 {ss_prefix}$tasks[['{task_name}']]$cores <- 1
 cat('\n**run_task**\n\n'); flush.console()
-{ss_prefix}$run_task('{task_name}')
+{ss_prefix}$run_task('{task_name}', run_key = {paste(deparse(run_key), collapse = '')})
 "
         ),
         file = self$script_path
@@ -256,6 +269,9 @@ cat('\n**run_task**\n\n'); flush.console()
 #' @param ss_prefix Character string. R expression that resolves to the
 #'   surveillance system object in the child process. Defaults to
 #'   \code{"global$ss"}.
+#' @param run_key A string that names the run, or \code{NULL}. The child process
+#'   passes it to \code{run_task()}. Pass a key to stage the run, as a scheduler
+#'   does. With \code{NULL} the task writes its tables directly.
 #'
 #' @return Invisibly returns the [TaskJob] R6 object (already started).
 #'
@@ -268,7 +284,8 @@ cat('\n**run_task**\n\n'); flush.console()
 #' @export
 run_task_sequentially_as_callr_bg_using_load_all <- function(
   task_name,
-  ss_prefix = "global$ss"
+  ss_prefix = "global$ss",
+  run_key = NULL
 ) {
-  return(TaskJob$new(task_name, ss_prefix)$start())
+  return(TaskJob$new(task_name, ss_prefix, run_key = run_key)$start())
 }

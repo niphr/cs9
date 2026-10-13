@@ -6,7 +6,8 @@
 \usage{
 run_task_sequentially_as_rstudio_job_using_load_all(
   task_name,
-  ss_prefix = "global$ss"
+  ss_prefix = "global$ss",
+  run_key = NULL
 )
 }
 \arguments{
@@ -14,6 +15,10 @@ run_task_sequentially_as_rstudio_job_using_load_all(
 
 \item{ss_prefix}{Character string specifying the prefix used to access the
 surveillance system object. Defaults to "global$ss".}
+
+\item{run_key}{A string that names the run, or \code{NULL}. The job passes it
+to \code{run_task()}. Pass a key to stage the run, as a scheduler does. With
+\code{NULL} the task writes its tables directly.}
 }
 \value{
 No return value. This function is called for its side effect of
