@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,6 +57,12 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.17" id="version-261017">Version 26.10.17<a class="anchor" aria-label="anchor" href="#version-261017"></a></h2>
+<ul><li>A config table is one of cs9’s own config tables, the objects in <code>config$tables</code>. Before, cs9 counted every table in the database and schema of the config access as a config table.</li>
+<li>In production the config and anon accesses share the database and the schema. There a run with a <code>run_key</code> staged nothing and wrote its tables directly.</li>
+<li>A run with a <code>run_key</code> whose task has tables but stages none of them stops with an error. A task whose every table is a config table, and a task without tables, still run unstaged.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.10.16" id="version-261016">Version 26.10.16<a class="anchor" aria-label="anchor" href="#version-261016"></a></h2>
 <ul><li>

@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 26.10.17
+
+- A config table is one of cs9’s own config tables, the objects in
+  `config$tables`. Before, cs9 counted every table in the database and
+  schema of the config access as a config table.
+- In production the config and anon accesses share the database and the
+  schema. There a run with a `run_key` staged nothing and wrote its
+  tables directly.
+- A run with a `run_key` whose task has tables but stages none of them
+  stops with an error. A task whose every table is a config table, and a
+  task without tables, still run unstaged.
+
 ## Version 26.10.16
 
 - [`run_task_detached()`](https://niphr.github.io/cs9/reference/run_task_detached.md),

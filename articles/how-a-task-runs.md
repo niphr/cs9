@@ -242,8 +242,8 @@ runs[, .(plan, worker = fifelse(pid == Sys.getpid(), "main", "forked"), finished
 #>     plan worker finished_before
 #>    <int> <char>           <int>
 #> 1:     1   main               0
-#> 2:     2 forked               0
-#> 3:     3 forked               1
+#> 2:     2 forked               1
+#> 3:     3 forked               0
 #> 4:     4 forked               2
 #> 5:     5 forked               3
 #> 6:     6   main               4
