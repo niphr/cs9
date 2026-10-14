@@ -1,5 +1,24 @@
 # Changelog
 
+## Version 26.10.18
+
+- In a run with a `run_key`, the publish sends one `DELETE` per live
+  table for each 500 operations. It joins their conditions by `OR`.
+  Before, it sent one `DELETE` per operation and live table.
+- An operation that empties the table publishes as one `DELETE` without
+  a condition.
+- A condition of `drop_rows_where()` or `keep_rows_where()` MUST test
+  only the row itself, with no subquery on the same table. In a keyed
+  run every condition reads the live table as it stood before the
+  publish.
+- The staging table has an index on `cs9_task` and `cs9_run_key`, then
+  the partition column of a partitioned table. A keyed run adds it to a
+  staging table that exists when the run begins. The index is verified
+  on SQLite and PostgreSQL, not on SQL Server.
+- On 2026-10-14 a run of `norsyss_data_import_consultations` recorded
+  705 operations on a table of 106 partitions. Its publish ran for over
+  45 minutes.
+
 ## Version 26.10.17
 
 - A config table is one of cs9’s own config tables, the objects in
