@@ -541,7 +541,8 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
           live_name = self$table_name_base,
           field_types = first$field_types,
           keys = unique(c(first$keys, self$column_name_partition)),
-          dbconnection = self$dbconnection
+          dbconnection = self$dbconnection,
+          partition_column = self$column_name_partition
         )
       }
       return(private$staging_object)

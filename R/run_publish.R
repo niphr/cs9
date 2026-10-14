@@ -99,6 +99,7 @@ run_begin <- function(task, tables, run_key) {
     started <- TRUE
     return(state)
   }
+  run_ensure_staging_indexes(con, found$targets)
   run_fence(con, state, found$targets)
   if (nrow(row) == 0) {
     state$today <- run_clock_today()
@@ -220,6 +221,21 @@ run_fence <- function(con, state, targets) {
           ")"
         )
       )
+    }
+  }
+  return(invisible(NULL))
+}
+
+# Gives each staging table of the run that exists its declared indexes. csdb
+# adds a missing declared index when a table object first reaches its table.
+# Until 26.10.18 that happened at the first staged row. The fence and the
+# clear then ran without the index, and a run that only records operations
+# never got it. A staging table that does not exist holds no row to read.
+run_ensure_staging_indexes <- function(con, targets) {
+  for (x in targets) {
+    staging <- x$.__enclos_env__$private$staging()
+    if (run_staging_exists(con, staging)) {
+      staging$.__enclos_env__$private$lazy_creation_of_table()
     }
   }
   return(invisible(NULL))
@@ -589,20 +605,59 @@ run_staged_summary <- function(con, state, staging, part_col) {
   ))
 }
 
+# The most operations in the OR list of one DELETE. A run can record one
+# operation per plan, and on 2026-10-14 a run recorded 705. The limit keeps
+# each statement short. 705 operations give 2 deletes per live table. SQLite
+# stops at an expression depth of 1000, and an OR list of 1001 operations
+# exceeds it.
+run_publish_operations_per_delete <- 500L
+
+# The WHERE clauses of the deletes that run the operations on one live table:
+# one per run_publish_operations_per_delete operations. An empty operation
+# removes every row, so it gives one clause "", a DELETE with no WHERE.
+#
+# Every operation deletes rows from the live table, and each one runs before
+# any insert. A delete leaves each row it keeps unchanged, so the deletes in
+# sequence remove each row that matches at least one predicate. One DELETE with
+# the predicates joined by OR removes the same rows.
+#
+# This holds only while each condition tests the row itself. A condition of
+# drop_rows_where() or keep_rows_where() MUST NOT read the same table through
+# a subquery. Every condition of a run reads the live table as it stood before
+# the publish. Before 26.10.18 such a condition was already undefined.
+# Parallel plans record the operations, and SELECT DISTINCT returns them in no
+# fixed order.
+run_operations_where <- function(ops) {
+  if (nrow(ops) == 0) {
+    return(character())
+  }
+  if (any(ops$operation == "empty")) {
+    return("")
+  }
+  predicates <- vapply(
+    seq_len(nrow(ops)),
+    function(i) {
+      return(run_operation_predicate(ops$operation[i], ops$sql_condition[i]))
+    },
+    character(1)
+  )
+  chunk <- ceiling(seq_along(predicates) / run_publish_operations_per_delete)
+  return(vapply(
+    split(predicates, chunk),
+    function(p) {
+      return(paste0(" WHERE ", paste0("(", p, ")", collapse = " OR ")))
+    },
+    character(1),
+    USE.NAMES = FALSE
+  ))
+}
+
 # Publishes one live table: its operations, then the delete of the live rows
 # that a staged upsert replaces, then the insert of every staged row.
 run_publish_part <- function(con, state, live, staging, part_col, ops, rows) {
   target <- run_table_ident(con, live$table)
-  for (i in seq_len(nrow(ops))) {
-    DBI::dbExecute(
-      con,
-      paste0(
-        "DELETE FROM ",
-        target,
-        " WHERE ",
-        run_operation_predicate(ops$operation[i], ops$sql_condition[i])
-      )
-    )
+  for (where in run_operations_where(ops)) {
+    DBI::dbExecute(con, paste0("DELETE FROM ", target, where))
   }
   if (nrow(rows) == 0) {
     return(invisible(NULL))

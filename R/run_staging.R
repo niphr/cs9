@@ -65,12 +65,20 @@ run_check_live_name <- function(table_name) {
 
 # The staging table of a live table. It borrows the live table's connection, so
 # it opens no connection of its own. csdb creates it at its first use.
+#
+# The index cs9_run leads with cs9_task and cs9_run_key, then the partition
+# column of a partitioned table. The publish, the fence and the clear select
+# the rows of one run, and the publish selects one partition. The primary key
+# leads with the live key, so it cannot serve those reads. On a staging table
+# that exists, csdb creates a missing declared index at the first use of the
+# table in an R process.
 run_new_staging_table <- function(
   dbconfig,
   live_name,
   field_types,
   keys,
-  dbconnection
+  dbconnection,
+  partition_column = NULL
 ) {
   return(csdb::DBTable_v9$new(
     dbconfig = dbconfig,
@@ -83,7 +91,9 @@ run_new_staging_table <- function(
       cs9_upsert = "INTEGER"
     ),
     keys = unique(c(keys, "cs9_task", "cs9_run_key")),
-    indexes = NULL,
+    indexes = list(
+      cs9_run = c("cs9_task", "cs9_run_key", partition_column)
+    ),
     validator_field_types = csdb::validator_field_types_blank,
     validator_field_contents = csdb::validator_field_contents_blank,
     dbconnection = dbconnection
