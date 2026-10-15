@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -132,7 +132,7 @@ diagram shows.</p>
 from that record. A hidden chunk stops the build when the record breaks
 a rule that the diagram shows. The run forks, so the diagram appears
 only on Linux and macOS, in a session that is not interactive.</p>
-<p><img src="how-a-task-runs_files/figure-html/overview-diagram-1.png" class="r-plt" alt="Diagram of one run of a task with 4 plans and 2 analyses per plan on 2 cores. It has one row for the main process and one row for each of 2 forked workers. In the main process, run_task() builds the plans, and plan 1 then pulls its data and runs analyses 1 and 2. The main process then forks, and each worker runs one middle plan, plan 2 or plan 3, while the main process waits. After both workers end, plan 4, the last plan, runs in the main process." width="100%"></p>
+<p><img src="how-a-task-runs_files/figure-html/overview-diagram-1.png" class="r-plt" alt="Diagram of one run of a task with 4 plans and 2 analyses per plan on 2 cores. It has one row for the main process and one row for each forked worker. In the main process, run_task() builds the plans, and plan 1 then pulls its data and runs analyses 1 and 2. The main process then forks its workers once, and the workers run the middle plans, plan 2 and plan 3, while the main process waits. After the workers end, plan 4, the last plan, runs in the main process." width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="rule-one-pull">A plan is one data pull<a class="anchor" aria-label="anchor" href="#rule-one-pull"></a>
@@ -212,7 +212,10 @@ data of that one pull. Put the variation that needs no new data in
 <code>cores</code> is above 1, the task has at least 4 plans, and the
 session is not interactive. It then runs plan 1 first and the last plan
 last, in the main process. The plans between them run in forked workers,
-in any order. <code>R/r6_Task.R</code> holds this branch.</p>
+in any order. <code>Task$run()</code> forks <code>cores</code> workers
+once, or fewer when there are fewer middle plans. Each worker takes the
+next middle plan until no plan is left. <code>R/r6_Task.R</code> holds
+this branch.</p>
 <p>A middle plan MUST NOT decide that the work of the other middle plans
 is complete. Put any step that needs all the work done in the last
 plan.</p>
@@ -237,19 +240,22 @@ pkgdown both build vignettes that way.</p>
 <span><span class="va">middle</span> <span class="op">&lt;-</span> <span class="fl">2</span><span class="op">:</span><span class="op">(</span><span class="va">n_fork_plans</span> <span class="op">-</span> <span class="fl">1L</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fork_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">argset</span>, <span class="va">tables</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="co"># TRUE when the table holds an open connection. This reads the private</span></span>
-<span>  <span class="co"># handle, because every public method of csdb::DBConnection_v9 first drops</span></span>
-<span>  <span class="co"># a handle that another process opened. disconnect() closes the handle and</span></span>
-<span>  <span class="co"># keeps the closed object, so an open handle is one that DBI calls valid.</span></span>
-<span>  <span class="va">held_open</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">table</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">con</span> <span class="op">&lt;-</span> <span class="va">table</span><span class="op">$</span><span class="va">dbconnection</span><span class="op">$</span><span class="va">.__enclos_env__</span><span class="op">$</span><span class="va">private</span><span class="op">$</span><span class="va">pconnection</span></span>
-<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbIsValid.html" class="external-link">dbIsValid</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
+<span>  <span class="co"># TRUE when the table holds an open connection that another process</span></span>
+<span>  <span class="co"># opened. This reads the private handle, because every public method of</span></span>
+<span>  <span class="co"># csdb::DBConnection_v9 first drops such a handle. disconnect() closes the</span></span>
+<span>  <span class="co"># handle and keeps the closed object, so an open handle is one that DBI</span></span>
+<span>  <span class="co"># calls valid.</span></span>
+<span>  <span class="va">held_inherited</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">table</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">private</span> <span class="op">&lt;-</span> <span class="va">table</span><span class="op">$</span><span class="va">dbconnection</span><span class="op">$</span><span class="va">.__enclos_env__</span><span class="op">$</span><span class="va">private</span></span>
+<span>    <span class="va">con</span> <span class="op">&lt;-</span> <span class="va">private</span><span class="op">$</span><span class="va">pconnection</span></span>
+<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbIsValid.html" class="external-link">dbIsValid</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>      <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">private</span><span class="op">$</span><span class="va">pconnection_pid</span>, <span class="fu"><a href="https://rdrr.io/r/base/Sys.getpid.html" class="external-link">Sys.getpid</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    start <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    inherited <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>      task <span class="op">=</span> <span class="fu">held_open</span><span class="op">(</span><span class="va">tables</span><span class="op">$</span><span class="va">fork</span><span class="op">)</span>,</span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu">cs9</span><span class="fu">::</span><span class="va"><a href="../reference/config.html">config</a></span><span class="op">$</span><span class="va">tables</span>, <span class="va">held_open</span>, <span class="fu"><a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span>      task <span class="op">=</span> <span class="fu">held_inherited</span><span class="op">(</span><span class="va">tables</span><span class="op">$</span><span class="va">fork</span><span class="op">)</span>,</span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu">cs9</span><span class="fu">::</span><span class="va"><a href="../reference/config.html">config</a></span><span class="op">$</span><span class="va">tables</span>, <span class="va">held_inherited</span>, <span class="fu"><a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
@@ -317,9 +323,9 @@ that the work was complete. The last plan saw all 4.</p>
 <span><span class="co">#&gt;    &lt;int&gt; &lt;char&gt;           &lt;int&gt;</span></span>
 <span><span class="co">#&gt; 1:     1   main               0</span></span>
 <span><span class="co">#&gt; 2:     2 forked               0</span></span>
-<span><span class="co">#&gt; 3:     3 forked               0</span></span>
+<span><span class="co">#&gt; 3:     3 forked               1</span></span>
 <span><span class="co">#&gt; 4:     4 forked               2</span></span>
-<span><span class="co">#&gt; 5:     5 forked               2</span></span>
+<span><span class="co">#&gt; 5:     5 forked               3</span></span>
 <span><span class="co">#&gt; 6:     6   main               4</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -339,6 +345,12 @@ task’s <code>tables</code> list, and of every table in
 <code>run_sequential()</code>. That sweep runs after plan 1 and before
 the fork. <code>tests/testthat/test-fork-ordering.R</code> pins the
 order.</li>
+<li>The sweep leaves the run connection of a keyed run open. That
+connection holds the lock of the task, so it stays open in the main
+process across the fork. A worker never uses it and never closes
+it.</li>
+<li>A worker opens its own connections. It keeps them from one plan to
+the next, and closes them when it ends.</li>
 <li>
 <code><a href="https://niphr.github.io/csdb/reference/DBConnection_v9.html" class="external-link">csdb::DBConnection_v9</a></code> records the process that opened a
 connection, and drops a connection that another process opened. csdb
@@ -349,9 +361,10 @@ added this in 2026.8.15.</li>
 action, and close it there.</p>
 <p>Plan 1 of the task above wrote to its table, so its connection was
 open after the write. The sweep then closed it. No middle plan received
-an open connection. The data selector of <code>rules_fork</code> reads
-the private handle, because a public method of the connection drops an
-inherited handle before it reports.</p>
+a connection that the main process opened. The data selector of
+<code>rules_fork</code> reads the private handle, because a public
+method of the connection drops an inherited handle before it
+reports.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="va">first</span><span class="op">$</span><span class="va">open_after_write</span><span class="op">)</span>,</span>

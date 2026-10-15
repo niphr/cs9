@@ -44,12 +44,12 @@ rule that the diagram shows. The run forks, so the diagram appears only
 on Linux and macOS, in a session that is not interactive.
 
 ![Diagram of one run of a task with 4 plans and 2 analyses per plan on 2
-cores. It has one row for the main process and one row for each of 2
-forked workers. In the main process, run_task() builds the plans, and
-plan 1 then pulls its data and runs analyses 1 and 2. The main process
-then forks, and each worker runs one middle plan, plan 2 or plan 3,
-while the main process waits. After both workers end, plan 4, the last
-plan, runs in the main
+cores. It has one row for the main process and one row for each forked
+worker. In the main process, run_task() builds the plans, and plan 1
+then pulls its data and runs analyses 1 and 2. The main process then
+forks its workers once, and the workers run the middle plans, plan 2 and
+plan 3, while the main process waits. After the workers end, plan 4, the
+last plan, runs in the main
 process.](how-a-task-runs_files/figure-html/overview-diagram-1.png)
 
 ## A plan is one data pull
@@ -130,8 +130,10 @@ seen
 `Task$run()` runs the plans in parallel when `cores` is above 1, the
 task has at least 4 plans, and the session is not interactive. It then
 runs plan 1 first and the last plan last, in the main process. The plans
-between them run in forked workers, in any order. `R/r6_Task.R` holds
-this branch.
+between them run in forked workers, in any order. `Task$run()` forks
+`cores` workers once, or fewer when there are fewer middle plans. Each
+worker takes the next middle plan until no plan is left. `R/r6_Task.R`
+holds this branch.
 
 A middle plan MUST NOT decide that the work of the other middle plans is
 complete. Put any step that needs all the work done in the last plan.
@@ -158,19 +160,22 @@ n_fork_plans <- 6L
 middle <- 2:(n_fork_plans - 1L)
 
 fork_data <- function(argset, tables) {
-  # TRUE when the table holds an open connection. This reads the private
-  # handle, because every public method of csdb::DBConnection_v9 first drops
-  # a handle that another process opened. disconnect() closes the handle and
-  # keeps the closed object, so an open handle is one that DBI calls valid.
-  held_open <- function(table) {
-    con <- table$dbconnection$.__enclos_env__$private$pconnection
-    !is.null(con) && DBI::dbIsValid(con)
+  # TRUE when the table holds an open connection that another process
+  # opened. This reads the private handle, because every public method of
+  # csdb::DBConnection_v9 first drops such a handle. disconnect() closes the
+  # handle and keeps the closed object, so an open handle is one that DBI
+  # calls valid.
+  held_inherited <- function(table) {
+    private <- table$dbconnection$.__enclos_env__$private
+    con <- private$pconnection
+    !is.null(con) && DBI::dbIsValid(con) &&
+      !identical(private$pconnection_pid, Sys.getpid())
   }
   list(
     start = Sys.time(),
     inherited = c(
-      task = held_open(tables$fork),
-      vapply(cs9::config$tables, held_open, logical(1))
+      task = held_inherited(tables$fork),
+      vapply(cs9::config$tables, held_inherited, logical(1))
     )
   )
 }
@@ -243,9 +248,9 @@ runs[, .(plan, worker = fifelse(pid == Sys.getpid(), "main", "forked"), finished
 #>    <int> <char>           <int>
 #> 1:     1   main               0
 #> 2:     2 forked               0
-#> 3:     3 forked               0
+#> 3:     3 forked               1
 #> 4:     4 forked               2
-#> 5:     5 forked               2
+#> 5:     5 forked               3
 #> 6:     6   main               4
 ```
 
@@ -264,6 +269,11 @@ Two protections exist:
   `tables` list, and of every table in `cs9::config$tables`, at the end
   of `run_sequential()`. That sweep runs after plan 1 and before the
   fork. `tests/testthat/test-fork-ordering.R` pins the order.
+- The sweep leaves the run connection of a keyed run open. That
+  connection holds the lock of the task, so it stays open in the main
+  process across the fork. A worker never uses it and never closes it.
+- A worker opens its own connections. It keeps them from one plan to the
+  next, and closes them when it ends.
 - [`csdb::DBConnection_v9`](https://niphr.github.io/csdb/reference/DBConnection_v9.html)
   records the process that opened a connection, and drops a connection
   that another process opened. csdb added this in 2026.8.15.
@@ -273,10 +283,10 @@ A connection that you open yourself with
 neither protection. Open it inside the action, and close it there.
 
 Plan 1 of the task above wrote to its table, so its connection was open
-after the write. The sweep then closed it. No middle plan received an
-open connection. The data selector of `rules_fork` reads the private
-handle, because a public method of the connection drops an inherited
-handle before it reports.
+after the write. The sweep then closed it. No middle plan received a
+connection that the main process opened. The data selector of
+`rules_fork` reads the private handle, because a public method of the
+connection drops an inherited handle before it reports.
 
 ``` r
 stopifnot(
