@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,6 +57,13 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.19" id="version-261019">Version 26.10.19<a class="anchor" aria-label="anchor" href="#version-261019"></a></h2>
+<ul><li>A run with a <code>run_key</code> keeps the date of its first attempt also when its task has no tables, or only config tables. This holds on PostgreSQL and SQLite. <code><a href="../reference/run_today.html">run_today()</a></code> and <code>argset$today</code> give that date on a retry with the key. Before, a retry on a later day got the date of the retry.</li>
+<li>Such a run keeps its date in <code>cs9_run</code> in the config database. It takes no lock and stages nothing, and each attempt runs every plan.</li>
+<li>With another driver for the config database, such a run stores no date, and <code><a href="../reference/run_today.html">run_today()</a></code> reads the clock, as before.</li>
+<li>The config tables and the task’s tables can share one database and schema. A staged run of the same task name with another key then removes that date. A retry of the key without tables gets the date of the retry.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.10.18" id="version-261018">Version 26.10.18<a class="anchor" aria-label="anchor" href="#version-261018"></a></h2>
 <ul><li>In a run with a <code>run_key</code>, the publish sends one <code>DELETE</code> per live table for each 500 operations. It joins their conditions by <code>OR</code>. Before, it sent one <code>DELETE</code> per operation and live table.</li>

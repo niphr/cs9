@@ -1,5 +1,24 @@
 # Changelog
 
+## Version 26.10.19
+
+- A run with a `run_key` keeps the date of its first attempt also when
+  its task has no tables, or only config tables. This holds on
+  PostgreSQL and SQLite.
+  [`run_today()`](https://niphr.github.io/cs9/reference/run_today.md)
+  and `argset$today` give that date on a retry with the key. Before, a
+  retry on a later day got the date of the retry.
+- Such a run keeps its date in `cs9_run` in the config database. It
+  takes no lock and stages nothing, and each attempt runs every plan.
+- With another driver for the config database, such a run stores no
+  date, and
+  [`run_today()`](https://niphr.github.io/cs9/reference/run_today.md)
+  reads the clock, as before.
+- The config tables and the task’s tables can share one database and
+  schema. A staged run of the same task name with another key then
+  removes that date. A retry of the key without tables gets the date of
+  the retry.
+
 ## Version 26.10.18
 
 - In a run with a `run_key`, the publish sends one `DELETE` per live
