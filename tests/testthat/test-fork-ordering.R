@@ -1,10 +1,11 @@
 # `Task$run()` MUST close every database connection before it forks.
 #
 # `Task$run()` takes its parallel branch, runs plan 1 through `run_sequential()`,
-# and then calls `private$run_parallel_plans()`. `run_parallel_plans()` forks with
-# `pbmcapply::pbmclapply` and passes the table objects into the workers.
-# `run_sequential()` ends with a disconnect sweep, so every worker opens its own
-# backend rather than inheriting one.
+# and then calls `private$run_parallel_plans()`. `run_parallel_plans()` forks its
+# workers once with `pbmcapply::pbmclapply` and passes the table objects into
+# them. `run_sequential()` ends with a disconnect sweep, so every worker opens its
+# own backend rather than inheriting one. A worker keeps its connections from one
+# plan to the next and closes them when it ends.
 #
 # A forked child that uses an inherited PostgreSQL connection reads wrong
 # answers. It does not error. Measured against the NorSySS server on 2026-08-14.
@@ -14,7 +15,8 @@
 #
 # The ordering is the invariant, so this file drives the public `Task$run()` and
 # mocks `pbmcapply::pbmclapply`. The mock reads every connection at the fork
-# boundary, records what it read, and returns without forking. A test that called
+# boundary and records what it read. It then runs each worker in this process,
+# without a fork, and reads the connections again. A test that called
 # the private `run_sequential()` would prove that the helper disconnects. It would
 # not prove that the public path calls the helper before it forks.
 #
@@ -120,11 +122,12 @@ connection_states <- function(tables) {
 }
 
 # Runs the task with `pbmcapply::pbmclapply` replaced, and returns what the
-# replacement saw at the fork boundary.
+# replacement saw at the fork boundary and after the workers ended.
 #
-# The replacement returns one element per plan, so the caller's own error check
-# finds no `try-error`. Nothing forks.
-run_and_observe_fork <- function(task, record) {
+# The replacement runs each worker in this process. Nothing forks. A worker
+# takes plans from the queue until none is left, so the first worker runs every
+# middle plan.
+run_and_observe_fork <- function(task, record, run_key = NULL) {
   observed <- new.env(parent = emptyenv())
   observed$called <- FALSE
 
@@ -132,17 +135,36 @@ run_and_observe_fork <- function(task, record) {
     pbmclapply = function(X, FUN, ...) {
       dots <- list(...)
       observed$called <- TRUE
-      observed$plans_n <- length(X)
+      observed$workers_n <- length(X)
       observed$mc_cores <- dots$mc.cores
       observed$task_tables <- connection_states(task$tables)
       observed$config_tables <- connection_states(config$tables)
+      # The run connection of a keyed run, or NULL for a run without a key.
+      observed$run_conn <- if (is.null(config$run)) {
+        NULL
+      } else {
+        config$run$conn$is_connected()
+      }
       observed$plans_run <- record$plans_run
-      lapply(seq_along(X), function(i) 1)
+      out <- lapply(
+        X,
+        FUN,
+        tables = dots$tables,
+        upsert_at_end_of_each_plan = dots$upsert_at_end_of_each_plan,
+        insert_at_end_of_each_plan = dots$insert_at_end_of_each_plan
+      )
+      observed$plans_run_in_workers <- setdiff(
+        record$plans_run,
+        observed$plans_run
+      )
+      observed$task_tables_after <- connection_states(task$tables)
+      observed$config_tables_after <- connection_states(config$tables)
+      out
     },
     .package = "pbmcapply"
   )
 
-  suppressMessages(task$run(cores = 2))
+  suppressMessages(task$run(cores = 2, run_key = run_key))
   observed
 }
 
@@ -172,9 +194,10 @@ test_that("Task$run() holds no open connection when it calls pbmclapply", {
   observed <- run_and_observe_fork(task, record)
 
   # The run really took the parallel branch and really reached the fork site.
-  # `plans_index` is `2:(length(self$plans) - 1)`, so the mock receives 2 plans.
+  # `plans_index` is `2:(length(self$plans) - 1)`, 2 plans, so the mock
+  # receives 2 workers.
   expect_true(observed$called)
-  expect_identical(observed$plans_n, 2L)
+  expect_identical(observed$workers_n, 2L)
   expect_identical(observed$mc_cores, 2)
 
   # A vapply over an empty list returns logical(0), and `any(logical(0))` is
@@ -203,6 +226,53 @@ test_that("Task$run() finishes plan 1 sequentially before it calls pbmclapply", 
   expect_true(observed$called)
   expect_identical(observed$plans_run, 1L)
 
-  # Plan 4 is the other sequential plan, and it runs after the fork.
-  expect_identical(record$plans_run, c(1L, 4L))
+  # The workers ran plans 2 and 3. Plan 4 is the other sequential plan, and it
+  # runs after the fork.
+  expect_identical(observed$plans_run_in_workers, c(2L, 3L))
+  expect_identical(record$plans_run, 1:4)
+})
+
+test_that("a worker closes its connections when it ends", {
+  dbconfig <- local_sqlite_dbconfig()
+  tab <- new_task_table(dbconfig)
+  withr::defer(tab$disconnect())
+
+  record <- new.env(parent = emptyenv())
+  record$plans_run <- integer(0)
+  task <- new_task(list("anon_fork" = tab), record)
+
+  observed <- run_and_observe_fork(task, record)
+
+  # Each plan read and wrote config_data_hash_for_each_plan, so the worker
+  # opened its connection.
+  expect_identical(observed$plans_run_in_workers, c(2L, 3L))
+  expect_length(observed$task_tables_after, 1L)
+  expect_length(observed$config_tables_after, 4L)
+  expect_false(any(observed$task_tables_after))
+  expect_false(any(observed$config_tables_after))
+})
+
+# The run connection of a keyed run holds the advisory lock of the task on
+# PostgreSQL, and closing it releases the lock. So the sweep closes every
+# connection of the task's tables and of the config tables, and leaves the run
+# connection open. SQLite takes no lock, but the sweep is the same code.
+test_that("the sweep before the fork leaves exactly the run connection open", {
+  dbconfig <- local_sqlite_dbconfig()
+  tab <- new_task_table(dbconfig)
+  withr::defer(tab$disconnect())
+
+  record <- new.env(parent = emptyenv())
+  record$plans_run <- integer(0)
+  task <- new_task(list("anon_fork" = tab), record)
+  tab$connect()
+  for (s in config$tables) s$connect()
+
+  observed <- run_and_observe_fork(task, record, run_key = "sweep")
+
+  expect_true(observed$called)
+  expect_length(observed$task_tables, 1L)
+  expect_length(observed$config_tables, 4L)
+  expect_false(any(observed$task_tables))
+  expect_false(any(observed$config_tables))
+  expect_true(isTRUE(observed$run_conn))
 })

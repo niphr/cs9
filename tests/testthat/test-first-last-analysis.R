@@ -117,7 +117,9 @@ new_task <- function(tables, record, name_action, fail_plan = NULL) {
 }
 
 # Replaces `pbmcapply::pbmclapply` with a serial `lapply()` that calls `FUN`.
-# It records the index_plan of each plan it receives.
+# Each element of X is one worker, and the first worker runs every middle
+# plan. The mock records the plan indexes of the parallel branch, which `FUN`
+# holds as `plans_index`.
 local_serial_pbmclapply <- function(record, envir = parent.frame()) {
   testthat::local_mocked_bindings(
     pbmclapply = function(
@@ -130,11 +132,7 @@ local_serial_pbmclapply <- function(record, envir = parent.frame()) {
       mc.style,
       mc.substyle
     ) {
-      record$parallel_plans <- vapply(
-        X,
-        function(x) x$get_argset(1)$index_plan,
-        integer(1)
-      )
+      record$parallel_plans <- as.integer(environment(FUN)$plans_index)
       lapply(X, FUN, ...)
     },
     .package = "pbmcapply",
@@ -195,7 +193,9 @@ test_that("a failed parallel plan stops run() before the last argset runs", {
   expect_identical(record$parallel_plans, 2:4)
 
   # Plans 1 and 2 ran, so the assertions below do not pass on an empty record.
-  expect_identical(runs$index_plan, c(1L, 1L, 2L, 2L))
+  # The worker runs plan 4 after plan 3 fails, as a forked plan 4 did before
+  # 26.10.20. Plan 5, the last plan, never runs.
+  expect_identical(runs$index_plan, c(1L, 1L, 2L, 2L, 4L, 4L))
   expect_false(any(runs$last_analysis))
 })
 

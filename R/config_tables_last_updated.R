@@ -1,5 +1,6 @@
 # `table_name` is a character vector. The function writes one row per name in
 # one upsert. A partitioned table records every child in one call this way.
+# The upsert is one SQL statement: see R/config_write.R.
 update_config_tables_last_updated <- function(
   table_name,
   date = NULL,
@@ -32,7 +33,7 @@ update_config_tables_last_updated <- function(
     date = date,
     datetime = datetime
   )
-  return(config$tables$config_tables_last_updated$upsert_data(to_upload))
+  return(config_write(config$tables$config_tables_last_updated, to_upload))
 }
 
 

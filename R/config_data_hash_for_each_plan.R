@@ -1,3 +1,14 @@
+# Every plan reads and writes this table. Outside a worker, each call closes
+# the connection when it returns, as before 26.10.20. In a forked worker
+# (config$in_parallel TRUE) it stays open, so the worker logs in once for all
+# its plans, and closes it when the worker ends.
+config_data_hash_close <- function() {
+  if (!isTRUE(config$in_parallel)) {
+    config$tables$config_data_hash_for_each_plan$disconnect()
+  }
+  return(invisible(NULL))
+}
+
 update_config_data_hash_for_each_plan <- function(
   task,
   index_plan,
@@ -7,7 +18,7 @@ update_config_data_hash_for_each_plan <- function(
   date = NULL,
   datetime = NULL
 ) {
-  on.exit(config$tables$config_data_hash_for_each_plan$disconnect())
+  on.exit(config_data_hash_close())
 
   if (!is.null(datetime)) {
     datetime <- as.character(datetime)
@@ -44,7 +55,7 @@ update_config_data_hash_for_each_plan <- function(
     "element_hash" = element_hash,
     "all_hash" = all_hash
   )
-  return(config$tables$config_data_hash_for_each_plan$upsert_data(to_upload))
+  return(config_write(config$tables$config_data_hash_for_each_plan, to_upload))
 }
 
 # The clock of update_config_data_hash_for_each_plan(). A test replaces it.
@@ -83,7 +94,7 @@ get_config_data_hash_for_each_plan <- function(
   index_plan = NULL,
   element_tag = NULL
 ) {
-  on.exit(config$tables$config_data_hash_for_each_plan$disconnect())
+  on.exit(config_data_hash_close())
 
   if (!is.null(task)) {
     temp <- config$tables$config_data_hash_for_each_plan$tbl() |>

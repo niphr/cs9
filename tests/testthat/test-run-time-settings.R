@@ -58,7 +58,7 @@ local_global_fns <- function(fns, envir = parent.frame()) {
 
 # Replaces `pbmcapply::pbmclapply` until the calling test ends, and returns an
 # environment that records whether Task$run() called it and with which
-# `mc.cores`. Nothing forks.
+# `mc.cores`. Nothing forks: the mock runs each worker in this process.
 #
 # Task$run() calls pbmclapply only in its parallel branch: 4 or more plans,
 # `cores` above 1 and a session that is not interactive. With `cores` equal to
@@ -69,8 +69,15 @@ local_observe_fork <- function(envir = parent.frame()) {
   testthat::local_mocked_bindings(
     pbmclapply = function(X, FUN, ...) {
       observed$called <- TRUE
-      observed$mc_cores <- list(...)$mc.cores
-      return(lapply(seq_along(X), function(i) 1))
+      dots <- list(...)
+      observed$mc_cores <- dots$mc.cores
+      return(lapply(
+        X,
+        FUN,
+        tables = dots$tables,
+        upsert_at_end_of_each_plan = dots$upsert_at_end_of_each_plan,
+        insert_at_end_of_each_plan = dots$insert_at_end_of_each_plan
+      ))
     },
     .package = "pbmcapply",
     .env = envir
@@ -78,13 +85,14 @@ local_observe_fork <- function(envir = parent.frame()) {
   return(observed)
 }
 
-# Four plans, which is the smallest count that reaches the parallel branch.
+# Six plans: 4 middle plans. Task$run() forks one worker per middle plan, up to
+# `cores`, so 4 middle plans let `cores` 2 and 3 reach pbmclapply unchanged.
 add_cores_task <- function(ss, name_action, cores) {
   return(ss$add_task(
     name_grouping = "runtime",
     name_action = name_action,
     cores = cores,
-    for_each_plan = plnr::expand_list(i = 1:4),
+    for_each_plan = plnr::expand_list(i = 1:6),
     action_fn_name = "cs9test_runtime_action"
   ))
 }

@@ -51,7 +51,7 @@ update_config_log <- function(
     datetime,
     message = msg
   )
-  return(config$tables$config_log$insert_data(to_upload))
+  return(config_write(config$tables$config_log, to_upload, upsert = FALSE))
 }
 
 # The key of config_log is auto_interactive, ss, task and datetime. A datetime

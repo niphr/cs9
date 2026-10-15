@@ -181,6 +181,11 @@ Task <- R6::R6Class(
           status = status
         )
       })
+      # PostgreSQL shows the context as the application_name of each session
+      # that csdb opens. The run itself is "<task>|parent", and each plan sets
+      # "<task>|<plan>". The caller gets its own context back at the end.
+      outer_context <- csdb::csdb_set_context(paste0(self$name, "|parent"))
+      on.exit(csdb::csdb_set_context(outer_context), add = TRUE)
 
       # task <- tm_get_task("analysis_norsyss_qp_gastro")
       message(glue::glue("task: {self$name}"))
@@ -444,6 +449,7 @@ Task <- R6::R6Class(
         if (!is.null(config$run)) {
           config$run$plan_id <- private$plan_ids[plans_index[i]]
         }
+        run_set_context(paste0(self$name, "|", plans_index[i]), tables)
 
         if (length(plans_index) == 1 && is.null(pb)) {
           verbose <- TRUE
@@ -504,7 +510,14 @@ Task <- R6::R6Class(
           run_mark_plan_done(config$run$plan_id, tables)
           config$run$plan_id <- NULL
         }
+        csdb::csdb_set_context(paste0(self$name, "|parent"))
       }
+      # The sweep closes every connection of the task's tables and of the
+      # config tables, so no worker inherits one of them open. It leaves the
+      # run connection of a keyed run open, config$run$conn: it holds the
+      # advisory lock of the task, and closing it releases the lock. A worker
+      # never uses that connection and never closes it. See
+      # private$run_parallel_worker().
       for (s in tables) {
         s$disconnect()
       }
@@ -513,6 +526,11 @@ Task <- R6::R6Class(
       }
       return(invisible(NULL))
     },
+    # The middle plans. This forks `cores` workers once, or one per plan when
+    # there are fewer plans. Each worker takes the next plan from a queue,
+    # runs it and records its result, until no plan is left. See
+    # R/parallel_plans.R. run_sequential() closed every connection of this
+    # process before, so no worker inherits an open connection.
     run_parallel_plans = function(
       plans_index,
       tables,
@@ -520,130 +538,32 @@ Task <- R6::R6Class(
       insert_at_end_of_each_plan,
       cores
     ) {
+      queue <- parallel_queue_new()
+      on.exit(unlink(queue, recursive = TRUE), add = TRUE)
+      workers <- min(cores, length(plans_index))
       y <- pbmcapply::pbmclapply(
-        self$plans[plans_index],
+        seq_len(workers),
         function(
-          x,
+          worker,
           tables,
           upsert_at_end_of_each_plan,
           insert_at_end_of_each_plan
         ) {
-          config$in_parallel <- TRUE # this will stop TABLOCK from being used in in/upserts
-          data.table::setDTthreads(1)
-          x$set_verbose(FALSE)
-          message(".")
-
-          # this tries to set a different seed for each parallel run
-          # so that there isn't a race condition in any of the parallel
-          # processes
-          set.seed(x$get_argset(1)$index)
-          # for (s in tables) s$disconnect()
-
-          # Each plan runs once. The scheduler retries the whole task.
-          config$plan_attempt_index <- 1
-          # The id from the argsets, as run_plan_ids() computed it.
-          if (!is.null(config$run)) {
-            config$run$plan_id <- run_plan_id(x, private$injected_fields())
-          }
-
-          catch_result <- tryCatch(
-            {
-              # for (s in tables) s$connect()
-              data <- x$get_data()
-              hashes <- data$hash
-              last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(
-                task = self$name,
-                index_plan = x$get_argset(1)$index_plan,
-                expected_element_tags = names(data$hash$current_elements)
-              )
-              data$hash$last_run <- last_run_hashes$last_run
-              data$hash$last_run_elements <- last_run_hashes$last_run_elements
-
-              retval <- x$run_all_with_data(data = data, tables = tables)
-
-              if (upsert_at_end_of_each_plan) {
-                retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
-                  retval,
-                  returned_name_when_dfs_are_not_nested = "output",
-                  use.names = TRUE,
-                  fill = TRUE
-                )
-                for (df_name in names(retval)) {
-                  tables[[df_name]]$upsert_data(
-                    retval[[df_name]],
-                    verbose = FALSE
-                  )
-                }
-              }
-              if (insert_at_end_of_each_plan) {
-                retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
-                  retval,
-                  returned_name_when_dfs_are_not_nested = "output",
-                  use.names = TRUE,
-                  fill = TRUE
-                )
-                for (df_name in names(retval)) {
-                  tables[[df_name]]$insert_data(
-                    retval[[df_name]],
-                    verbose = FALSE
-                  )
-                }
-              }
-
-              rm("retval")
-
-              # this might break things!!!!!!
-              update_config_data_hash_for_each_plan(
-                task = self$name,
-                index_plan = x$get_argset(1)$index_plan,
-                element_tag = names(hashes$current_elements),
-                element_hash = unlist(hashes$current_elements),
-                all_hash = hashes$current
-              )
-              rm("data")
-              if (!is.null(config$run)) {
-                run_mark_plan_done(config$run$plan_id, tables)
-              }
-
-              return(list(
-                error = FALSE,
-                msg = "succeeded"
-              ))
-            },
-            error = function(e) {
-              return(list(
-                error = TRUE,
-                msg = paste0(
-                  "Error in index ",
-                  x$get_argset(1)$index,
-                  ".\n********\n",
-                  e$message,
-                  "\n********\n"
-                )
-              ))
-            }
-          )
-          # for (s in tables) s$disconnect()
-          if (catch_result$error) {
-            stop(catch_result$msg)
-          }
-
-          # ***************************** #
-          # NEVER DELETE gc()             #
-          # IT CAUSES 2x SPEEDUP          #
-          # AND 10x MEMORY EFFICIENCY     #
-          gc() #
-          # ***************************** #
-          return(1)
+          return(private$run_parallel_worker(
+            queue,
+            plans_index,
+            tables,
+            upsert_at_end_of_each_plan,
+            insert_at_end_of_each_plan
+          ))
         },
         tables = tables,
         upsert_at_end_of_each_plan = upsert_at_end_of_each_plan,
         insert_at_end_of_each_plan = insert_at_end_of_each_plan,
         ignore.interactive = TRUE,
-        mc.cores = cores,
-        # Each plan gets its own fork. A prescheduled core stops at its first
-        # error, which skipped the other plans on that core.
-        mc.preschedule = FALSE,
+        mc.cores = workers,
+        # One element of X per worker, so each worker forks once.
+        mc.preschedule = TRUE,
         mc.style = "ETA",
         mc.substyle = 2
       )
@@ -651,28 +571,184 @@ Task <- R6::R6Class(
       if (!is.null(config$run)) {
         config$run$plan_id <- NULL
       }
+      csdb::csdb_set_context(paste0(self$name, "|parent"))
 
-      # The error holds the message of every failed plan, in plan order.
-      try_error_index <- vapply(
-        y,
-        function(x) inherits(x, "try-error"),
-        logical(1)
+      # The error holds the message of every failed plan, in plan order, and
+      # then the error of each worker that stopped outside a plan.
+      labels <- vapply(
+        self$plans[plans_index],
+        function(x) paste0(x$get_argset(1)$index, ""),
+        character(1)
       )
-      if (any(try_error_index)) {
+      failed <- parallel_queue_failures(queue, labels)
+      if (length(failed) > 0) {
+        stopped <- vapply(y, function(x) inherits(x, "try-error"), logical(1))
         stop(
           "Error running in parallel: ",
-          sum(try_error_index),
+          length(failed),
           " of ",
-          length(y),
+          length(plans_index),
           " parallel plans failed.\n",
           paste(
-            vapply(y[try_error_index], function(x) x[1], character(1)),
+            c(failed, vapply(y[stopped], function(x) x[1], character(1))),
             collapse = "\n"
           ),
           call. = FALSE
         )
       }
-      # print(y)
+      return(invisible(NULL))
+    },
+    # One forked worker. It keeps its connections from one plan to the next,
+    # and closes them when it ends. Each plan runs as a plan in its own fork
+    # ran before 26.10.20.
+    run_parallel_worker = function(
+      queue,
+      plans_index,
+      tables,
+      upsert_at_end_of_each_plan,
+      insert_at_end_of_each_plan
+    ) {
+      # The run connection of a keyed run stays open across the fork, because
+      # it holds the lock of the task. A worker MUST NOT use it, and MUST NOT
+      # call DBI::dbDisconnect() on it: both processes share its socket, and
+      # a close from the worker would end the session of the main process
+      # and release the lock. run_connection() gives a worker a connection of
+      # a staged table instead. This reference keeps the inherited handle
+      # reachable, so the garbage collector of the worker never runs the
+      # finalizer that closes it.
+      inherited_run_conn <- config$run$conn
+      # This process opened these connections itself, after the fork. The
+      # inherited run connection is not among them.
+      on.exit(
+        {
+          for (s in tables) {
+            s$disconnect()
+          }
+          for (s in config$tables) {
+            s$disconnect()
+          }
+        },
+        add = TRUE
+      )
+      config$in_parallel <- TRUE # this will stop TABLOCK from being used in in/upserts
+      data.table::setDTthreads(1)
+      repeat {
+        position <- parallel_queue_take(queue)
+        if (position > length(plans_index)) {
+          break
+        }
+        x <- self$plans[[plans_index[position]]]
+        x$set_verbose(FALSE)
+        message(".")
+
+        # this tries to set a different seed for each parallel run
+        # so that there isn't a race condition in any of the parallel
+        # processes
+        set.seed(x$get_argset(1)$index)
+
+        # Each plan runs once. The scheduler retries the whole task.
+        config$plan_attempt_index <- 1
+        # The id from the argsets, as run_plan_ids() computed it.
+        if (!is.null(config$run)) {
+          config$run$plan_id <- run_plan_id(x, private$injected_fields())
+        }
+        result <- private$run_parallel_plan(
+          x,
+          plans_index[position],
+          tables,
+          upsert_at_end_of_each_plan,
+          insert_at_end_of_each_plan
+        )
+        if (!is.null(config$run)) {
+          config$run$plan_id <- NULL
+        }
+        parallel_queue_result(queue, position, result)
+
+        # ***************************** #
+        # NEVER DELETE gc()             #
+        # IT CAUSES 2x SPEEDUP          #
+        # AND 10x MEMORY EFFICIENCY     #
+        gc() #
+        # ***************************** #
+      }
+      return(invisible(NULL))
+    },
+    # One plan in a worker. An error ends the plan, not the worker.
+    run_parallel_plan = function(
+      x,
+      index_plan,
+      tables,
+      upsert_at_end_of_each_plan,
+      insert_at_end_of_each_plan
+    ) {
+      return(tryCatch(
+        {
+          run_set_context(paste0(self$name, "|", index_plan), tables)
+          data <- x$get_data()
+          hashes <- data$hash
+          last_run_hashes <- get_last_run_data_hash_split_into_plnr_format(
+            task = self$name,
+            index_plan = x$get_argset(1)$index_plan,
+            expected_element_tags = names(data$hash$current_elements)
+          )
+          data$hash$last_run <- last_run_hashes$last_run
+          data$hash$last_run_elements <- last_run_hashes$last_run_elements
+
+          retval <- x$run_all_with_data(data = data, tables = tables)
+
+          if (upsert_at_end_of_each_plan) {
+            retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
+              retval,
+              returned_name_when_dfs_are_not_nested = "output",
+              use.names = TRUE,
+              fill = TRUE
+            )
+            for (df_name in names(retval)) {
+              tables[[df_name]]$upsert_data(
+                retval[[df_name]],
+                verbose = FALSE
+              )
+            }
+          }
+          if (insert_at_end_of_each_plan) {
+            retval <- csutil::unnest_dfs_within_list_of_fully_named_lists(
+              retval,
+              returned_name_when_dfs_are_not_nested = "output",
+              use.names = TRUE,
+              fill = TRUE
+            )
+            for (df_name in names(retval)) {
+              tables[[df_name]]$insert_data(
+                retval[[df_name]],
+                verbose = FALSE
+              )
+            }
+          }
+
+          rm("retval")
+
+          # this might break things!!!!!!
+          update_config_data_hash_for_each_plan(
+            task = self$name,
+            index_plan = x$get_argset(1)$index_plan,
+            element_tag = names(hashes$current_elements),
+            element_hash = unlist(hashes$current_elements),
+            all_hash = hashes$current
+          )
+          rm("data")
+          # The done mark comes after every write of the plan.
+          if (!is.null(config$run)) {
+            run_mark_plan_done(config$run$plan_id, tables)
+          }
+          list(error = FALSE, msg = "succeeded")
+        },
+        error = function(e) {
+          return(list(
+            error = TRUE,
+            msg = parallel_plan_error(x$get_argset(1)$index, e$message)
+          ))
+        }
+      ))
     },
     # run_parallel = function(plans_index, tables, upsert_at_end_of_each_plan, insert_at_end_of_each_plan, pb){
     #   y <- foreach(x = self$plans[plans_index]) %dopar% {

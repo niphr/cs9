@@ -64,28 +64,22 @@ new_five_partition_table <- function(dbconfig) {
   return(pt)
 }
 
-# Count every call to config_tables_last_updated$upsert_data(). The wrapper
-# calls the original, so the rows still reach the database.
+# Count every write to config_tables_last_updated. Since 26.10.20 each write is
+# one call of config_write(), which runs one SQL statement on SQLite. Before,
+# it was one call of the table's upsert_data(). The wrapper calls the
+# original, so the rows still reach the database.
 local_count_last_updated_upserts <- function(envir = parent.frame()) {
-  tab <- config$tables$config_tables_last_updated
-  original <- tab$upsert_data
+  original <- config_write
   counter <- new.env()
   counter$n <- 0L
-  unlockBinding("upsert_data", tab)
-  assign(
-    "upsert_data",
-    function(...) {
-      counter$n <- counter$n + 1L
-      original(...)
+  testthat::local_mocked_bindings(
+    config_write = function(table, ...) {
+      if (identical(table, config$tables$config_tables_last_updated)) {
+        counter$n <- counter$n + 1L
+      }
+      return(original(table, ...))
     },
-    envir = tab
-  )
-  withr::defer(
-    {
-      assign("upsert_data", original, envir = tab)
-      lockBinding("upsert_data", tab)
-    },
-    envir = envir
+    .env = envir
   )
   return(counter)
 }

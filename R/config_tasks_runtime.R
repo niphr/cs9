@@ -43,7 +43,7 @@ update_config_tasks_stats <- function(
     ram_per_core_mb = ram_per_core_mb,
     status = status
   )
-  return(config$tables$config_tasks_stats$upsert_data(to_upload))
+  return(config_write(config$tables$config_tasks_stats, to_upload))
 }
 
 #' Get Configuration Tasks Statistics

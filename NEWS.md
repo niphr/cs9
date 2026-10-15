@@ -1,3 +1,15 @@
+# Version 26.10.20
+
+- In a parallel run, `Task$run()` forks its workers once: `cores` workers, or one per middle plan when there are fewer. Each worker runs middle plans until none is left. Before, each middle plan had its own fork.
+- The workers take the plans from a queue file that filelock guards, so cs9 imports filelock.
+- A worker keeps its database connections from one plan to the next, and closes them when it ends. A plan whose worker dies counts as a failed plan. Before, the run ignored it.
+- The run connection of a keyed run stays open in the main process across the fork, because it holds the lock of the task. A worker never uses it and never closes it.
+- cs9 writes its config tables with one `INSERT` statement over the connection of the table, on PostgreSQL and SQLite. Before, each write on PostgreSQL ran psql, which is one more login.
+- An upsert into a config table is `INSERT ... ON CONFLICT` on its keys. It needs the primary key that csdb creates with the table.
+- In a worker, the data hash bookkeeping keeps the connection of `config_data_hash_for_each_plan` open from one plan to the next. Outside a worker each call closes it, as before.
+- `Task$run()` sets the csdb context to `<task>|parent`, and each plan sets `<task>|<plan>`. PostgreSQL shows it as the `application_name` of each connection. An open connection gets the name by the rule of csdb: the characters `A-Z a-z 0-9 _ | . : -`, at most 63. This needs csdb 2026.10.15.
+- On PostgreSQL 18, a keyed run with 40 plans on 4 cores made 57 logins, 40 of them by psql. Before, the same run made 205 logins, 82 of them by psql.
+
 # Version 26.10.19
 
 - A run with a `run_key` keeps the date of its first attempt also when its task has no tables, or only config tables. This holds on PostgreSQL and SQLite. `run_today()` and `argset$today` give that date on a retry with the key. Before, a retry on a later day got the date of the retry.
