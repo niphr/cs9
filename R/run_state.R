@@ -50,6 +50,9 @@ run_today <- function() {
   if (!is.null(config$run$today)) {
     return(config$run$today)
   }
+  if (!is.null(config$run_today)) {
+    return(config$run_today)
+  }
   return(run_clock_today())
 }
 
@@ -241,9 +244,14 @@ run_with_role <- function(con, sql, state) {
 }
 
 # Two runs that start at once can both try to create a table. The loser's error
-# is ignored when the table exists afterwards.
-run_store_create <- function(con, state) {
-  for (name in names(run_store_definitions)) {
+# is ignored when the table exists afterwards. `store_names` names the tables to
+# create.
+run_store_create <- function(
+  con,
+  state,
+  store_names = names(run_store_definitions)
+) {
+  for (name in store_names) {
     sql <- paste0(
       "CREATE TABLE IF NOT EXISTS ",
       run_store_ident(con, name, state),
@@ -331,7 +339,10 @@ run_target_info <- function(x) {
   }
   # Only the cs9 table classes stage. A plain csdb::DBTable_v9, such as a
   # config table, takes part in the name check only.
-  info$stageable <- inherits(x, c("DBPartitionedTableExtended_v9", "DBTableExtended_v9"))
+  info$stageable <- inherits(
+    x,
+    c("DBPartitionedTableExtended_v9", "DBTableExtended_v9")
+  )
   return(info)
 }
 
@@ -392,7 +403,14 @@ run_targets <- function(tables) {
   # config tables included, so it runs before they are set aside.
   same <- vapply(
     infos,
-    function(i) paste(i$name, run_database_id(i$dbconfig), i$dbconfig$schema, sep = "|"),
+    function(i) {
+      return(paste(
+        i$name,
+        run_database_id(i$dbconfig),
+        i$dbconfig$schema,
+        sep = "|"
+      ))
+    },
     character(1)
   )
   targets <- targets[!duplicated(same)]
@@ -416,7 +434,11 @@ run_targets <- function(tables) {
   )
   # A task whose every table is a config table stages nothing, and that is
   # allowed. run_begin() stops on any other way to no staged table.
-  out$config_only <- all(vapply(infos[aside], run_is_config_table, logical(1))) &&
+  out$config_only <- all(vapply(
+    infos[aside],
+    run_is_config_table,
+    logical(1)
+  )) &&
     all(aside)
   targets <- targets[!aside]
   infos <- infos[!aside]
@@ -456,11 +478,13 @@ run_targets_check <- function(tables) {
   for (k in seq_along(tables)) {
     info <- run_target_info(tables[[k]])
     if (is.null(info) || !(info$stageable || run_is_config_table(info))) {
-      return(list(problem = paste0(
-        "the table ",
-        run_object_label(info, labels[k], k, tables[[k]]),
-        " is not a cs9 table class that cs9 can stage"
-      )))
+      return(list(
+        problem = paste0(
+          "the table ",
+          run_object_label(info, labels[k], k, tables[[k]]),
+          " is not a cs9 table class that cs9 can stage"
+        )
+      ))
     }
     # `[<-` keeps the position. `[[<-` with NULL would drop the element.
     infos[k] <- list(info)

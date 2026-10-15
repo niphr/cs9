@@ -198,7 +198,9 @@ test_that("a task without a table of its own runs without staging", {
 
   expect_null(err)
   expect_equal(stage_calls(ctl, 2), c(1L, 1L))
-  expect_equal(made_tables(), character())
+  # Since 26.10.19 the run keeps its date in cs9_run of the config database.
+  # It creates no staging table and no other bookkeeping table.
+  expect_equal(made_tables(), "cs9_run")
 })
 
 # A published run_key MUST stay published. Before the fix in round 2 of phase

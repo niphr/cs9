@@ -194,6 +194,11 @@ Task <- R6::R6Class(
 
       # A run with a run_key stages every write to the task's own tables, and
       # publishes them after the last plan. See R/run_state.R.
+      # A run inside the action of another run does not see the outer date.
+      # The outer run gets its date back when this run ends.
+      outer_today <- config$run_today
+      config$run_today <- NULL
+      on.exit(config$run_today <- outer_today, add = TRUE)
       run <- run_begin(self$name, self$tables, run_key)
       on.exit(run_end(run), add = TRUE)
       if (isTRUE(run$published)) {

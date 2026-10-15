@@ -138,7 +138,8 @@ test_that("a keyed task whose every table is a config table runs unstaged", {
   expect_null(err)
   expect_equal(stage_calls(ctl, 2), c(1L, 1L))
   expect_true("config only" %in% config_log_messages())
-  expect_equal(made_tables(), character())
+  # Since 26.10.19 the run keeps its date in cs9_run of the config database.
+  expect_equal(made_tables(), "cs9_run")
 })
 
 test_that("a keyed run with tables but no staged table stops", {

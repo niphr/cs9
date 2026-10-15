@@ -15,6 +15,11 @@ config$plan_attempt_index <- 1
 # The state of the task run in progress, or NULL. Task$run() sets it and clears
 # it on exit. See R/run_state.R.
 config$run <- NULL
+# The date of the keyed run in progress that stages nothing, or NULL. A staged
+# run keeps its date in config$run$today. run_begin() sets it, and run_today()
+# reads it. Task$run() empties it before run_begin() and gives the value of the
+# outer run back on exit.
+config$run_today <- NULL
 # TRUE while Task$run() builds the plans. staged_tbl() then stops, because a
 # plan MAY read published tables only.
 config$planning <- FALSE

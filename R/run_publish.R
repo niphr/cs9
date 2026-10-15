@@ -30,7 +30,8 @@ run_will_stage <- function(task, tables, found) {
 
 # Starts the run of a task, before Task$run() builds the plans. Returns the run
 # state, or NULL when the run stages nothing. The run then writes its tables
-# directly, as it did before 26.10.14, and touches no bookkeeping table.
+# directly, as it did before 26.10.14. A keyed run that stages nothing still
+# keeps its date: see run_date_unstaged().
 #
 # A run stages only when it has a run_key. A scheduler passes one. An
 # interactive run, a vignette and a run of a task that a scheduler does not yet
@@ -51,6 +52,7 @@ run_begin <- function(task, tables, run_key) {
   run_key <- run_check_key(run_key)
   found <- run_targets(tables)
   if (!run_will_stage(task, tables, found)) {
+    config$run_today <- run_date_unstaged(task, run_key)
     return(NULL)
   }
   dbconfig <- found$dbconfig
@@ -123,6 +125,57 @@ run_begin <- function(task, tables, run_key) {
   return(state)
 }
 
+# The date of a keyed run that stages nothing: its task has no table, or only
+# config tables. Such a run has no run database. Its row in cs9_run is in the
+# config database, on the connection of config_log, which Task$run() writes
+# to anyway. The first attempt inserts the row, and a later attempt reads it.
+#
+# The run takes no lock and creates no other bookkeeping table. Its plans run
+# again on every attempt, and nothing marks its row as published.
+#
+# On a config database other than PostgreSQL or SQLite it stores nothing and
+# returns NULL, so run_today() reads the clock, as before 26.10.19.
+run_date_unstaged <- function(task, run_key) {
+  conn <- config$tables$config_log$dbconnection
+  if (!run_driver_supported(conn$config$driver)) {
+    return(NULL)
+  }
+  state <- list(
+    task = task,
+    run_key = run_key,
+    conn = conn,
+    schema = if (is.null(conn$config$schema)) "" else conn$config$schema,
+    sqlite = identical(toupper(conn$config$driver), "SQLITE")
+  )
+  con <- conn$autoconnection
+  run_store_create(con, state, "cs9_run")
+  ident <- run_store_ident(con, "cs9_run", state)
+  # Two attempts that start at once keep one row.
+  DBI::dbExecute(
+    con,
+    paste0(
+      "INSERT INTO ",
+      ident,
+      " (task, run_key, run_date) VALUES (",
+      paste(
+        run_q(con, c(task, run_key, as.character(run_clock_today()))),
+        collapse = ", "
+      ),
+      ") ON CONFLICT DO NOTHING"
+    )
+  )
+  row <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT run_date FROM ",
+      ident,
+      " WHERE ",
+      run_where_store(con, state)
+    )
+  )
+  return(as.Date(row$run_date[1]))
+}
+
 run_new_connection <- function(dbconfig) {
   return(csdb::DBConnection_v9$new(
     driver = dbconfig$driver,
@@ -165,6 +218,12 @@ run_lock_task <- function(con, task) {
 # Removes what other runs of this task left behind: staged rows, operations,
 # done marks and run rows. Only a run that holds the lock of the task reaches
 # this point, so no other run of the task is alive.
+#
+# A known limit, kept as it is: a task name can run with tables and without
+# them, for example after its tables change. The config tables and the tables
+# of the task can share one database and schema. A staged run of that task then
+# removes the row of every other key, also of a key that ran without tables. A
+# retry of that key gets a new date. See run_date_unstaged().
 #
 # A published run keeps its row in cs9_run, so a later attempt with its key
 # still does nothing. Only the rows of other keys that are not published are
