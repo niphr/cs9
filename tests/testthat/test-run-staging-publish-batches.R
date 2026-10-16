@@ -718,3 +718,121 @@ test_that("on PostgreSQL a publish locks each partition, so a task that stages o
   data.table::setorderv(expected, "x")
   expect_equal(live_rows(out), expected)
 })
+
+# A dead run can leave millions of staged rows. A DELETE or an ALTER TABLE of
+# such a table is one big transaction, so cs9 empties it with TRUNCATE when no
+# row of it must stay.
+test_that("on PostgreSQL an old staging table that holds only a dead run is truncated before cs9_stg_id is added", {
+  skip_without_pg()
+  pg <- local_pg_db()
+  out <- new_stage_out(pg$dbconfig, "partitioned")
+  pg_seed(pg, out)
+  ctl <- local_pg_stage_ctl()
+  # Run "dead" stages 2812 rows, plan 3 fails, and nobody retries it.
+  ctl$fail <- 3L
+  err0 <- run_attempt(new_stage_task(out, n_plans = 3), run_key = "dead")
+  expect_match(error_text(err0), "plan 3 failed on purpose", fixed = TRUE)
+  pg_make_old_staging(pg)
+  seen <- local_pg_publish(pg, out)
+  rec <- local_staging_statements(pg)
+
+  out2 <- new_stage_out(pg$dbconfig, "partitioned")
+  ctl$fail <- integer()
+  err <- run_attempt(new_stage_task(out2, n_plans = 3), run_key = "new")
+
+  expect_equal(error_text(err), "")
+  truncate_at <- grep("^TRUNCATE TABLE", rec$sql)
+  alter_at <- grep("^ALTER TABLE .* ADD COLUMN", rec$sql)
+  expect_length(alter_at, 1)
+  expect_true(length(truncate_at) > 0 && truncate_at[1] < alter_at[1])
+  # The ALTER found an empty table, so it rewrote no row.
+  expect_equal(rec$rows_at_alter, 0)
+  # The fence deleted no dead row one by one.
+  expect_false(any(grepl("^DELETE FROM .*anon_stage_part_cs9stg", rec$sql[seq_len(alter_at[1])])))
+  expect_equal(live_rows(out2), pg_expected())
+  expect_equal(pg_staged_n(pg), 0)
+})
+
+test_that("on PostgreSQL an old staging table keeps the rows of a partly published run, which are then published", {
+  skip_without_pg()
+  pg <- local_pg_db()
+  out <- new_stage_out(pg$dbconfig, "partitioned")
+  pg_seed(pg, out)
+  ctl <- local_pg_stage_ctl()
+  task <- new_stage_task(out, n_plans = 3)
+  seen <- local_pg_publish(pg, out)
+  probe1 <- local_batch_probe(stop_after = 2)
+  err1 <- run_attempt(task, run_key = "A")
+  expect_match(error_text(err1), "the publish stops after batch 2", fixed = TRUE)
+  # A dead run of the same task also left rows, and the table gets the shape
+  # of cs9 3951f7f.
+  pg_stage_fake(pg, "stage_fixed", "dead", "p1", 1500)
+  pg_make_old_staging(pg)
+  expect_equal(pg_staged_n(pg), 812 + 1500)
+
+  rec <- local_staging_statements(pg)
+  out2 <- new_stage_out(pg$dbconfig, "partitioned")
+  ctl$rows <- function(plan) NULL
+  ctl$hooks <- list("3" = function(tables, argset) {
+    tables$out$upsert_data(data.table::data.table(x = "keep-p1", part = "p1", n = 9L))
+    return(invisible(NULL))
+  })
+  probe2 <- local_batch_probe()
+  err2 <- run_attempt(new_stage_task(out2, n_plans = 3), run_key = "B")
+
+  expect_equal(error_text(err2), "")
+  # The ALTER kept the 2312 rows. Run B published the 812 rows left of run A
+  # first, then the fence truncated the 1500 dead rows.
+  expect_equal(rec$rows_at_alter, 2312)
+  alter_at <- grep("^ALTER TABLE .* ADD COLUMN", rec$sql)
+  truncate_at <- grep("^TRUNCATE TABLE", rec$sql)
+  expect_true(length(truncate_at) > 0 && min(truncate_at) > alter_at[1])
+  expect_equal(probe2$moved, c(501, 301, 10, 1))
+  expected <- pg_expected()
+  expected[x == "keep-p1", n := 9L]
+  expect_equal(live_rows(out2), expected)
+  expect_equal(pg_published_n(pg, "A"), 1)
+  expect_equal(pg_published_n(pg, "B"), 1)
+  expect_equal(pg_staged_n(pg), 0)
+})
+
+test_that("on PostgreSQL the fence deletes dead staged rows in batches of at most the batch size when other rows stay", {
+  skip_without_pg()
+  pg <- local_pg_db()
+  out <- new_stage_out(pg$dbconfig, "partitioned")
+  pg_seed(pg, out)
+  ctl <- local_pg_stage_ctl()
+  stg <- out$.__enclos_env__$private$staging()
+  suppressMessages(stg$create_table())
+  # Another task keeps 300 rows. A dead run of this task left 2800.
+  pg_stage_fake(pg, "other_task", "k1", "p1", 300)
+  pg_stage_fake(pg, "stage_fixed", "dead", "p1", 2500)
+  pg_stage_fake(pg, "stage_fixed", "dead", "p2", 300)
+  pg_audit_install(pg, out)
+  seen <- local_pg_publish(pg, out)
+
+  err <- run_attempt(new_stage_task(out, n_plans = 3), run_key = "fresh")
+
+  expect_equal(error_text(err), "")
+  dead <- DBI::dbGetQuery(
+    pg$admin,
+    paste0(
+      "SELECT CAST(txid AS VARCHAR(20)) AS txid, count(*)::int AS n FROM ",
+      pg$schema,
+      ".cs9t_audit WHERE tab = 'anon_stage_part_cs9stg' AND op = 'DELETE' ",
+      "AND x LIKE 'dead-%' GROUP BY txid"
+    )
+  )
+  expect_equal(sort(dead$n), c(300, 500, 1000, 1000))
+  expect_lte(max(dead$n), 1000)
+  kept <- pg_count(
+    pg,
+    paste0(
+      "SELECT count(*)::int AS n FROM ",
+      pg$schema,
+      ".anon_stage_part_cs9stg WHERE cs9_task = 'other_task'"
+    )
+  )
+  expect_equal(kept, 300)
+  expect_equal(live_rows(out), pg_expected())
+})

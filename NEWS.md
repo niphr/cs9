@@ -1,3 +1,7 @@
+# Version 26.10.25
+
+- On PostgreSQL a keyed run empties a staging table with `TRUNCATE` when no row of it must stay. It does so also before it adds `cs9_stg_id` to an old staging table. Otherwise the fence deletes the rows of dead runs in transactions of at most 200,000 rows. Before, a dead run of about 25 million rows meant two transactions of that size at the next run.
+
 # Version 26.10.24
 
 - On PostgreSQL a keyed run publishes in transactions of at most 200,000 staged rows, in the order of the new staging column `cs9_stg_id`. On 2026-10-16 PostgreSQL went down twice during a publish of about 25 million rows in one transaction. A recorded delete runs in one transaction per partition, and `drop_all_rows()` becomes a `TRUNCATE`. A reader can see a partly published run. After a publish that stopped part-way, a retry with the same `run_key` checks the plan list, runs no plan and publishes the rest. A run of the task with a new `run_key` first publishes the rest of that run. A staging table from before this version gets `cs9_stg_id` in place and keeps its rows. SQLite publishes in one transaction, as before. cs9 needs csdb 2026.10.18.

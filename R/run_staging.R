@@ -72,6 +72,10 @@ run_as_creator <- function(con, state, sql) {
 # from the primary key, so that csdb creates the index cs9_run again with
 # cs9_stg_id. Two runs that start at once can both try. The loser's error is
 # ignored when the column exists afterwards.
+#
+# When no row of the table must stay, cs9 empties it first, so the ALTER runs
+# on an empty table. Otherwise the ALTER rewrites the table with its rows in
+# one transaction. That happens once per table, at the upgrade.
 run_add_stg_id <- function(con, state, staging) {
   name <- staging$table_name_short_for_mssql_fully_specified_for_postgres
   has_id <- function() {
@@ -80,6 +84,7 @@ run_add_stg_id <- function(con, state, staging) {
   if (has_id()) {
     return(invisible(NULL))
   }
+  run_truncate_if_dead(con, state, staging)
   indexes <- DBI::dbGetQuery(
     con,
     paste0(
@@ -112,6 +117,151 @@ run_add_stg_id <- function(con, state, staging) {
       return(invisible(NULL))
     }
   )
+  return(invisible(NULL))
+}
+
+# The rows of a staging table that run_fence() removes: the rows of this task
+# with another key that is not published.
+run_fence_dead_where <- function(con, state) {
+  return(paste0(
+    run_qi(con, "cs9_task"),
+    " = ",
+    run_q(con, state$task),
+    " AND ",
+    run_qi(con, "cs9_run_key"),
+    " <> ",
+    run_q(con, state$run_key),
+    " AND ",
+    run_qi(con, "cs9_run_key"),
+    " NOT IN (SELECT run_key FROM ",
+    run_store_ident(con, "cs9_run", state),
+    " WHERE task = ",
+    run_q(con, state$task),
+    " AND published_datetime IS NOT NULL)"
+  ))
+}
+
+# Must any row of the staging table stay? A row stays when it belongs to
+# another task, to this run, to a published run, or to a run whose publish is
+# partly committed. run_finish_other_publishes() finishes such a run. Each
+# EXISTS reads the index cs9_run, which leads with cs9_task and cs9_run_key.
+run_staging_keeps_rows <- function(con, state, staging) {
+  stg <- run_table_ident(con, staging)
+  task_col <- run_qi(con, "cs9_task")
+  task <- run_q(con, state$task)
+  kept_keys <- paste0(
+    "SELECT run_key FROM ",
+    run_store_ident(con, "cs9_run", state),
+    " WHERE task = ",
+    task,
+    " AND published_datetime IS NOT NULL UNION SELECT run_key FROM ",
+    run_store_ident(con, "cs9_run_publish", state),
+    " WHERE task = ",
+    task,
+    " UNION SELECT ",
+    run_q(con, state$run_key)
+  )
+  any_row <- function(where) {
+    return(paste0("EXISTS (SELECT 1 FROM ", stg, " WHERE ", where, ")"))
+  }
+  keep <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT CASE WHEN ",
+      any_row(paste0(task_col, " < ", task)),
+      " OR ",
+      any_row(paste0(task_col, " > ", task)),
+      " OR ",
+      any_row(paste0(
+        task_col,
+        " = ",
+        task,
+        " AND ",
+        run_qi(con, "cs9_run_key"),
+        " IN (",
+        kept_keys,
+        ")"
+      )),
+      " THEN 1 ELSE 0 END AS keep"
+    )
+  )$keep
+  return(as.integer(keep) == 1L)
+}
+
+# Empties a staging table on PostgreSQL with TRUNCATE when no row of it must
+# stay. Returns TRUE when it did. The lock blocks the inserts of other runs
+# until the commit, so no row arrives between the check and the TRUNCATE.
+run_truncate_if_dead <- function(con, state, staging) {
+  ident <- run_table_ident(con, staging)
+  return(DBI::dbWithTransaction(con, {
+    run_set_local_creator(con, state)
+    DBI::dbExecute(
+      con,
+      paste0("LOCK TABLE ", ident, " IN SHARE ROW EXCLUSIVE MODE")
+    )
+    if (run_staging_keeps_rows(con, state, staging)) {
+      FALSE
+    } else {
+      DBI::dbExecute(con, paste0("TRUNCATE TABLE ", ident))
+      TRUE
+    }
+  }))
+}
+
+# Deletes the dead rows of a staging table on PostgreSQL in batches of at most
+# run_publish_rows_per_batch rows, per key and partition, in cs9_stg_id
+# order. Each DELETE is one statement, so it commits on its own.
+run_fence_dead_rows <- function(con, state, staging, part_col) {
+  ident <- run_table_ident(con, staging)
+  groups <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT DISTINCT ",
+      paste(run_qi(con, c("cs9_run_key", part_col)), collapse = ", "),
+      " FROM ",
+      ident,
+      " WHERE ",
+      run_fence_dead_where(con, state)
+    )
+  )
+  for (i in seq_len(nrow(groups))) {
+    dead <- state
+    dead$run_key <- groups$cs9_run_key[i]
+    part <- if (is.null(part_col)) NULL else as.character(groups[[part_col]][i])
+    live <- list(part = part)
+    repeat {
+      last <- DBI::dbGetQuery(
+        con,
+        run_batch_last_sql(con, dead, live, staging, part_col)
+      )$last_id
+      if (is.na(last)) {
+        break
+      }
+      DBI::dbExecute(
+        con,
+        paste0(
+          "DELETE FROM ",
+          ident,
+          " WHERE ",
+          run_part_where(con, dead, part_col, part, ""),
+          " AND ",
+          run_stg_id(con),
+          " <= ",
+          last
+        )
+      )
+    }
+  }
+  return(invisible(NULL))
+}
+
+# SET LOCAL ROLE role_create_table, the owner of the tables that csdb
+# creates, for the rest of the open transaction.
+run_set_local_creator <- function(con, state) {
+  role <- state$conn$config$role_create_table
+  if (!is.null(role) && !is.na(role) && role != "x") {
+    DBI::dbExecute(con, paste0("SET LOCAL ROLE ", run_qi(con, role)))
+  }
   return(invisible(NULL))
 }
 

@@ -231,6 +231,11 @@ run_lock_task <- function(con, task) {
 # A published run keeps its row in cs9_run, so a later attempt with its key
 # still does nothing. Only the rows of other keys that are not published are
 # removed. A published run has no staged row, operation or done mark left.
+#
+# On PostgreSQL a staging table can hold millions of rows of a dead run. When
+# no row of it must stay, the fence empties it with TRUNCATE. Otherwise it
+# deletes the dead rows in committed batches of at most
+# run_publish_rows_per_batch rows. See run_truncate_if_dead().
 run_fence <- function(con, state, targets) {
   published <- paste0(
     "SELECT run_key FROM ",
@@ -262,27 +267,21 @@ run_fence <- function(con, state, targets) {
   }
   for (x in targets) {
     staging <- x$.__enclos_env__$private$staging()
-    if (run_staging_exists(con, staging)) {
+    if (!run_staging_exists(con, staging)) {
+      next
+    }
+    if (state$sqlite) {
       DBI::dbExecute(
         con,
         paste0(
           "DELETE FROM ",
           run_table_ident(con, staging),
           " WHERE ",
-          run_qi(con, "cs9_task"),
-          " = ",
-          run_q(con, state$task),
-          " AND ",
-          run_qi(con, "cs9_run_key"),
-          " <> ",
-          run_q(con, state$run_key),
-          " AND ",
-          run_qi(con, "cs9_run_key"),
-          " NOT IN (",
-          published,
-          ")"
+          run_fence_dead_where(con, state)
         )
       )
+    } else if (!run_truncate_if_dead(con, state, staging)) {
+      run_fence_dead_rows(con, state, staging, run_part_col(x))
     }
   }
   return(invisible(NULL))
@@ -307,6 +306,14 @@ run_ensure_staging <- function(con, state, targets) {
     }
   }
   return(invisible(NULL))
+}
+
+# The partition column of a staged table, or NULL for a plain table.
+run_part_col <- function(x) {
+  if (inherits(x, "DBPartitionedTableExtended_v9")) {
+    return(x$column_name_partition)
+  }
+  return(NULL)
 }
 
 run_staging_exists <- function(con, staging) {
@@ -821,11 +828,7 @@ run_live_parts <- function(x) {
 # the live table has staged rows.
 run_publish_work <- function(con, state, name, x) {
   staging <- x$.__enclos_env__$private$staging()
-  part_col <- if (inherits(x, "DBPartitionedTableExtended_v9")) {
-    x$column_name_partition
-  } else {
-    NULL
-  }
+  part_col <- run_part_col(x)
   ops <- DBI::dbGetQuery(
     con,
     paste0(

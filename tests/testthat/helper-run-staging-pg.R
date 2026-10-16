@@ -499,3 +499,55 @@ pg_live_locks_held <- function(pg, out) {
     logical(1)
   )))
 }
+
+# Writes `n` rows of task `task` and run `key` into the staging table with
+# SQL, as a run that died would have left them. Their x is
+# "<key>-<part>-00001" and on.
+pg_stage_fake <- function(pg, task, key, part, n) {
+  DBI::dbExecute(
+    pg$admin,
+    paste0(
+      "INSERT INTO ",
+      pg$schema,
+      ".anon_stage_part_cs9stg (x, part, n, auto_last_updated_datetime, ",
+      "cs9_task, cs9_run_key, cs9_plan, cs9_upsert) SELECT '",
+      key,
+      "-",
+      part,
+      "-' || lpad(CAST(g AS VARCHAR), 5, '0'), '",
+      part,
+      "', 0, '2026-01-01 00:00:00', '",
+      task,
+      "', '",
+      key,
+      "', 'fake', 0 FROM generate_series(1, ",
+      n,
+      ") AS g"
+    )
+  )
+  return(invisible(NULL))
+}
+
+# Records every statement that DBI::dbExecute() sends on the staging table,
+# in order. At the ALTER TABLE that adds cs9_stg_id it also counts the rows of
+# the table, from the connection of the test.
+local_staging_statements <- function(pg, envir = parent.frame()) {
+  rec <- new.env(parent = emptyenv())
+  rec$sql <- character()
+  rec$rows_at_alter <- NA_real_
+  execute <- DBI::dbExecute
+  testthat::local_mocked_bindings(
+    dbExecute = function(conn, statement, ...) {
+      if (grepl("anon_stage_part_cs9stg", statement, fixed = TRUE)) {
+        rec$sql <- c(rec$sql, statement)
+        if (grepl("^ALTER TABLE .* ADD COLUMN", statement)) {
+          rec$rows_at_alter <- pg_staged_n(pg)
+        }
+      }
+      return(execute(conn, statement, ...))
+    },
+    .package = "DBI",
+    .env = envir
+  )
+  return(rec)
+}
