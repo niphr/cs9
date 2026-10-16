@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 26.10.25
+
+- On PostgreSQL a keyed run empties a staging table with `TRUNCATE` when
+  no row of it must stay. It does so also before it adds `cs9_stg_id` to
+  an old staging table. Otherwise the fence deletes the rows of dead
+  runs in transactions of at most 200,000 rows. Before, a dead run of
+  about 25 million rows meant two transactions of that size at the next
+  run.
+
 ## Version 26.10.24
 
 - On PostgreSQL a keyed run publishes in transactions of at most 200,000

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.25</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,6 +57,10 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.25" id="version-261025">Version 26.10.25<a class="anchor" aria-label="anchor" href="#version-261025"></a></h2>
+<ul><li>On PostgreSQL a keyed run empties a staging table with <code>TRUNCATE</code> when no row of it must stay. It does so also before it adds <code>cs9_stg_id</code> to an old staging table. Otherwise the fence deletes the rows of dead runs in transactions of at most 200,000 rows. Before, a dead run of about 25 million rows meant two transactions of that size at the next run.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.10.24" id="version-261024">Version 26.10.24<a class="anchor" aria-label="anchor" href="#version-261024"></a></h2>
 <ul><li>On PostgreSQL a keyed run publishes in transactions of at most 200,000 staged rows, in the order of the new staging column <code>cs9_stg_id</code>. On 2026-10-16 PostgreSQL went down twice during a publish of about 25 million rows in one transaction. A recorded delete runs in one transaction per partition, and <code>drop_all_rows()</code> becomes a <code>TRUNCATE</code>. A reader can see a partly published run. After a publish that stopped part-way, a retry with the same <code>run_key</code> checks the plan list, runs no plan and publishes the rest. A run of the task with a new <code>run_key</code> first publishes the rest of that run. A staging table from before this version gets <code>cs9_stg_id</code> in place and keeps its rows. SQLite publishes in one transaction, as before. cs9 needs csdb 2026.10.18.</li>
