@@ -76,11 +76,12 @@ and holds the exit code. No file means still running, never done.
 ## Read the error count as well as the exit code
 
 Exit code 0 does not mean the work succeeded. Measured on 2026-08-17: a
-NorSySS import exited 0 with 212 rejected `COPY` statements in its log,
-because the PostgreSQL `load_data_infile` method runs `psql` through
-[`system2()`](https://rdrr.io/r/base/system2.html) without reading its
-exit status, so a rejected `COPY` never reaches R. A status of 0 beside
-a non-zero error count is the shape that failure takes.
+NorSySS import exited 0 with 212 rejected `COPY` statements in its log.
+The csdb of that date did not read the exit status of its load client,
+so a rejected `COPY` never reached R. Since csdb 2026.10.3 a refused
+load stops with an R error. A task that catches an error and continues
+still exits 0, so a status of 0 beside a non-zero error count means:
+read the log.
 
 The count comes from a grep over the log, so it is a heuristic. A count
 above zero is worth reading. A count of zero does NOT prove the task did
