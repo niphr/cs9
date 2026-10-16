@@ -13,7 +13,7 @@ configuration problems."><meta property="og:image" content="https://niphr.github
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,8 +95,6 @@ for output (suppressible). If FALSE (default), uses cat() for console output.</p
     <p>A list containing environment setup status and recommendations:</p><ul><li><p>status: "ok", "warning", or "error".</p></li>
 <li><p>issues: Character vector of identified problems.</p></li>
 <li><p>recommendations: Character vector of suggested fixes.</p></li>
-<li><p>pg_load: The PostgreSQL load method from <code>CS9_DBCONFIG_PG_LOAD</code>,
-<code>"psql"</code> or <code>"json"</code>. It is <code>NA</code> for an invalid value.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -119,7 +117,6 @@ must configure for full database-driven surveillance functionality.</p>
 <span class="r-in"><span><span class="fu">check_environment_setup</span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> CS9 Environment Check Results:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Status:  error </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> PostgreSQL load, CS9_DBCONFIG_PG_LOAD: psql</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Issues found:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -  Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER </span>

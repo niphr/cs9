@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -234,14 +234,6 @@ Recorded, and taken with <code>SET ROLE</code> before
 <td>Not required. Recorded, ignored. SQLite has no roles.</td>
 </tr>
 <tr class="even">
-<td><code>CS9_DBCONFIG_PG_LOAD</code></td>
-<td>Not required. Unset or empty is <code>psql</code>: csdb starts
-<code>psql</code> for each load, and each <code>psql</code> logs in.
-<code>json</code> sends the rows over the open connection, so a load
-makes no new login.</td>
-<td>Not required. Recorded, ignored.</td>
-</tr>
-<tr class="odd">
 <td><code>CS9_DBCONFIG_SCHEMA_&lt;ACCESS&gt;</code></td>
 <td>Required for the <code>config</code> and <code>anon</code> access
 levels, which the validator names one by one. Identifiers become
@@ -249,7 +241,7 @@ levels, which the validator names one by one. Identifiers become
 <td>Not required. Recorded, ignored. SQLite has no schemas, so
 identifiers are the bare table name.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>CS9_DBCONFIG_DB_&lt;ACCESS&gt;</code></td>
 <td>Required for <code>config</code> and <code>anon</code>. The database
 name.</td>
@@ -285,9 +277,6 @@ the driver decides which tiers apply.</p>
 <code>CS9_DBCONFIG_PORT</code>.</li>
 <li>SQLite: one <code>CS9_DBCONFIG_DB_&lt;ACCESS&gt;</code> per access
 level, and <code>config</code> among the access levels.</li>
-<li>Every driver: <code>CS9_DBCONFIG_PG_LOAD</code> MUST be
-<code>psql</code>, <code>json</code>, empty or unset. Any other value is
-an error, and CS9 then stops on load.</li>
 <li>
 <code>PostgreSQL Unicode</code>: <code>CS9_DBCONFIG_USER</code>,
 <code>CS9_DBCONFIG_SCHEMA_CONFIG</code>,

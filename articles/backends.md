@@ -101,7 +101,6 @@ reports an error without it.
 | `CS9_DBCONFIG_TRUSTED_CONNECTION` | Not required. Recorded, and the PostgreSQL connection does not read it.                                                                                                              | Not required. Recorded, ignored.                                                                |
 | `CS9_DBCONFIG_SSLMODE`            | Not required. Recorded, and used: `require` selects the encrypted connection.                                                                                                        | Not required. Recorded, ignored.                                                                |
 | `CS9_DBCONFIG_ROLE_CREATE_TABLE`  | Not required, but see the `SET ROLE ""` trap above. Recorded, and taken with `SET ROLE` before `CREATE TABLE`.                                                                       | Not required. Recorded, ignored. SQLite has no roles.                                           |
-| `CS9_DBCONFIG_PG_LOAD`            | Not required. Unset or empty is `psql`: csdb starts `psql` for each load, and each `psql` logs in. `json` sends the rows over the open connection, so a load makes no new login.     | Not required. Recorded, ignored.                                                                |
 | `CS9_DBCONFIG_SCHEMA_<ACCESS>`    | Required for the `config` and `anon` access levels, which the validator names one by one. Identifiers become `schema.table`.                                                         | Not required. Recorded, ignored. SQLite has no schemas, so identifiers are the bare table name. |
 | `CS9_DBCONFIG_DB_<ACCESS>`        | Required for `config` and `anon`. The database name.                                                                                                                                 | Required for every access level in `CS9_DBCONFIG_ACCESS`. The path to the file.                 |
 
@@ -129,8 +128,6 @@ validates in tiers, and the driver decides which tiers apply.
   `CS9_DBCONFIG_PORT`.
 - SQLite: one `CS9_DBCONFIG_DB_<ACCESS>` per access level, and `config`
   among the access levels.
-- Every driver: `CS9_DBCONFIG_PG_LOAD` MUST be `psql`, `json`, empty or
-  unset. Any other value is an error, and CS9 then stops on load.
 - `PostgreSQL Unicode`: `CS9_DBCONFIG_USER`,
   `CS9_DBCONFIG_SCHEMA_CONFIG`, `CS9_DBCONFIG_DB_CONFIG`,
   `CS9_DBCONFIG_SCHEMA_ANON` and `CS9_DBCONFIG_DB_ANON`.
