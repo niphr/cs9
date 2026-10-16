@@ -1,5 +1,18 @@
 # Changelog
 
+## Version 26.10.21
+
+- `CS9_DBCONFIG_PG_LOAD` sets `pg_load` in every database configuration
+  and every csdb connection that cs9 builds. Unset or empty is `psql`.
+  With `json`, csdb sends the rows of a load over the open connection,
+  and a load makes no `psql` login. This needs csdb 2026.10.16.
+- Any other value stops [`library(cs9)`](https://niphr.github.io/cs9/)
+  and
+  [`reload_db_config()`](https://niphr.github.io/cs9/reference/reload_db_config.md)
+  with an error that names the variable and the allowed values.
+  [`check_environment_setup()`](https://niphr.github.io/cs9/reference/check_environment_setup.md)
+  shows the value. Other drivers ignore it.
+
 ## Version 26.10.20
 
 - In a parallel run, `Task$run()` forks its workers once: `cores`

@@ -33,6 +33,9 @@ A list containing environment setup status and recommendations:
 
 - recommendations: Character vector of suggested fixes.
 
+- pg_load: The PostgreSQL load method from `CS9_DBCONFIG_PG_LOAD`,
+  `"psql"` or `"json"`. It is `NA` for an invalid value.
+
 ## Details
 
 CS9 needs specific environment variables for database connectivity and
@@ -62,6 +65,7 @@ The installation vignette:
 check_environment_setup()
 #> CS9 Environment Check Results:
 #> Status:  error 
+#> PostgreSQL load, CS9_DBCONFIG_PG_LOAD: psql
 #> 
 #> Issues found:
 #>  -  Missing required environment variables: CS9_AUTO, CS9_PATH, CS9_DBCONFIG_ACCESS, CS9_DBCONFIG_DRIVER 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,6 +57,12 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.21" id="version-261021">Version 26.10.21<a class="anchor" aria-label="anchor" href="#version-261021"></a></h2>
+<ul><li>
+<code>CS9_DBCONFIG_PG_LOAD</code> sets <code>pg_load</code> in every database configuration and every csdb connection that cs9 builds. Unset or empty is <code>psql</code>. With <code>json</code>, csdb sends the rows of a load over the open connection, and a load makes no <code>psql</code> login. This needs csdb 2026.10.16.</li>
+<li>Any other value stops <code><a href="https://niphr.github.io/cs9/">library(cs9)</a></code> and <code><a href="../reference/reload_db_config.html">reload_db_config()</a></code> with an error that names the variable and the allowed values. <code><a href="../reference/check_environment_setup.html">check_environment_setup()</a></code> shows the value. Other drivers ignore it.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.10.20" id="version-261020">Version 26.10.20<a class="anchor" aria-label="anchor" href="#version-261020"></a></h2>
 <ul><li>In a parallel run, <code>Task$run()</code> forks its workers once: <code>cores</code> workers, or one per middle plan when there are fewer. Each worker runs middle plans until none is left. Before, each middle plan had its own fork.</li>
