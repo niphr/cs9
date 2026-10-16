@@ -56,8 +56,10 @@ run_today <- function() {
   return(run_clock_today())
 }
 
-# psql loads the key in a tab-separated CSV file without quotes, so a tab, a
-# line break or a double quote would break the load. NULL is not checked here:
+# The rule against a tab, a line break and a double quote dates from the
+# PostgreSQL load before csdb 2026.10.17. It wrote the key into a tab-separated
+# file without quotes. The JSON load of today escapes those characters, so the
+# load no longer needs the rule. NULL is not checked here:
 # run_begin() reads it as "do not stage".
 run_check_key <- function(run_key) {
   if (!run_key_ok(run_key)) {

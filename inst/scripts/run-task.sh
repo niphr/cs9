@@ -47,9 +47,10 @@
 #
 #   READ ERRORS TOO. Exit code 0 does not mean the work succeeded. Measured on
 #   2026-08-17: a NorSySS import exited 0 with 212 rejected COPY statements in its
-#   log, because load_data_infile.db_postgres runs psql through system2() without
-#   reading its exit status, so a rejected COPY is silent to R. A status of 0 with
-#   a non-zero error count is the shape that failure takes.
+#   log. The csdb of that date did not read the exit status of its load client,
+#   so a rejected COPY never reached R. Since csdb 2026.10.3 a refused load stops
+#   with an R error. A task that catches an error and continues still exits 0, so
+#   a status of 0 with a non-zero error count means: read the log.
 #
 #   The count is a grep over the log and therefore a heuristic. A count above zero
 #   is worth reading. A count of zero is NOT proof that the task did what it
@@ -174,7 +175,8 @@ EOF
 # Positional arguments carry the paths, which keeps one level of quoting out.
 # The error count is written BEFORE the status file, so a caller that sees a
 # status can always read a count beside it. Waiting on STATUS therefore needs no
-# second wait. ERROR_PATTERN catches psql's "ERROR:" and R's "Error in ".
+# second wait. The grep below counts "ERROR:", the prefix of a PostgreSQL
+# server error, and R's "Error in ".
 setsid bash -c '
   echo $$ > "$5"
   if [ -n "$6" ]; then

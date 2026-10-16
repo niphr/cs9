@@ -150,7 +150,8 @@ run_check_replace_columns <- function(newdata, field_types, table_name) {
 }
 
 # A unique-key error on the staging table means that the run wrote one row
-# twice. PostgreSQL reports it through psql, as csdb_load_duplicate_key.
+# twice. On PostgreSQL the csdb load reports it as an error of class
+# csdb_load_duplicate_key. SQLite reports it in the text of the error.
 run_is_duplicate <- function(e) {
   return(
     inherits(e, "csdb_load_duplicate_key") ||

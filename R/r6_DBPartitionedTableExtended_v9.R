@@ -171,20 +171,17 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         partitions_in_use
       ))]
       # One csdb::insert_data_many() call loads every partition. On
-      # PostgreSQL that is one psql session and one transaction, so the
-      # insert needs one psql login for the load, plus one for the
-      # last-updated bookkeeping below. By default (confirm_insert_via_nrow =
-      # FALSE) a failure stores no row, unless the error says the connection
-      # broke or a row count differed after psql finished. The rows may then
-      # be stored, and the error says to count them. With
-      # confirm_insert_via_nrow = TRUE, a duplicate key makes csdb insert
-      # partition by partition, so a failure can leave some partitions stored
-      # and recorded. Until 26.10.13 each
-      # partition had its own psql login, and a failure kept the partitions
-      # loaded before it.
+      # PostgreSQL that is one transaction over the open connection that the
+      # children share, and csdb starts no client. By default
+      # (confirm_insert_via_nrow = FALSE) a failure stores no row, unless the
+      # connection broke or the COMMIT failed. The rows may then be stored,
+      # and the error says to count them. With confirm_insert_via_nrow = TRUE,
+      # a duplicate key makes csdb insert partition by partition, so a failure
+      # can leave some partitions stored and recorded.
       #
       # DBTableExtended_v9$insert_data() stamps auto_last_updated_datetime.
-      # The psql session does not call that method, so the stamp is set here.
+      # The JSON load of csdb does not call that method, so the stamp is set
+      # here.
       # When csdb calls a child's insert_data() or upsert_data() (another
       # driver, a duplicate key with confirm_insert_via_nrow = TRUE, or the
       # upsert of confirm_insert_via_nrow), that child also writes its own

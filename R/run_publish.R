@@ -451,7 +451,7 @@ run_clear_plans <- function(con, state, targets, keep) {
 # recorded operations on the live tables, inserts the staged rows, clears the
 # staged rows, operations and done marks of the run, and marks the run as
 # published. A failure rolls everything back, so the live tables keep their
-# rows. The statements are plain SQL: no psql and no csdb load.
+# rows. The statements are plain SQL, not a csdb load.
 #
 # config_tables_last_updated gets one row per changed live table. When it is in
 # the run database, the publish transaction writes it too. Otherwise, as on

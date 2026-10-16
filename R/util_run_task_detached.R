@@ -22,11 +22,11 @@
 #'
 #' @section Read the error count as well as the exit code:
 #' Exit code 0 does not mean the work succeeded. Measured on 2026-08-17: a
-#' NorSySS import exited 0 with 212 rejected \command{COPY} statements in its log,
-#' because the PostgreSQL \code{load_data_infile} method runs \command{psql}
-#' through \code{system2()} without reading its exit status, so a rejected
-#' \command{COPY} never reaches R. A status of 0 beside a non-zero error count is
-#' the shape that failure takes.
+#' NorSySS import exited 0 with 212 rejected \command{COPY} statements in its
+#' log. The csdb of that date did not read the exit status of its load client,
+#' so a rejected \command{COPY} never reached R. Since csdb 2026.10.3 a refused
+#' load stops with an R error. A task that catches an error and continues still
+#' exits 0, so a status of 0 beside a non-zero error count means: read the log.
 #'
 #' The count comes from a grep over the log, so it is a heuristic. A count above
 #' zero is worth reading. A count of zero does NOT prove the task did what it

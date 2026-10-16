@@ -56,9 +56,9 @@ update_config_log <- function(
 
 # The key of config_log is auto_interactive, ss, task and datetime. A datetime
 # in whole seconds made a second run of a task in the same second fail on
-# SQLite with "UNIQUE constraint failed". The bulk loads on PostgreSQL and SQL
-# Server ignore the exit status of psql and bcp, so there the row was lost
-# without an R error.
+# SQLite with "UNIQUE constraint failed". Until csdb 2026.10.3 the bulk loads on
+# PostgreSQL and SQL Server ignored the exit status of their load client. There
+# the row was lost without an R error.
 #
 # The fix changes the value and leaves the table alone. csdb drops and
 # recreates a table whose field names change, and it never changes the keys of

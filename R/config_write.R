@@ -1,8 +1,10 @@
 # cs9 writes its own config tables, the objects in config$tables, with one SQL
-# statement over the connection of the table. On PostgreSQL the csdb load runs
-# psql, and each psql run is one more login. A forked worker writes these
-# tables in every plan, and production logs in through a token proxy that
-# fails under many logins. Other drivers keep the csdb load.
+# statement over the connection of the table. Until csdb 2026.10.17 each csdb
+# load on PostgreSQL started a client, and each client was one more login. A
+# forked worker writes these tables in every plan, and production logs in
+# through a token proxy that fails under many logins. The csdb JSON load now
+# uses the open connection too, so it makes no extra login either. Other
+# drivers keep the csdb load.
 #
 # An upsert is INSERT ... ON CONFLICT on the keys of the table. It needs the
 # primary key that csdb creates with the table. It updates every other column,
@@ -94,8 +96,7 @@ config_write_sql <- function(con, ident, fields, keys, values) {
 }
 
 # The VALUES list for PostgreSQL. Each value is a quoted literal, so the server
-# casts it to the type of its column, as it casts the text of a psql load. NA
-# becomes NULL.
+# casts it to the type of its column. NA becomes NULL.
 config_sql_values <- function(con, rows) {
   cols <- lapply(rows, function(v) {
     return(run_q(con, as.character(v)))
