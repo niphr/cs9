@@ -187,7 +187,8 @@ run_new_connection <- function(dbconfig) {
     password = dbconfig$password,
     trusted_connection = dbconfig$trusted_connection,
     sslmode = dbconfig$sslmode,
-    role_create_table = dbconfig$role_create_table
+    role_create_table = dbconfig$role_create_table,
+    pg_load = dbconfig$pg_load
   ))
 }
 

@@ -246,6 +246,7 @@ substitutes the `x` sentinel only for a `NULL`. The PostgreSQL `create_table` in
 | `CS9_DBCONFIG_PASSWORD` | `yourStrongPassword100` | Database password. Optional when a hook from `csdb::csdb_set_password_hook()` supplies the password |
 | `CS9_DBCONFIG_SSLMODE` | `prefer` | SSL connection preference |
 | `CS9_DBCONFIG_ROLE_CREATE_TABLE` | `x` | Role to take when creating tables. `x` means take no role |
+| `CS9_DBCONFIG_PG_LOAD` | `json` | How csdb loads rows into PostgreSQL: `psql` or `json`. Optional. Unset or empty is `psql` |
 | `CS9_DBCONFIG_SCHEMA_CONFIG` | `config` | Schema for CS9 configuration tables |
 | `CS9_DBCONFIG_DB_CONFIG` | `cs9_surveillance` | Database for configuration |
 | `CS9_DBCONFIG_SCHEMA_ANON` | `anon` | Schema for anonymous data tables |

@@ -19,6 +19,8 @@ A list containing environment setup status and recommendations:
 \item status: "ok", "warning", or "error".
 \item issues: Character vector of identified problems.
 \item recommendations: Character vector of suggested fixes.
+\item pg_load: The PostgreSQL load method from \code{CS9_DBCONFIG_PG_LOAD},
+\code{"psql"} or \code{"json"}. It is \code{NA} for an invalid value.
 }
 }
 \description{

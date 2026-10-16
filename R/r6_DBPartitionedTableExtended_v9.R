@@ -92,7 +92,8 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
         password = dbconfig$password,
         trusted_connection = dbconfig$trusted_connection,
         sslmode = dbconfig$sslmode,
-        role_create_table = dbconfig$role_create_table
+        role_create_table = dbconfig$role_create_table,
+        pg_load = dbconfig$pg_load
       )
 
       self$tables <- vector("list", length(self$partitions))
