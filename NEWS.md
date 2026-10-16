@@ -1,3 +1,7 @@
+# Version 26.10.23
+
+- The "Publishing run" message carries the clock time, and a new message "Published in N mins" follows the publish. On Airflow the time stamp of a log line is when the log reader got it. On 2026-10-16 the reader passed "Publishing" on about 5 minutes after R printed it, so the publish looked shorter and a gap looked like idle time.
+
 # Version 26.10.22
 
 - cs9 no longer reads `CS9_DBCONFIG_PG_LOAD`, and it gives csdb no `pg_load`. csdb 2026.10.17, which cs9 now needs, sends every PostgreSQL load as JSON over the open connection.

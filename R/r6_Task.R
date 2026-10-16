@@ -411,10 +411,16 @@ Task <- R6::R6Class(
       }
 
       if (!is.null(run)) {
+        p0 <- Sys.time()
         message(glue::glue(
-          "Publishing run '{run$run_key}' of task {self$name}"
+          "Publishing run '{run$run_key}' of task {self$name} at {p0}"
         ))
         run_publish(config$run, self$tables)
+        message(
+          "Published in ",
+          round(as.numeric(difftime(Sys.time(), p0, units = "mins")), 1),
+          " mins"
+        )
       }
 
       status <- "succeeded"
