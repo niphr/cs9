@@ -196,14 +196,10 @@ test_that("the publish splits a long OR list into deletes of a fixed size", {
   rec <- local_publish_recorder()
   rec$on <- TRUE
 
-  run_publish_part(
+  run_publish_part_operations(
     con,
-    state = NULL,
     live = list(table = out, part = NULL),
-    staging = NULL,
-    part_col = NULL,
-    ops = ops,
-    rows = data.frame(part = character(), upsert = integer(), n = numeric())
+    ops = ops
   )
 
   rec$on <- FALSE

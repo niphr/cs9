@@ -388,7 +388,7 @@ plot_events <- function(log, ncol = 1, width = 80) {
 The task has one plan per unit, for example a location or a partition. The first analysis empties the output table. Each analysis then inserts the rows of its own unit.
 
 - **Use it when** the rows of each unit depend only on the data pull of that unit, and nothing reads the output during the run.
-- **Do not use it when** a reader MUST see a complete table at every moment. Use [fit then fill](#shape-fit-then-fill), which publishes in one transaction.
+- **Do not use it when** a reader MUST see a complete table at every moment. Use [fit then fill](#shape-fit-then-fill), which publishes the whole table in one write.
 - **Failure modes.** A failed run leaves the table partial until the next run succeeds. Only the first plan MAY empty the table, because the middle plans MAY run in parallel, in any order ([rule](how-a-task-runs.html#rule-first-last)). With a partitioned output, one plan per partition writes only its own partition.
 
 ```{r rebuild-define}
@@ -920,7 +920,7 @@ national row, records the `source` of each threshold, and publishes the whole re
 
 - **Use it when** a fit can fail for one unit, and its fallback needs the result of another unit, here the national row.
 - **Do not use it when** every unit has a valid result of its own. A [per-unit rebuild](#shape-per-unit-rebuild) is then enough.
-- **Failure modes.** A middle plan of the fit task MUST NOT fill, because the national row MAY not exist yet ([rule](how-a-task-runs.html#rule-first-last)). The fill reads the whole fitted table in one pull, so the fitted table MUST stay small. The published table changes in one transaction, so a failed fill leaves the previous thresholds.
+- **Failure modes.** A middle plan of the fit task MUST NOT fill, because the national row MAY not exist yet ([rule](how-a-task-runs.html#rule-first-last)). The fill reads the whole fitted table in one pull, so the fitted table MUST stay small. The published table changes in one write, so a failed fill leaves the previous thresholds.
 
 ```{r shape2-define}
 ss$add_table(
@@ -1275,9 +1275,12 @@ plot_events(notify$log, ncol = 3, width = 26)
 
 ## Three rules {#three-rules}
 
-**Publish in one transaction.** A task once emptied its MEM table in `first_analysis` and refilled
+**Publish the whole table in one write.** A task once emptied its MEM table in `first_analysis` and refilled
 it argset by argset. Between those two points, and after any failed argset, readers saw an empty or
-partial table. Fit then fill writes the published table in one call to `replace_all_rows()`.
+partial table. Fit then fill writes the published table in one call to `replace_all_rows()`. In a
+run with a `run_key` on PostgreSQL, cs9 publishes that write in batches. A reader can then see a
+part of it until the publish ends. On SQLite the publish is one transaction. See
+[the publish on PostgreSQL](rebuilding-a-table-safely.html#publish-postgresql).
 
 **Replace the whole scope of the run.** A swap once deleted from the live table only the weeks that
 each staging partition held. A week with no staged rows therefore kept its stale rows. The staged

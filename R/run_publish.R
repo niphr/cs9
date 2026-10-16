@@ -69,7 +69,8 @@ run_begin <- function(task, tables, run_key) {
     conn = run_new_connection(dbconfig),
     schema = if (is.null(dbconfig$schema)) "" else dbconfig$schema,
     sqlite = sqlite,
-    published = FALSE
+    published = FALSE,
+    publishing = FALSE
   )
   # Task$run() closes the connection when this function returns. Until then,
   # an error here closes it, so a run that cannot get the lock leaks none.
@@ -101,8 +102,10 @@ run_begin <- function(task, tables, run_key) {
     started <- TRUE
     return(state)
   }
-  run_ensure_staging_indexes(con, found$targets)
+  run_ensure_staging(con, state, found$targets)
+  run_finish_other_publishes(con, state, tables)
   run_fence(con, state, found$targets)
+  state$publishing <- run_publish_started(con, state)
   if (nrow(row) == 0) {
     state$today <- run_clock_today()
     DBI::dbExecute(
@@ -290,10 +293,16 @@ run_fence <- function(con, state, targets) {
 # Until 26.10.18 that happened at the first staged row. The fence and the
 # clear then ran without the index, and a run that only records operations
 # never got it. A staging table that does not exist holds no row to read.
-run_ensure_staging_indexes <- function(con, targets) {
+#
+# On PostgreSQL a staging table from before 26.10.24 first gets cs9_stg_id in
+# place, with its rows: see run_add_stg_id().
+run_ensure_staging <- function(con, state, targets) {
   for (x in targets) {
     staging <- x$.__enclos_env__$private$staging()
     if (run_staging_exists(con, staging)) {
+      if (!state$sqlite) {
+        run_add_stg_id(con, state, staging)
+      }
       staging$.__enclos_env__$private$lazy_creation_of_table()
     }
   }
@@ -447,67 +456,53 @@ run_clear_plans <- function(con, state, targets, keep) {
 
 # The publish ----
 
-# Publishes the run in ONE transaction on the run connection: it runs the
-# recorded operations on the live tables, inserts the staged rows, clears the
-# staged rows, operations and done marks of the run, and marks the run as
-# published. A failure rolls everything back, so the live tables keep their
-# rows. The statements are plain SQL, not a csdb load.
+# The most staged rows that one transaction of the publish moves. On
+# 2026-10-16 PostgreSQL went down twice during a publish that moved about 25
+# million staged rows in one transaction, and every connection dropped.
+run_publish_rows_per_batch <- 200000L
+
+# Publishes the run on the run connection. The statements are plain SQL, not a
+# csdb load. On PostgreSQL the publish commits in steps, and each step is one
+# transaction:
+#   1. cs9_run_publish gets the list of the live tables that the publish
+#      changes. From this commit on, the run is partly published.
+#   2. For each staged table with operations: the operations, in one
+#      transaction per live table. See run_publish_operations().
+#   3. For each live table: batches of at most run_publish_rows_per_batch
+#      staged rows. See run_publish_batch().
+#   4. The done marks, the plan list and the list of step 1 are removed, and
+#      the run is marked as published.
+# A failure rolls back its own step only, so a reader can see a partly
+# published run. The next attempt with the same key publishes the rest. See
+# run_begin() and Task$run().
+#
+# On SQLite one transaction holds every step, as before 26.10.24, so a
+# failure rolls back the whole publish. The database is a local file, and no
+# server can drop the connection during a long transaction. Step 3 there
+# moves all staged rows of a live table at once, with no id. A live column
+# named rowid would hide the SQLite rowid.
 #
 # config_tables_last_updated gets one row per changed live table. When it is in
-# the run database, the publish transaction writes it too. Otherwise, as on
-# SQLite, where each access is its own file, csdb writes it after the commit,
-# and a failure there is a warning.
+# the run database, step 4 writes it. Otherwise, as on SQLite, where each
+# access is its own file, csdb writes it after step 4 commits, and a failure
+# there is a warning.
 run_publish <- function(state, tables) {
   targets <- run_targets(tables)$targets
+  # One handle for the whole publish. autoconnection opens a new session when
+  # the connection dropped, and that session holds no lock.
   con <- state$conn$autoconnection
   same_db <- run_config_in_run_database(con, state)
-  changed <- character()
-  DBI::dbWithTransaction(con, {
-    if (!state$sqlite) {
-      for (name in sort(names(targets))) {
-        # pg_advisory_xact_lock() returns void, which odbc cannot read, so
-        # the query selects a constant from it.
-        DBI::dbGetQuery(
-          con,
-          paste0(
-            "SELECT 1 AS got FROM pg_advisory_xact_lock(hashtext(",
-            run_q(con, paste("cs9 table", name)),
-            "))"
-          )
-        )
-      }
-    }
-    for (name in names(targets)) {
-      changed <- c(
-        changed,
-        run_publish_table(con, state, name, targets[[name]])
-      )
-    }
-    run_clear_plans(con, state, targets, keep = character())
-    DBI::dbExecute(
+  if (state$sqlite) {
+    changed <- DBI::dbWithTransaction(
       con,
-      paste0(
-        "DELETE FROM ",
-        run_store_ident(con, "cs9_run_plan_list", state),
-        " WHERE ",
-        run_where_store(con, state)
-      )
+      run_publish_steps(con, state, targets, same_db)
     )
-    DBI::dbExecute(
-      con,
-      paste0(
-        "UPDATE ",
-        run_store_ident(con, "cs9_run", state),
-        " SET published_datetime = ",
-        run_q(con, cstime::now_c()),
-        " WHERE ",
-        run_where_store(con, state)
-      )
-    )
-    if (same_db && length(changed) > 0) {
-      run_last_updated_sql(con, changed)
-    }
-  })
+  } else {
+    locked <- run_live_table_names(targets)
+    run_lock_tables(con, locked)
+    on.exit(run_unlock_tables(con, locked), add = TRUE)
+    changed <- run_publish_steps(con, state, targets, same_db)
+  }
   if (!same_db && length(changed) > 0) {
     tryCatch(
       update_config_tables_last_updated(table_name = changed),
@@ -525,6 +520,235 @@ run_publish <- function(state, tables) {
     )
   }
   return(invisible(changed))
+}
+
+# Task$run() publishes through this function. The messages carry the clock
+# time and the duration of the publish.
+run_publish_timed <- function(state, tables) {
+  p0 <- Sys.time()
+  message(glue::glue(
+    "Publishing run '{state$run_key}' of task {state$task} at {p0}"
+  ))
+  run_publish(state, tables)
+  message(
+    "Published in ",
+    round(as.numeric(difftime(Sys.time(), p0, units = "mins")), 1),
+    " mins"
+  )
+  return(invisible(NULL))
+}
+
+# The steps of the publish. Returns the names of the live tables that the
+# publish changes, also the ones that an earlier attempt changed.
+run_publish_steps <- function(con, state, targets, same_db) {
+  work <- lapply(names(targets), function(name) {
+    return(run_publish_work(con, state, name, targets[[name]]))
+  })
+  changed <- run_publish_changed(con, state, work)
+  for (w in work) {
+    run_publish_table(con, state, w)
+  }
+  run_publish_step(
+    con,
+    state,
+    run_publish_end(con, state, targets, same_db, changed)
+  )
+  return(changed)
+}
+
+# Runs `code` as one step of the publish. On PostgreSQL the step is a
+# transaction of its own. On SQLite it runs in the open transaction of the
+# whole publish.
+run_publish_step <- function(con, state, code) {
+  if (state$sqlite) {
+    return(code)
+  }
+  return(DBI::dbWithTransaction(con, code))
+}
+
+# The lock of each live table that the publish can write: each plain table and
+# each partition. The run connection, which also holds the lock of the task,
+# holds them for the whole publish. Two tasks that publish to one live table
+# therefore do not interleave their steps, also when one stages the
+# partitioned table and the other stages one of its partitions as a table.
+# Before 26.10.24 the publish held one lock per staged table for its one
+# transaction. The sorted order keeps two publishes from waiting on each
+# other.
+run_lock_tables <- function(con, table_names) {
+  for (name in sort(table_names)) {
+    # pg_advisory_lock() returns void, which odbc cannot read, so the query
+    # selects a constant from it.
+    DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT 1 AS got FROM pg_advisory_lock(",
+        run_table_lock_key(con, name),
+        ")"
+      )
+    )
+  }
+  return(invisible(NULL))
+}
+
+# Releases the locks of run_lock_tables(), also after an error. A connection
+# that dropped holds no lock, and an error here would hide the error of the
+# publish, so an error here is ignored.
+run_unlock_tables <- function(con, table_names) {
+  for (name in table_names) {
+    tryCatch(
+      DBI::dbGetQuery(
+        con,
+        paste0(
+          "SELECT CASE WHEN pg_advisory_unlock(",
+          run_table_lock_key(con, name),
+          ") THEN 1 ELSE 0 END AS got"
+        )
+      ),
+      error = function(e) invisible(NULL)
+    )
+  }
+  return(invisible(NULL))
+}
+
+# The names of the live tables of `targets`: see run_live_parts().
+run_live_table_names <- function(targets) {
+  out <- character()
+  for (x in targets) {
+    for (live in run_live_parts(x)) {
+      out <- c(out, live$table$table_name)
+    }
+  }
+  return(unique(out))
+}
+
+run_table_lock_key <- function(con, name) {
+  return(paste0("hashtext(", run_q(con, paste("cs9 table", name)), ")"))
+}
+
+# Finishes the publish of each other run of this task that committed a part of
+# its publish. Every plan of such a run is done, so only its staged rows and
+# its operations are left. run_fence() would otherwise remove them, and the
+# live tables would keep a part of that run. Only a run that holds the lock of
+# the task reaches this point.
+run_finish_other_publishes <- function(con, state, tables) {
+  keys <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT DISTINCT run_key FROM ",
+      run_store_ident(con, "cs9_run_publish", state),
+      " WHERE task = ",
+      run_q(con, state$task),
+      " AND run_key <> ",
+      run_q(con, state$run_key),
+      " ORDER BY run_key"
+    )
+  )$run_key
+  for (key in keys) {
+    other <- state
+    other$run_key <- key
+    message(glue::glue(
+      "Run '{key}' of task {state$task} is partly published. ",
+      "Run '{state$run_key}' publishes the rest of it first."
+    ))
+    run_publish_timed(other, tables)
+  }
+  return(invisible(NULL))
+}
+
+# Did an earlier attempt commit step 1 of the publish of this run?
+run_publish_started <- function(con, state) {
+  n <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT COUNT(*) AS n FROM ",
+      run_store_ident(con, "cs9_run_publish", state),
+      " WHERE ",
+      run_where_store(con, state)
+    )
+  )$n
+  return(as.numeric(n) > 0)
+}
+
+# Step 1: the live tables that the publish changes, in cs9_run_publish. An
+# attempt that resumes the publish reads them back. The steps that committed
+# left no operation and no staged row to find those tables by.
+run_publish_changed <- function(con, state, work) {
+  ident <- run_store_ident(con, "cs9_run_publish", state)
+  stored <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT table_name FROM ",
+      ident,
+      " WHERE ",
+      run_where_store(con, state),
+      " ORDER BY table_position"
+    )
+  )
+  if (nrow(stored) > 0) {
+    return(as.character(stored$table_name))
+  }
+  changed <- unlist(lapply(work, function(w) {
+    return(vapply(w$parts, function(p) p$live$table$table_name, character(1)))
+  }))
+  if (length(changed) == 0) {
+    return(character())
+  }
+  rows <- paste0(
+    "(",
+    run_q(con, state$task),
+    ", ",
+    run_q(con, state$run_key),
+    ", ",
+    seq_along(changed),
+    ", ",
+    run_q(con, changed),
+    ")"
+  )
+  # One statement, so one transaction on PostgreSQL.
+  DBI::dbExecute(
+    con,
+    paste0(
+      "INSERT INTO ",
+      ident,
+      " (task, run_key, table_position, table_name) VALUES ",
+      paste(rows, collapse = ", ")
+    )
+  )
+  return(changed)
+}
+
+# Step 4: removes the done marks, the plan list, the list of step 1, and the
+# operations and staged rows that are left. Then it marks the run as
+# published, and writes config_tables_last_updated when that table is in the
+# run database.
+run_publish_end <- function(con, state, targets, same_db, changed) {
+  run_clear_plans(con, state, targets, keep = character())
+  for (name in c("cs9_run_plan_list", "cs9_run_publish")) {
+    DBI::dbExecute(
+      con,
+      paste0(
+        "DELETE FROM ",
+        run_store_ident(con, name, state),
+        " WHERE ",
+        run_where_store(con, state)
+      )
+    )
+  }
+  DBI::dbExecute(
+    con,
+    paste0(
+      "UPDATE ",
+      run_store_ident(con, "cs9_run", state),
+      " SET published_datetime = ",
+      run_q(con, cstime::now_c()),
+      " WHERE ",
+      run_where_store(con, state)
+    )
+  )
+  if (same_db && length(changed) > 0) {
+    run_last_updated_sql(con, changed)
+  }
+  return(invisible(NULL))
 }
 
 # Is config_tables_last_updated in the run database, and does it exist?
@@ -591,9 +815,11 @@ run_live_parts <- function(x) {
   return(list(list(table = x, part = NULL)))
 }
 
-# Publishes one staged table inside the transaction. Returns the names of the
-# live tables that changed.
-run_publish_table <- function(con, state, name, x) {
+# The work of the publish of one staged table: its operations, and each live
+# table that it changes. Each live table comes with the summary of its staged
+# rows. A live table changes when the staged table has operations, or when
+# the live table has staged rows.
+run_publish_work <- function(con, state, name, x) {
   staging <- x$.__enclos_env__$private$staging()
   part_col <- if (inherits(x, "DBPartitionedTableExtended_v9")) {
     x$column_name_partition
@@ -612,23 +838,35 @@ run_publish_table <- function(con, state, name, x) {
     )
   )
   staged <- run_staged_summary(con, state, staging, part_col)
-  if (nrow(ops) == 0 && nrow(staged) == 0) {
-    return(character())
-  }
-  changed <- character()
+  parts <- list()
   for (live in run_live_parts(x)) {
     rows <- if (is.null(live$part)) {
       staged
     } else {
       staged[staged$part == live$part, , drop = FALSE]
     }
-    if (nrow(ops) == 0 && nrow(rows) == 0) {
-      next
+    if (nrow(ops) > 0 || nrow(rows) > 0) {
+      parts[[length(parts) + 1L]] <- list(live = live, rows = rows)
     }
-    run_publish_part(con, state, live, staging, part_col, ops, rows)
-    changed <- c(changed, live$table$table_name)
   }
-  return(changed)
+  return(list(
+    name = name,
+    staging = staging,
+    part_col = part_col,
+    ops = ops,
+    parts = parts
+  ))
+}
+
+# Publishes one staged table: step 2, then step 3 for each of its live tables.
+run_publish_table <- function(con, state, w) {
+  if (nrow(w$ops) > 0) {
+    run_publish_operations(con, state, w)
+  }
+  for (p in w$parts) {
+    run_publish_rows(con, state, p$live, w$staging, w$part_col, p$rows)
+  }
+  return(invisible(NULL))
 }
 
 # The staged rows of this run in one staging table: one row per partition and
@@ -711,27 +949,138 @@ run_operations_where <- function(ops) {
   ))
 }
 
-# Publishes one live table: its operations, then the delete of the live rows
-# that a staged upsert replaces, then the insert of every staged row.
-run_publish_part <- function(con, state, live, staging, part_col, ops, rows) {
+# Step 2 for one staged table: its operations, in one transaction per live
+# table. The transaction of the last live table also deletes the operations
+# from cs9_run_operation.
+#
+# A resume that finds the operations still recorded runs them again on every
+# live table of the staged table. That is safe, because step 2 of a staged
+# table ends before the first batch of that table. While an operation is
+# recorded, no row of this run is in those live tables. A second run of the
+# operation therefore deletes no row that this run published. After the delete
+# of the operations, a later attempt never runs them again.
+run_publish_operations <- function(con, state, w) {
+  last <- length(w$parts)
+  for (i in seq_len(last)) {
+    run_publish_step(con, state, {
+      run_publish_part_operations(
+        con,
+        w$parts[[i]]$live,
+        w$ops,
+        truncate = !state$sqlite
+      )
+      if (i == last) {
+        run_delete_operations(con, state, w$name)
+      }
+    })
+  }
+  if (last == 0) {
+    run_publish_step(con, state, run_delete_operations(con, state, w$name))
+  }
+  return(invisible(NULL))
+}
+
+run_delete_operations <- function(con, state, name) {
+  DBI::dbExecute(
+    con,
+    paste0(
+      "DELETE FROM ",
+      run_store_ident(con, "cs9_run_operation", state),
+      " WHERE ",
+      run_where_store(con, state),
+      " AND table_name = ",
+      run_q(con, name)
+    )
+  )
+  return(invisible(NULL))
+}
+
+# The statements that run the operations on one live table. With `truncate`,
+# an operation that removes every row, as drop_all_rows() records it, is a
+# TRUNCATE of the live table. Every other operation is a DELETE. SQLite has
+# no TRUNCATE.
+run_publish_part_operations <- function(con, live, ops, truncate = FALSE) {
   target <- run_table_ident(con, live$table)
-  for (where in run_operations_where(ops)) {
+  wheres <- run_operations_where(ops)
+  if (truncate && identical(wheres, "")) {
+    DBI::dbExecute(con, paste0("TRUNCATE TABLE ", target))
+    return(invisible(NULL))
+  }
+  for (where in wheres) {
     DBI::dbExecute(con, paste0("DELETE FROM ", target, where))
   }
+  return(invisible(NULL))
+}
+
+# Step 3 for one live table: its staged rows, in batches of at most
+# run_publish_rows_per_batch rows. `rows` is the summary of the staged rows of
+# the live table at the start of this attempt. Each batch before the last
+# moves exactly run_publish_rows_per_batch rows, and the last batch moves the
+# rest. SQLite has one batch.
+run_publish_rows <- function(con, state, live, staging, part_col, rows) {
   if (nrow(rows) == 0) {
     return(invisible(NULL))
   }
-  where <- run_where_run(con, state, prefix = "stg.")
-  if (!is.null(part_col)) {
-    where <- paste0(
-      where,
-      " AND stg.",
-      run_qi(con, part_col),
-      " = ",
-      run_q(con, live$part)
-    )
+  batches <- if (state$sqlite) {
+    1
+  } else {
+    ceiling(sum(as.numeric(rows$n)) / run_publish_rows_per_batch)
   }
-  if (any(as.numeric(rows$upsert) == 1)) {
+  upsert <- any(as.numeric(rows$upsert) == 1)
+  for (b in seq_len(batches)) {
+    run_publish_batch(con, state, live, staging, part_col, upsert = upsert)
+  }
+  return(invisible(NULL))
+}
+
+# One batch of the staged rows of one live table, in one step. The step
+# deletes the live rows that the upserts of the batch replace, inserts the
+# batch, and deletes the batch from staging. Returns the number of staged rows
+# that the batch moved.
+#
+# The batch is the staged rows of this run in the live table with the lowest
+# ids, at most run_publish_rows_per_batch of them. Each earlier batch deleted
+# its rows from staging. The next batch therefore starts at the lowest id that
+# is still staged, also the first batch of a resumed publish. The three
+# statements select the rows up to the last id of the batch.
+#
+# Two staged rows of one run never share a live key. The staging key holds the
+# live key, and a second write of a key stops the run: see
+# run_stop_same_row(). A batch therefore never splits two rows that a publish
+# in one batch treats together.
+run_publish_batch <- function(con, state, live, staging, part_col, upsert) {
+  if (state$sqlite) {
+    return(run_batch_move(con, state, live, staging, part_col, upsert, NULL))
+  }
+  return(run_publish_step(con, state, {
+    last <- DBI::dbGetQuery(
+      con,
+      run_batch_last_sql(con, state, live, staging, part_col)
+    )$last_id
+    if (is.na(last)) {
+      0
+    } else {
+      run_batch_move(con, state, live, staging, part_col, upsert, last)
+    }
+  }))
+}
+
+# The three statements of one batch, for the staged rows up to the id `last`.
+# With `last` NULL, as on SQLite, the batch is every staged row of the live
+# table, as the publish of 26.10.23 moved them.
+run_batch_move <- function(con, state, live, staging, part_col, upsert, last) {
+  bound <- function(prefix) {
+    if (is.null(last)) {
+      return("")
+    }
+    return(paste0(" AND ", run_stg_id(con, prefix), " <= ", last))
+  }
+  where <- paste0(
+    run_part_where(con, state, part_col, live$part, "stg."),
+    bound("stg.")
+  )
+  target <- run_table_ident(con, live$table)
+  if (upsert) {
     bare <- run_qi(con, live$table$table_name)
     match <- paste0(
       "stg.",
@@ -775,5 +1124,53 @@ run_publish_part <- function(con, state, live, staging, part_col, ops, rows) {
       where
     )
   )
-  return(invisible(NULL))
+  moved <- DBI::dbExecute(
+    con,
+    paste0(
+      "DELETE FROM ",
+      run_table_ident(con, staging),
+      " WHERE ",
+      run_part_where(con, state, part_col, live$part, ""),
+      bound("")
+    )
+  )
+  return(moved)
+}
+
+# The last id of the next batch: the largest of the lowest
+# run_publish_rows_per_batch ids of the staged rows of this run in one live
+# table. NULL when no row is staged. The index cs9_run of the staging table
+# serves the read. The id comes back as text, so a bigint needs no bit64.
+run_batch_last_sql <- function(con, state, live, staging, part_col) {
+  id <- run_stg_id(con)
+  return(paste0(
+    "SELECT CAST(MAX(b.cs9_id) AS VARCHAR(20)) AS last_id FROM (SELECT ",
+    id,
+    " AS cs9_id FROM ",
+    run_table_ident(con, staging),
+    " WHERE ",
+    run_part_where(con, state, part_col, live$part, ""),
+    " ORDER BY ",
+    id,
+    " LIMIT ",
+    as.integer(run_publish_rows_per_batch),
+    ") AS b"
+  ))
+}
+
+# The staged rows of this run in one live table: for a partitioned table, the
+# rows of its partition.
+run_part_where <- function(con, state, part_col, part, prefix) {
+  where <- run_where_run(con, state, prefix = prefix)
+  if (is.null(part_col)) {
+    return(where)
+  }
+  return(paste0(
+    where,
+    " AND ",
+    prefix,
+    run_qi(con, part_col),
+    " = ",
+    run_q(con, part)
+  ))
 }

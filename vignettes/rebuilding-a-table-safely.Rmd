@@ -118,7 +118,7 @@ stopifnot(
 )
 ```
 
-The diagram shows the two numbers at each step. Until the last plan succeeds, a reader sees the old table. cs9 then publishes the staged rows, and a reader sees the new table.
+The diagram shows the two numbers at each step. Until the last plan succeeds, a reader sees the old table. cs9 then publishes the staged rows, and a reader sees the new table. This vignette uses SQLite, where the publish is one transaction. On PostgreSQL the publish commits in steps: see [the publish on PostgreSQL](#publish-postgresql).
 
 ```{r draw, include = FALSE}
 library(ggplot2)
@@ -202,6 +202,21 @@ draw(run_b, data.table(
 ))
 ```
 
+## The publish on PostgreSQL {#publish-postgresql}
+
+On PostgreSQL cs9 publishes a run in steps, and each step commits on its own:
+
+1. cs9 records the live tables that the publish changes.
+2. cs9 runs the deletes that the plans recorded, in one transaction per table or partition. `drop_all_rows()` becomes a `TRUNCATE`.
+3. cs9 moves the staged rows of each table or partition in batches of at most 200,000 rows. Each batch is one transaction.
+4. cs9 marks the run as published.
+
+Between two steps a reader can see a partly published run. For example, a partition can be empty, or hold only the rows of its first batches.
+
+A publish that stops keeps the steps that it committed. The next attempt with the same `run_key` builds the plans and stops when the plan list changed. Then it publishes the rest and runs no plan. A run of the same task with a new `run_key` first publishes the rest of the older run.
+
+On SQLite the publish is one transaction. A reader sees the old table or the new table, and never a part of a run.
+
 ## What you need to know when you write a task {#rules}
 
 You do not change your task code. A run with a `run_key` stages the writes of every table in the task's `tables`. A write outside such a run goes to the table at once. These rules apply during a run with a `run_key`:
@@ -211,6 +226,7 @@ You do not change your task code. A run with a `run_key` stages the writes of ev
 - A run MUST write each row once. Two writes of one row stop the run, also when both are upserts.
 - A plan MUST NOT delete rows that another plan wrote in the same run. Plan 1 MAY delete, because it runs before every other plan.
 - Plan 1 and the last plan run on every attempt. Any other plan that finished on an earlier attempt is skipped.
+- After a publish that committed a part, the next attempt runs no plan. It publishes the rest.
 - Use `run_today()` in a planner instead of `Sys.Date()`. On a retry after midnight it still gives the date of the first attempt.
 - Write to a partitioned table through the table, not through one of its partitions.
 - SQL that a task sends on the connection of a table goes to the table at once. cs9 does not stage it.

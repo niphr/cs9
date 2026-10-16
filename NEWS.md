@@ -1,3 +1,7 @@
+# Version 26.10.24
+
+- On PostgreSQL a keyed run publishes in transactions of at most 200,000 staged rows, in the order of the new staging column `cs9_stg_id`. On 2026-10-16 PostgreSQL went down twice during a publish of about 25 million rows in one transaction. A recorded delete runs in one transaction per partition, and `drop_all_rows()` becomes a `TRUNCATE`. A reader can see a partly published run. After a publish that stopped part-way, a retry with the same `run_key` checks the plan list, runs no plan and publishes the rest. A run of the task with a new `run_key` first publishes the rest of that run. A staging table from before this version gets `cs9_stg_id` in place and keeps its rows. SQLite publishes in one transaction, as before. cs9 needs csdb 2026.10.18.
+
 # Version 26.10.23
 
 - The "Publishing run" message carries the clock time, and a new message "Published in N mins" follows the publish. On Airflow the time stamp of a log line is when the log reader got it. On 2026-10-16 the reader passed "Publishing" on about 5 minutes after R printed it, so the publish looked shorter and a gap looked like idle time.

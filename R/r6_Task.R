@@ -147,8 +147,10 @@ Task <- R6::R6Class(
     # `run_key` names the run. A run with a key stages its writes and
     # publishes them after the last plan. A second call with the same key
     # resumes the first: it skips each plan that the first call finished,
-    # except plan 1, and publishes once. NULL stages nothing: the run writes
-    # its tables directly, as before 26.10.14. A run with a key always builds
+    # except plan 1, and publishes once. After a publish that committed a
+    # part, it runs no plan and publishes the rest. NULL stages nothing: the
+    # run writes its tables directly, as before 26.10.14. A run with a key
+    # always builds
     # its plans again, so every attempt compares its plan list with the list
     # of the first attempt. Without a key, `replan = TRUE` builds the
     # plans again, after the run has its date. SurveillanceSystem_v9$run_task()
@@ -215,12 +217,36 @@ Task <- R6::R6Class(
         return(invisible(NULL))
       }
       config$run <- run
-
       # A plan MAY read published tables only, so staged_tbl() stops here.
       # A keyed run always builds its plans again: see the comment above.
       config$planning <- TRUE
       self$update_plans(replan = replan || !is.null(run_key))
       config$planning <- FALSE
+
+      # An earlier attempt committed a part of the publish. Every plan and
+      # action_after_fn ran before that publish started. This attempt builds
+      # the plans and stops when the plan list changed, as every attempt does.
+      # Then it runs no plan and no action, and publishes what is still
+      # staged. Plan 1 would otherwise run again, and its operations would
+      # delete rows that the earlier attempt published.
+      if (isTRUE(run$publishing)) {
+        run_check_plan_set(
+          run$conn$autoconnection,
+          config$run,
+          run_plan_ids(self$plans, private$injected_fields(), self$name)
+        )
+        message(glue::glue(
+          "Run '{run$run_key}' of task {self$name} is partly published. ",
+          "This attempt publishes the rest."
+        ))
+        run_publish_timed(config$run, self$tables)
+        ram_max_used_mb <- 0
+        status <- "succeeded"
+        if (!is.null(self$permission)) {
+          return(self$permission$revoke_permission())
+        }
+        return(invisible(NULL))
+      }
 
       update_config_log(
         ss = self$ss,
@@ -411,16 +437,7 @@ Task <- R6::R6Class(
       }
 
       if (!is.null(run)) {
-        p0 <- Sys.time()
-        message(glue::glue(
-          "Publishing run '{run$run_key}' of task {self$name} at {p0}"
-        ))
-        run_publish(config$run, self$tables)
-        message(
-          "Published in ",
-          round(as.numeric(difftime(Sys.time(), p0, units = "mins")), 1),
-          " mins"
-        )
+        run_publish_timed(config$run, self$tables)
       }
 
       status <- "succeeded"

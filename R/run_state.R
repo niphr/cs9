@@ -1,5 +1,6 @@
 # A task run stages every write to its own tables and publishes them at the
-# end, in one transaction. vignette("rebuilding-a-table-safely") explains it to
+# end. On PostgreSQL the publish commits in batches, and on SQLite it is one
+# transaction. vignette("rebuilding-a-table-safely") explains it to
 # a user. This file holds the state of a run, the plan ids and the bookkeeping
 # tables. R/run_staging.R holds the staged writes, R/run_publish.R the start of
 # a run and the publish.
@@ -20,6 +21,8 @@
 #   schema      the schema of the bookkeeping tables, or "" on SQLite.
 #   sqlite      TRUE on SQLite.
 #   published   TRUE when an earlier attempt published this run.
+#   publishing  TRUE when an earlier attempt committed a part of the publish
+#               of this run.
 
 # The plan tag of a write outside every plan. action_before_fn and
 # action_after_fn run again on every attempt, like plan 1.
@@ -209,8 +212,9 @@ run_where_store <- function(con, state = config$run) {
 
 # The bookkeeping tables ----
 
-# Three tables in the run database, beside the staging tables. One publish
-# transaction then covers the live tables, the staging tables and the marks.
+# The bookkeeping tables in the run database, beside the staging tables. Each
+# transaction of the publish then covers the live tables, the staging tables
+# and the marks. cs9_run MUST stay first: run_fence() removes it last.
 run_store_definitions <- list(
   cs9_run = paste(
     "task VARCHAR NOT NULL, run_key VARCHAR NOT NULL,",
@@ -233,6 +237,14 @@ run_store_definitions <- list(
     "task VARCHAR NOT NULL, run_key VARCHAR NOT NULL,",
     "plan_position INTEGER NOT NULL, plan_id VARCHAR NOT NULL,",
     "PRIMARY KEY (task, run_key, plan_position)"
+  ),
+  # The live tables that the publish of a run changes, written by the first
+  # transaction of the publish. A row here means that the run is partly
+  # published. See run_publish().
+  cs9_run_publish = paste(
+    "task VARCHAR NOT NULL, run_key VARCHAR NOT NULL,",
+    "table_position INTEGER NOT NULL, table_name VARCHAR NOT NULL,",
+    "PRIMARY KEY (task, run_key, table_position)"
   )
 )
 
