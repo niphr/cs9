@@ -114,7 +114,9 @@ stopifnot(
 
 The diagram shows the two numbers at each step. Until the last plan
 succeeds, a reader sees the old table. cs9 then publishes the staged
-rows, and a reader sees the new table.
+rows, and a reader sees the new table. This vignette uses SQLite, where
+the publish is one transaction. On PostgreSQL the publish commits in
+steps: see [the publish on PostgreSQL](#publish-postgresql).
 
     #> Warning: The `label.size` argument of `geom_label()` is deprecated as of ggplot2 3.5.0.
     #> ℹ Please use the `linewidth` argument instead.
@@ -185,6 +187,29 @@ plan 3. The rows that a reader sees stay at 5 until the end of attempt
 2, and then drop to the 3 new
 rows.](rebuilding-a-table-safely_files/figure-html/failure-diagram-1.png)
 
+## The publish on PostgreSQL
+
+On PostgreSQL cs9 publishes a run in steps, and each step commits on its
+own:
+
+1.  cs9 records the live tables that the publish changes.
+2.  cs9 runs the deletes that the plans recorded, in one transaction per
+    table or partition. `drop_all_rows()` becomes a `TRUNCATE`.
+3.  cs9 moves the staged rows of each table or partition in batches of
+    at most 200,000 rows. Each batch is one transaction.
+4.  cs9 marks the run as published.
+
+Between two steps a reader can see a partly published run. For example,
+a partition can be empty, or hold only the rows of its first batches.
+
+A publish that stops keeps the steps that it committed. The next attempt
+with the same `run_key` builds the plans and stops when the plan list
+changed. Then it publishes the rest and runs no plan. A run of the same
+task with a new `run_key` first publishes the rest of the older run.
+
+On SQLite the publish is one transaction. A reader sees the old table or
+the new table, and never a part of a run.
+
 ## What you need to know when you write a task
 
 You do not change your task code. A run with a `run_key` stages the
@@ -201,6 +226,8 @@ goes to the table at once. These rules apply during a run with a
   Plan 1 MAY delete, because it runs before every other plan.
 - Plan 1 and the last plan run on every attempt. Any other plan that
   finished on an earlier attempt is skipped.
+- After a publish that committed a part, the next attempt runs no plan.
+  It publishes the rest.
 - Use
   [`run_today()`](https://niphr.github.io/cs9/reference/run_today.md) in
   a planner instead of

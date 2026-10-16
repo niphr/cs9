@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -212,7 +212,7 @@ run.</li>
 <li>
 <strong>Do not use it when</strong> a reader MUST see a complete
 table at every moment. Use <a href="#shape-fit-then-fill">fit then
-fill</a>, which publishes in one transaction.</li>
+fill</a>, which publishes the whole table in one write.</li>
 <li>
 <strong>Failure modes.</strong> A failed run leaves the table
 partial until the next run succeeds. Only the first plan MAY empty the
@@ -756,8 +756,8 @@ then enough.</li>
 <strong>Failure modes.</strong> A middle plan of the fit task MUST
 NOT fill, because the national row MAY not exist yet (<a href="how-a-task-runs.html#rule-first-last">rule</a>). The fill reads
 the whole fitted table in one pull, so the fitted table MUST stay small.
-The published table changes in one transaction, so a failed fill leaves
-the previous thresholds.</li>
+The published table changes in one write, so a failed fill leaves the
+previous thresholds.</li>
 </ul>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
@@ -1090,11 +1090,15 @@ third run the send fails, and the task MUST stop with an error.</p>
 <div class="section level2">
 <h2 id="three-rules">Three rules<a class="anchor" aria-label="anchor" href="#three-rules"></a>
 </h2>
-<p><strong>Publish in one transaction.</strong> A task once emptied its
-MEM table in <code>first_analysis</code> and refilled it argset by
-argset. Between those two points, and after any failed argset, readers
-saw an empty or partial table. Fit then fill writes the published table
-in one call to <code>replace_all_rows()</code>.</p>
+<p><strong>Publish the whole table in one write.</strong> A task once
+emptied its MEM table in <code>first_analysis</code> and refilled it
+argset by argset. Between those two points, and after any failed argset,
+readers saw an empty or partial table. Fit then fill writes the
+published table in one call to <code>replace_all_rows()</code>. In a run
+with a <code>run_key</code> on PostgreSQL, cs9 publishes that write in
+batches. A reader can then see a part of it until the publish ends. On
+SQLite the publish is one transaction. See <a href="rebuilding-a-table-safely.html#publish-postgresql">the publish on
+PostgreSQL</a>.</p>
 <p><strong>Replace the whole scope of the run.</strong> A swap once
 deleted from the live table only the weeks that each staging partition
 held. A week with no staged rows therefore kept its stale rows. The

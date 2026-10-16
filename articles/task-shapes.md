@@ -81,8 +81,8 @@ the rows of its own unit.
 - **Use it when** the rows of each unit depend only on the data pull of
   that unit, and nothing reads the output during the run.
 - **Do not use it when** a reader MUST see a complete table at every
-  moment. Use [fit then fill](#shape-fit-then-fill), which publishes in
-  one transaction.
+  moment. Use [fit then fill](#shape-fit-then-fill), which publishes the
+  whole table in one write.
 - **Failure modes.** A failed run leaves the table partial until the
   next run succeeds. Only the first plan MAY empty the table, because
   the middle plans MAY run in parallel, in any order
@@ -660,8 +660,8 @@ the `source` of each threshold, and publishes the whole result with
   because the national row MAY not exist yet
   ([rule](https://niphr.github.io/cs9/articles/how-a-task-runs.html#rule-first-last)).
   The fill reads the whole fitted table in one pull, so the fitted table
-  MUST stay small. The published table changes in one transaction, so a
-  failed fill leaves the previous thresholds.
+  MUST stay small. The published table changes in one write, so a failed
+  fill leaves the previous thresholds.
 
 ``` r
 ss$add_table(
@@ -1016,11 +1016,15 @@ send fails.](task-shapes_files/figure-html/notify-diagram-1.png)
 
 ## Three rules
 
-**Publish in one transaction.** A task once emptied its MEM table in
-`first_analysis` and refilled it argset by argset. Between those two
-points, and after any failed argset, readers saw an empty or partial
-table. Fit then fill writes the published table in one call to
-`replace_all_rows()`.
+**Publish the whole table in one write.** A task once emptied its MEM
+table in `first_analysis` and refilled it argset by argset. Between
+those two points, and after any failed argset, readers saw an empty or
+partial table. Fit then fill writes the published table in one call to
+`replace_all_rows()`. In a run with a `run_key` on PostgreSQL, cs9
+publishes that write in batches. A reader can then see a part of it
+until the publish ends. On SQLite the publish is one transaction. See
+[the publish on
+PostgreSQL](https://niphr.github.io/cs9/articles/rebuilding-a-table-safely.html#publish-postgresql).
 
 **Replace the whole scope of the run.** A swap once deleted from the
 live table only the weeks that each staging partition held. A week with

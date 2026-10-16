@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -196,7 +196,10 @@ staged.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The diagram shows the two numbers at each step. Until the last plan
 succeeds, a reader sees the old table. cs9 then publishes the staged
-rows, and a reader sees the new table.</p>
+rows, and a reader sees the new table. This vignette uses SQLite, where
+the publish is one transaction. On PostgreSQL the publish commits in
+steps: see <a href="#publish-postgresql">the publish on
+PostgreSQL</a>.</p>
 <pre><code><span><span class="co">#&gt; Warning: The `label.size` argument of `geom_label()` is deprecated as of ggplot2 3.5.0.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Please use the `linewidth` argument instead.</span></span>
 <span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
@@ -249,6 +252,31 @@ first attempt are removed first, so each row is published once.</p>
 <p><img src="rebuilding-a-table-safely_files/figure-html/failure-diagram-1.png" class="r-plt" alt="Two line charts, one per attempt of one run. In attempt 1 the rows that a reader sees stay at the 5 old rows at every step, also after plan 3 fails. The staging table holds 1, 2 and 3 rows after plans 1, 2 and 3, and keeps 3 rows after the failure. In attempt 2 the staging table starts with the 3 rows of attempt 1. There is no point for plan 2, which is skipped. The staging table holds 2 rows after plan 1 and 3 rows after plan 3. The rows that a reader sees stay at 5 until the end of attempt 2, and then drop to the 3 new rows." width="800"></p>
 </div>
 <div class="section level2">
+<h2 id="publish-postgresql">The publish on PostgreSQL<a class="anchor" aria-label="anchor" href="#publish-postgresql"></a>
+</h2>
+<p>On PostgreSQL cs9 publishes a run in steps, and each step commits on
+its own:</p>
+<ol style="list-style-type: decimal">
+<li>cs9 records the live tables that the publish changes.</li>
+<li>cs9 runs the deletes that the plans recorded, in one transaction per
+table or partition. <code>drop_all_rows()</code> becomes a
+<code>TRUNCATE</code>.</li>
+<li>cs9 moves the staged rows of each table or partition in batches of
+at most 200,000 rows. Each batch is one transaction.</li>
+<li>cs9 marks the run as published.</li>
+</ol>
+<p>Between two steps a reader can see a partly published run. For
+example, a partition can be empty, or hold only the rows of its first
+batches.</p>
+<p>A publish that stops keeps the steps that it committed. The next
+attempt with the same <code>run_key</code> builds the plans and stops
+when the plan list changed. Then it publishes the rest and runs no plan.
+A run of the same task with a new <code>run_key</code> first publishes
+the rest of the older run.</p>
+<p>On SQLite the publish is one transaction. A reader sees the old table
+or the new table, and never a part of a run.</p>
+</div>
+<div class="section level2">
 <h2 id="rules">What you need to know when you write a task<a class="anchor" aria-label="anchor" href="#rules"></a>
 </h2>
 <p>You do not change your task code. A run with a <code>run_key</code>
@@ -266,6 +294,8 @@ also when both are upserts.</li>
 Plan 1 MAY delete, because it runs before every other plan.</li>
 <li>Plan 1 and the last plan run on every attempt. Any other plan that
 finished on an earlier attempt is skipped.</li>
+<li>After a publish that committed a part, the next attempt runs no
+plan. It publishes the rest.</li>
 <li>Use <code><a href="../reference/run_today.html">run_today()</a></code> in a planner instead of
 <code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date()</a></code>. On a retry after midnight it still gives the
 date of the first attempt.</li>
