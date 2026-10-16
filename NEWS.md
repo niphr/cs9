@@ -1,3 +1,7 @@
+# Version 26.10.22
+
+- cs9 no longer reads `CS9_DBCONFIG_PG_LOAD`, and it gives csdb no `pg_load`. csdb 2026.10.17, which cs9 now needs, sends every PostgreSQL load as JSON over the open connection.
+
 # Version 26.10.21
 
 - `CS9_DBCONFIG_PG_LOAD` sets `pg_load` in every database configuration and every csdb connection that cs9 builds. Unset or empty is `psql`. With `json`, csdb sends the rows of a load over the open connection, and a load makes no `psql` login. This needs csdb 2026.10.16.

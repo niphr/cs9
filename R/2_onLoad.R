@@ -11,11 +11,7 @@
       set_env_vars()
     },
     error = function(e) {
-      # An invalid CS9_DBCONFIG_PG_LOAD stops the load. Every other failure is
-      # silent, and check_environment_setup() reports it.
-      if (inherits(e, "cs9_invalid_pg_load")) {
-        stop(e)
-      }
+      # Silent failure - diagnostics available via check_environment_setup()
     }
   )
 
@@ -153,29 +149,6 @@ get_db_acess_from_env <- function() {
   return(retval)
 }
 
-# CS9_DBCONFIG_PG_LOAD selects how csdb loads rows into PostgreSQL. Unset or
-# empty is "psql". Other drivers ignore the value, and it is validated anyway.
-get_pg_load_from_env <- function() {
-  value <- Sys.getenv("CS9_DBCONFIG_PG_LOAD")
-  if (value == "") {
-    return("psql")
-  }
-  if (!value %in% c("psql", "json")) {
-    stop(structure(
-      class = c("cs9_invalid_pg_load", "error", "condition"),
-      list(
-        message = paste0(
-          'CS9_DBCONFIG_PG_LOAD MUST be "psql" or "json", or unset. It is "',
-          value,
-          '".'
-        ),
-        call = NULL
-      )
-    ))
-  }
-  return(value)
-}
-
 get_db_from_env <- function(access) {
   retval <- list(
     access = access,
@@ -186,7 +159,6 @@ get_db_from_env <- function(access) {
     trusted_connection = Sys.getenv("CS9_DBCONFIG_TRUSTED_CONNECTION"),
     sslmode = Sys.getenv("CS9_DBCONFIG_SSLMODE"),
     role_create_table = Sys.getenv("CS9_DBCONFIG_ROLE_CREATE_TABLE"),
-    pg_load = get_pg_load_from_env(),
     server = Sys.getenv("CS9_DBCONFIG_SERVER"),
     schema = Sys.getenv(paste0("CS9_DBCONFIG_SCHEMA_", toupper(access))),
     db = Sys.getenv(paste0("CS9_DBCONFIG_DB_", toupper(access)))
@@ -207,10 +179,6 @@ get_db_from_env <- function(access) {
 
 set_env_vars <- function() {
   config$dbconfigs <- list()
-
-  # Validated once, outside the access loop, so an invalid value stops the
-  # load also when CS9_DBCONFIG_ACCESS is unset and no dbconfig is built.
-  get_pg_load_from_env()
 
   # Get database access configuration with fallback
   db_access <- tryCatch(
@@ -353,20 +321,6 @@ validate_environment <- function() {
       "Refer to CS9 documentation for environment setup instructions"
     )
   }
-
-  pg_load <- tryCatch(
-    get_pg_load_from_env(),
-    cs9_invalid_pg_load = function(e) {
-      result$status <<- "error"
-      result$issues <<- c(result$issues, conditionMessage(e))
-      result$recommendations <<- c(
-        result$recommendations,
-        "Set CS9_DBCONFIG_PG_LOAD to psql or json, or unset it"
-      )
-      return(NA_character_)
-    }
-  )
-  result$pg_load <- pg_load
 
   driver <- Sys.getenv("CS9_DBCONFIG_DRIVER")
   is_sqlite <- toupper(driver) == "SQLITE"
@@ -518,8 +472,6 @@ validate_environment <- function() {
 #'   \item status: "ok", "warning", or "error".
 #'   \item issues: Character vector of identified problems.
 #'   \item recommendations: Character vector of suggested fixes.
-#'   \item pg_load: The PostgreSQL load method from `CS9_DBCONFIG_PG_LOAD`,
-#'     `"psql"` or `"json"`. It is `NA` for an invalid value.
 #' }
 #'
 #' @examples
@@ -569,12 +521,7 @@ check_environment_setup <- function(
     output_fn <- if (use_startup_message) packageStartupMessage else cat
 
     output_fn("CS9 Environment Check Results:\n")
-    output_fn("Status: ", result$status, "\n")
-    output_fn(paste0(
-      "PostgreSQL load, CS9_DBCONFIG_PG_LOAD: ",
-      result$pg_load,
-      "\n\n"
-    ))
+    output_fn("Status: ", result$status, "\n\n")
 
     if (length(result$issues) > 0) {
       output_fn("Issues found:\n")
