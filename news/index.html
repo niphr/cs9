@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.10.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,6 +57,10 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.10.23" id="version-261023">Version 26.10.23<a class="anchor" aria-label="anchor" href="#version-261023"></a></h2>
+<ul><li>The “Publishing run” message carries the clock time, and a new message “Published in N mins” follows the publish. On Airflow the time stamp of a log line is when the log reader got it. On 2026-10-16 the reader passed “Publishing” on about 5 minutes after R printed it, so the publish looked shorter and a gap looked like idle time.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.10.22" id="version-261022">Version 26.10.22<a class="anchor" aria-label="anchor" href="#version-261022"></a></h2>
 <ul><li>cs9 no longer reads <code>CS9_DBCONFIG_PG_LOAD</code>, and it gives csdb no <code>pg_load</code>. csdb 2026.10.17, which cs9 now needs, sends every PostgreSQL load as JSON over the open connection.</li>
