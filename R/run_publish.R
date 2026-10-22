@@ -600,19 +600,35 @@ run_lock_tables <- function(con, table_names) {
 # Releases the locks of run_lock_tables(), also after an error. A connection
 # that dropped holds no lock, and an error here would hide the error of the
 # publish, so an error here is ignored.
+#
+# A connection that dropped gets no unlock SQL at all. PostgreSQL releases
+# every session-level advisory lock of a session when the session ends, so
+# there is nothing to release. After a failed statement, a second statement
+# on that connection crashes R with a segfault in odbc, and tryCatch() cannot
+# catch it: see csdb::csdb_connection_is_alive(). For the same reason the
+# loop stops at the first unlock that fails.
 run_unlock_tables <- function(con, table_names) {
+  if (!csdb::csdb_connection_is_alive(con)) {
+    return(invisible(NULL))
+  }
   for (name in table_names) {
-    tryCatch(
-      DBI::dbGetQuery(
-        con,
-        paste0(
-          "SELECT CASE WHEN pg_advisory_unlock(",
-          run_table_lock_key(con, name),
-          ") THEN 1 ELSE 0 END AS got"
+    ok <- tryCatch(
+      {
+        DBI::dbGetQuery(
+          con,
+          paste0(
+            "SELECT CASE WHEN pg_advisory_unlock(",
+            run_table_lock_key(con, name),
+            ") THEN 1 ELSE 0 END AS got"
+          )
         )
-      ),
-      error = function(e) invisible(NULL)
+        TRUE
+      },
+      error = function(e) FALSE
     )
+    if (!ok) {
+      break
+    }
   }
   return(invisible(NULL))
 }

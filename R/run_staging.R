@@ -35,7 +35,13 @@ run_stg_id <- function(con, prefix = "") {
 # name would reach the identity, and rows with one id would fall into one
 # batch, so the column is reserved.
 run_check_reserved_columns <- function(newdata, label) {
-  reserved <- c("cs9_task", "cs9_run_key", "cs9_plan", "cs9_upsert", "cs9_stg_id")
+  reserved <- c(
+    "cs9_task",
+    "cs9_run_key",
+    "cs9_plan",
+    "cs9_upsert",
+    "cs9_stg_id"
+  )
   hit <- intersect(reserved, names(newdata))
   if (length(hit) > 0) {
     stop(
@@ -57,7 +63,15 @@ run_as_creator <- function(con, state, sql) {
   role <- state$conn$config$role_create_table
   if (!is.null(role) && !is.na(role) && role != "x") {
     DBI::dbExecute(con, paste0("SET ROLE ", run_qi(con, role)))
-    on.exit(DBI::dbExecute(con, "RESET ROLE"), add = TRUE)
+    # A connection that dropped gets no RESET ROLE. Its session ended, and
+    # the role ended with it. A second statement after a failed one crashes R
+    # with a segfault in odbc: see csdb::csdb_connection_is_alive().
+    on.exit(
+      if (csdb::csdb_connection_is_alive(con)) {
+        DBI::dbExecute(con, "RESET ROLE")
+      },
+      add = TRUE
+    )
   }
   for (x in sql) {
     DBI::dbExecute(con, x)

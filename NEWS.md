@@ -1,3 +1,7 @@
+# Version 26.10.26
+
+- On a connection that the PostgreSQL server ended, a keyed run sends no advisory unlock and no `RESET ROLE`, and stops with an R error. Before, the unlock crashed R with a segfault in odbc, exit code 139, as in a CNPG primary failover, and R skipped every cleanup. cs9 needs csdb 2026.10.23.
+
 # Version 26.10.25
 
 - On PostgreSQL a keyed run empties a staging table with `TRUNCATE` when no row of it must stay. It does so also before it adds `cs9_stg_id` to an old staging table. Otherwise the fence deletes the rows of dead runs in transactions of at most 200,000 rows. Before, a dead run of about 25 million rows meant two transactions of that size at the next run.
