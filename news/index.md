@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 26.10.26
+
+- On a connection that the PostgreSQL server ended, a keyed run sends no
+  advisory unlock and no `RESET ROLE`, and stops with an R error.
+  Before, the unlock crashed R with a segfault in odbc, exit code 139,
+  as in a CNPG primary failover, and R skipped every cleanup. cs9 needs
+  csdb 2026.10.23.
+
 ## Version 26.10.25
 
 - On PostgreSQL a keyed run empties a staging table with `TRUNCATE` when
