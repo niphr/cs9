@@ -56,6 +56,21 @@ test_that("run_unlock_tables() unlocks each table on a live connection", {
   expect_match(rec$sql, "pg_advisory_unlock(", fixed = TRUE)
 })
 
+# The real guard, csdb::csdb_connection_is_alive(), on a live connection whose
+# catalog request fails for a reason other than a lost connection.
+test_that("run_unlock_tables() unlocks each table when the catalog request fails for another reason", {
+  con <- local_sqlite_con()
+  testthat::local_mocked_bindings(
+    dbExistsTable = function(conn, name, ...) {
+      stop("permission denied for schema anon", call. = FALSE)
+    },
+    .package = "DBI"
+  )
+  rec <- local_sql_recorder()
+  run_unlock_tables(con, c("anon_a", "anon_b"))
+  expect_length(rec$sql, 2)
+})
+
 test_that("run_unlock_tables() stops at the first unlock that fails", {
   con <- local_sqlite_con()
   local_alive(TRUE)
