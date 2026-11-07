@@ -74,7 +74,9 @@ It then works in this order:
 \enumerate{
 \item It checks the database of every table, and of every partition. One
 database that is not SQLite under \code{tempdir()} stops the whole call.
-\item It gets the data of each table from \code{synthetic()}. With a number \code{n}, a
+\item It gets the data of each table. With \code{dataset}, a table whose catalogue
+holds a dataset of that name gets that dataset. Every other table gets
+\verb{$random(n, seed)}, and a message names those tables. With a number \code{n}, a
 partitioned table gets \code{max(n, length(name_partitions))} rows. Every
 table gets \code{n = NULL} unchanged, which means the generator's own size.
 With \code{n = NULL}, the default generator of a partitioned table draws the
@@ -83,11 +85,8 @@ size of \code{csdb::simulate_from_profile()}, and at least
 every partition. A custom generator decides which partitions get rows.
 \item It validates the data against the contract of the table that receives
 it. A \code{SyntheticTable} from the caller can be looser than the table.
-\item With \code{task}, it checks the join contract of the tables that it fills.
-Two of these tables that share key columns MUST have a non-empty inner
-join on the shared key columns. Otherwise the call stops, and the error
-names the two tables and the shared columns. A pair with no shared key
-column is not checked. With \code{tables} alone, there is no join check.
+\item With \code{task}, it checks the join groups of the task. The next paragraphs
+describe this join check.
 \item For each table, it checks the database of the table again, then calls
 \code{drop_all_rows()}, then \code{insert_data()}. \code{drop_all_rows()} empties every
 partition, so a partition that the data does not name is left empty.
@@ -95,6 +94,20 @@ partition, so a partition that the data does not name is left empty.
 
 A failure in steps 1 to 4 therefore writes nothing. The check in step 5
 refuses a database that changed after step 1.
+
+\code{add_task(synthetic_joins = )} declares the join groups of a task, and
+cs9 stores them in the field \code{synthetic_joins} by task name. A join
+group is a character vector of at least 2 table names of the \code{tables} of
+the task. \code{add_task()} stops when a group names another table. Two tables
+of a group that share key columns MUST have a non-empty inner join on the
+shared key columns, the partition column included. Otherwise
+\code{populate_synthetic()} stops, and the error names the two tables and the
+shared columns. A pair with no shared key column is not checked.
+
+The join check is off by default. A task with no join groups gets no join
+check, and \code{tables} alone gets none. With \code{task} and \code{tables}, each group
+keeps only the tables that the call fills. A group with fewer than 2 of
+these tables is skipped.
 
 Each table gets its own seed, so two tables do not share a stream of
 random values. The seed of a table is \code{seed} plus the first 7 hexadecimal
@@ -206,6 +219,8 @@ global$ss$add_table(
     \item{\code{synthetic_mode}}{\code{TRUE} when synthetic mode is on. Change it with \code{set_synthetic()}.}
 
     \item{\code{synthetic_world}}{\code{NULL}, or the named list that every generator gets as \code{world}.}
+
+    \item{\code{synthetic_joins}}{Named list of the join groups of \code{add_task(synthetic_joins = )}, by task name.}
 
     \item{\code{sources}}{Named list of sources from \code{add_source()}. Each holds a \code{reader} and a \code{simulator}.}
   }
@@ -408,7 +423,8 @@ global$ss$add_table(
   insert_at_end_of_each_plan = FALSE,
   action_fn_name,
   data_selector_fn_name = NULL,
-  tables = NULL
+  tables = NULL,
+  synthetic_joins = NULL
 )}
     \if{html}{\out{</div>}}
   }
@@ -431,6 +447,7 @@ A runner that sets \code{cores} to 1, such as \code{TaskJob}, replaces the funct
       \item{\code{action_fn_name}}{The name of the function called for each analysis with arguments \code{data}, \code{argset}, \code{schema}.}
       \item{\code{data_selector_fn_name}}{The name of a function called to obtain the data for each analysis. The function MUST have the arguments \code{argset}, \code{schema} and MUST return a named list.}
       \item{\code{tables}}{A named list that maps \code{cs9::config$schemas} for use in \code{action_fn_name} and \code{data_selector_fn_name}.}
+      \item{\code{synthetic_joins}}{\code{NULL}, or a list of join groups for \code{populate_synthetic()}. A join group is a character vector of at least 2 table names of \code{tables}. See the section "Synthetic mode".}
     }
     \if{html}{\out{</div>}}
   }
@@ -696,7 +713,7 @@ A second call with the same \code{run_key} resumes a failed run. It skips each p
     \describe{
       \item{\code{task}}{\code{NULL}, a task name or a \code{Task}. The method fills every table in its \code{tables}.}
       \item{\code{tables}}{\code{NULL}, or a character vector of table names to fill.}
-      \item{\code{dataset, n, seed}}{Passed to \code{synthetic()} for each table. Each table gets its own seed from \code{seed} and the table name.}
+      \item{\code{dataset, n, seed}}{A table whose catalogue holds the dataset \code{dataset} gets that dataset. Every other table gets \verb{$random(n, seed)}, with its own seed from \code{seed} and the table name.}
     }
     \if{html}{\out{</div>}}
   }

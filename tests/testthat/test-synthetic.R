@@ -890,7 +890,7 @@ add_join_tables <- function(ss) {
   return(tables)
 }
 
-test_that("item 11: populate_synthetic(task = ) refuses tables that share keys and do not join", {
+test_that("a declared group that does not join is refused", {
   local_staging_db()
   ss <- local_synth_system()
   t <- add_join_tables(ss)
@@ -901,7 +901,8 @@ test_that("item 11: populate_synthetic(task = ) refuses tables that share keys a
     name_action = "nojoin",
     for_each_plan = plnr::expand_list(plan = 1),
     action_fn_name = "identity",
-    tables = list(a = t$a, b = t$b, y = t$y)
+    tables = list(a = t$a, b = t$b, y = t$y),
+    synthetic_joins = list(c("anon_synth_join_a", "anon_synth_join_b"))
   )
   before <- synth_snapshot(t[c("a", "b", "y")])
   ss$set_synthetic(TRUE)
@@ -928,7 +929,10 @@ test_that("item 11: a pair with no shared key column is not checked", {
     name_action = "join",
     for_each_plan = plnr::expand_list(plan = 1),
     action_fn_name = "identity",
-    tables = list(a = t$a, b2 = t$b2, y = t$y)
+    tables = list(a = t$a, b2 = t$b2, y = t$y),
+    synthetic_joins = list(
+      c("anon_synth_join_a", "anon_synth_join_b2", "anon_synth_join_y")
+    )
   )
   ss$set_synthetic(TRUE)
 
@@ -942,7 +946,94 @@ test_that("item 11: a pair with no shared key column is not checked", {
   )
 })
 
-test_that("item 11: naming the inputs excludes an output table from the join check", {
+test_that("an undeclared pair is not checked", {
+  local_staging_db()
+  ss <- local_synth_system()
+  t <- add_join_tables(ss)
+  # join_a and join_b share the key x and do not join. Only join_a and
+  # join_b2 are a declared group.
+  ss$add_task(
+    name_grouping = "synth",
+    name_action = "undeclared",
+    for_each_plan = plnr::expand_list(plan = 1),
+    action_fn_name = "identity",
+    tables = list(a = t$a, b = t$b, b2 = t$b2),
+    synthetic_joins = list(c("anon_synth_join_a", "anon_synth_join_b2"))
+  )
+  ss$set_synthetic(TRUE)
+
+  err <- synth_error(ss$populate_synthetic(task = "synth_undeclared", n = 5L))
+
+  expect_equal(err, "")
+  expect_equal(synth_rows(t$a)$x, paste0("a_", 1:5))
+  expect_equal(synth_rows(t$b)$x, paste0("b_", 1:5))
+  expect_equal(synth_rows(t$b2)$x, paste0("a_", 1:5))
+})
+
+test_that("a task with no synthetic_joins gets no join check", {
+  local_staging_db()
+  ss <- local_synth_system()
+  t <- add_join_tables(ss)
+  ss$add_task(
+    name_grouping = "synth",
+    name_action = "nogroups",
+    for_each_plan = plnr::expand_list(plan = 1),
+    action_fn_name = "identity",
+    tables = list(a = t$a, b = t$b)
+  )
+  ss$set_synthetic(TRUE)
+
+  err <- synth_error(ss$populate_synthetic(task = "synth_nogroups", n = 5L))
+
+  expect_null(ss$synthetic_joins$synth_nogroups)
+  expect_equal(err, "")
+  expect_equal(synth_rows(t$a)$x, paste0("a_", 1:5))
+  expect_equal(synth_rows(t$b)$x, paste0("b_", 1:5))
+})
+
+test_that("add_task() refuses join groups that are not groups of the task's tables", {
+  local_staging_db()
+  ss <- local_synth_system()
+  t <- add_join_tables(ss)
+  add_groups <- function(groups) {
+    return(synth_error(ss$add_task(
+      name_grouping = "synth",
+      name_action = "groups",
+      for_each_plan = plnr::expand_list(plan = 1),
+      action_fn_name = "identity",
+      tables = list(a = t$a, b = t$b),
+      synthetic_joins = groups
+    )))
+  }
+
+  err_stranger <- add_groups(list(
+    c("anon_synth_join_a", "anon_synth_join_b"),
+    c("anon_synth_join_a", "anon_synth_join_y", "anon_synth_nothing")
+  ))
+  err_one <- add_groups(list("anon_synth_join_a"))
+  err_same <- add_groups(list(c("anon_synth_join_a", "anon_synth_join_a")))
+  err_vector <- add_groups(c("anon_synth_join_a", "anon_synth_join_b"))
+  refused_task <- ss$tasks$synth_groups
+  err_ok <- add_groups(list(c("anon_synth_join_a", "anon_synth_join_b")))
+
+  expect_match(
+    err_stranger,
+    "not in the tables of the task: anon_synth_join_y, anon_synth_nothing.",
+    fixed = TRUE
+  )
+  for (err in list(err_one, err_same, err_vector)) {
+    expect_match(err, "at least 2 different table names", fixed = TRUE)
+  }
+  # A refused add_task() adds no task.
+  expect_null(refused_task)
+  expect_equal(err_ok, "")
+  expect_equal(
+    ss$synthetic_joins$synth_groups,
+    list(c("anon_synth_join_a", "anon_synth_join_b"))
+  )
+})
+
+test_that("item 11: naming the inputs excludes an output table from a declared group", {
   local_staging_db()
   ss <- local_synth_system()
   # Two inputs that join on x, and an output with the key x and other values.
@@ -978,7 +1069,11 @@ test_that("item 11: naming the inputs excludes an output table from the join che
     name_action = "io",
     for_each_plan = plnr::expand_list(plan = 1),
     action_fn_name = "identity",
-    tables = io
+    tables = io,
+    synthetic_joins = list(
+      c("anon_synth_io_in1", "anon_synth_io_in2"),
+      c("anon_synth_io_in1", "anon_synth_io_out")
+    )
   )
   before <- synth_snapshot(io)
   ss$set_synthetic(TRUE)
@@ -986,6 +1081,13 @@ test_that("item 11: naming the inputs excludes an output table from the join che
 
   err_task <- synth_error(ss$populate_synthetic(task = "synth_io", n = 5L))
   after_task <- synth_snapshot(io)
+  # The second group keeps both of its tables, so the check runs.
+  err_restricted <- synth_error(ss$populate_synthetic(
+    task = "synth_io",
+    tables = c("anon_synth_io_in1", "anon_synth_io_out"),
+    n = 5L
+  ))
+  after_restricted <- synth_snapshot(io)
   err_stranger <- synth_error(ss$populate_synthetic(
     task = "synth_io",
     tables = c(inputs, "anon_synth_io_other"),
@@ -998,7 +1100,7 @@ test_that("item 11: naming the inputs excludes an output table from the join che
   ))
   after_inputs <- synth_snapshot(io)
 
-  # The task alone checks the output too, and refuses.
+  # The task alone checks the declared group with the output, and refuses.
   expect_match(
     err_task,
     "the tables anon_synth_io_in1 and anon_synth_io_out have no row in common",
@@ -1006,15 +1108,93 @@ test_that("item 11: naming the inputs excludes an output table from the join che
   )
   expect_equal(after_task, before)
   expect_match(
+    err_restricted,
+    "the tables anon_synth_io_in1 and anon_synth_io_out have no row in common",
+    fixed = TRUE
+  )
+  expect_equal(after_restricted, before)
+  expect_match(
     err_stranger,
     "not in the tables of the task: anon_synth_io_other.",
     fixed = TRUE
   )
-  # The named inputs are filled, and the output is as before.
+  # The named inputs are filled, and the output is as before. The second group
+  # keeps only anon_synth_io_in1, so it is skipped.
   expect_equal(err_inputs, "")
   expect_equal(after_inputs$in1$x, paste0("a_", 1:5))
   expect_equal(after_inputs$in2$x, paste0("a_", 1:5))
   expect_equal(after_inputs$out, before$out)
+})
+
+test_that("populate_synthetic(dataset =) uses a table's named dataset", {
+  local_staging_db()
+  ss <- local_synth_system()
+  # With n = NULL the generator draws 3 rows, else n rows.
+  own_size <- function(profile, n, seed, world) {
+    k <- if (is.null(n)) 3L else n
+    return(data.table::data.table(x = paste0("d_", seq_len(k)), n = seq_len(k)))
+  }
+  catalogue <- add_synth_table(
+    ss,
+    "plain",
+    "anon",
+    "ds_catalogue",
+    synthetic = list(generator = own_size, dir = withr::local_tempdir())
+  )
+  plain <- add_synth_table(
+    ss,
+    "plain",
+    "anon",
+    "ds_random",
+    synthetic = list(generator = synth_prefix_generator("r_"))
+  )
+  # The recipe default is n = NULL and seed = 1, so it holds 3 rows.
+  suppressMessages(ss$synthetic_tables$anon_synth_ds_catalogue$add_dataset(
+    "default",
+    n = NULL,
+    seed = 1L,
+    description = "Three rows."
+  ))
+  ss$set_synthetic(TRUE)
+  both <- c("anon_synth_ds_catalogue", "anon_synth_ds_random")
+  random_of <- function(msgs) {
+    return(grep("used $random()", msgs, fixed = TRUE, value = TRUE))
+  }
+
+  msgs_default <- testthat::capture_messages(
+    written <- ss$populate_synthetic(tables = both, dataset = "default", n = 5L)
+  )
+  rows_default <- list(
+    catalogue = synth_rows(catalogue)$x,
+    plain = synth_rows(plain)$x
+  )
+  msgs_null <- testthat::capture_messages(
+    ss$populate_synthetic(tables = both, n = 5L)
+  )
+  msgs_other <- testthat::capture_messages(
+    ss$populate_synthetic(tables = both, dataset = "other", n = 5L)
+  )
+
+  expect_equal(
+    written,
+    c(anon_synth_ds_catalogue = 3L, anon_synth_ds_random = 5L)
+  )
+  expect_equal(rows_default$catalogue, paste0("d_", 1:3))
+  expect_equal(rows_default$plain, paste0("r_", 1:5))
+  expect_equal(
+    random_of(msgs_default),
+    paste0(
+      "populate_synthetic() used $random() for the tables with no dataset ",
+      "'default' in their catalogue: anon_synth_ds_random.\n"
+    )
+  )
+  expect_length(random_of(msgs_null), 0L)
+  expect_match(
+    random_of(msgs_other),
+    "catalogue: anon_synth_ds_catalogue, anon_synth_ds_random.",
+    fixed = TRUE
+  )
+  expect_equal(synth_rows(catalogue)$x, paste0("d_", 1:5))
 })
 
 test_that("item 12: add_source() refuses a reader and a simulator with different arguments", {
@@ -1156,7 +1336,9 @@ local_setsid <- function(envir = parent.frame()) {
 # An implementation package with the task synthrun_copy, which copies
 # anon_synthrun_input to anon_synthrun_output. The task writes the number of
 # input rows it saw to seen-input-rows.txt in the package directory. A detached
-# run has its own tempdir(), so .onLoad() puts the SQLite files there.
+# run has its own tempdir(), so .onLoad() puts the SQLite files there. The
+# synthetic output has negative ids, so it does not join the input on id. The
+# task declares no join group, so populate_synthetic() MUST NOT refuse it.
 local_synthetic_runner_pkg <- function(envir = parent.frame()) {
   dir <- withr::local_tempdir(.local_envir = envir)
   writeLines(
@@ -1183,7 +1365,8 @@ local_synthetic_runner_pkg <- function(envir = parent.frame()) {
       "  ss <- cs9::SurveillanceSystem_v9$new(name = 'synthrun')",
       "  for (v in c('input', 'output')) {",
       "    ss$add_table(name_access = 'anon', name_grouping = 'synthrun', name_variant = v,",
-      "      field_types = c(id = 'INTEGER', n = 'INTEGER'), keys = 'id')",
+      "      field_types = c(id = 'INTEGER', n = 'INTEGER'), keys = 'id',",
+      "      synthetic = if (v == 'output') list(generator = synth_negative_ids))",
       "  }",
       "  ss$add_task(name_grouping = 'synthrun', name_action = 'copy',",
       "    for_each_plan = plnr::expand_list(plan = 1),",
@@ -1192,6 +1375,9 @@ local_synthetic_runner_pkg <- function(envir = parent.frame()) {
       "    tables = list(input = ss$tables$anon_synthrun_input,",
       "      output = ss$tables$anon_synthrun_output))",
       "  global$ss <- ss",
+      "}",
+      "synth_negative_ids <- function(profile, n, seed, world) {",
+      "  data.table::data.table(id = -seq_len(n), n = 0L)",
       "}",
       "synth_data <- function(argset, tables) {",
       "  list(input = dplyr::collect(tables$input$tbl()))",
@@ -1273,7 +1459,11 @@ test_that("run-task.sh writes the synthetic calls only with --synthetic", {
     )
     calls <- c(
       "global$ss$set_synthetic(TRUE)",
-      paste0("global$ss$populate_synthetic(task = \"", task, "\")")
+      paste0(
+        "global$ss$populate_synthetic(task = \"",
+        task,
+        "\", dataset = \"default\")"
+      )
     )
     run_line <- which(
       driver == paste0("global$ss$run_task(\"", task, "\", run_key = run_key)")

@@ -50,7 +50,9 @@
 #'
 #' 1. It checks the database of every table, and of every partition. One
 #'    database that is not SQLite under `tempdir()` stops the whole call.
-#' 2. It gets the data of each table from `synthetic()`. With a number `n`, a
+#' 2. It gets the data of each table. With `dataset`, a table whose catalogue
+#'    holds a dataset of that name gets that dataset. Every other table gets
+#'    `$random(n, seed)`, and a message names those tables. With a number `n`, a
 #'    partitioned table gets `max(n, length(name_partitions))` rows. Every
 #'    table gets `n = NULL` unchanged, which means the generator's own size.
 #'    With `n = NULL`, the default generator of a partitioned table draws the
@@ -59,17 +61,28 @@
 #'    every partition. A custom generator decides which partitions get rows.
 #' 3. It validates the data against the contract of the table that receives
 #'    it. A `SyntheticTable` from the caller can be looser than the table.
-#' 4. With `task`, it checks the join contract of the tables that it fills.
-#'    Two of these tables that share key columns MUST have a non-empty inner
-#'    join on the shared key columns. Otherwise the call stops, and the error
-#'    names the two tables and the shared columns. A pair with no shared key
-#'    column is not checked. With `tables` alone, there is no join check.
+#' 4. With `task`, it checks the join groups of the task. The next paragraphs
+#'    describe this join check.
 #' 5. For each table, it checks the database of the table again, then calls
 #'    `drop_all_rows()`, then `insert_data()`. `drop_all_rows()` empties every
 #'    partition, so a partition that the data does not name is left empty.
 #'
 #' A failure in steps 1 to 4 therefore writes nothing. The check in step 5
 #' refuses a database that changed after step 1.
+#'
+#' `add_task(synthetic_joins = )` declares the join groups of a task, and
+#' cs9 stores them in the field `synthetic_joins` by task name. A join
+#' group is a character vector of at least 2 table names of the `tables` of
+#' the task. `add_task()` stops when a group names another table. Two tables
+#' of a group that share key columns MUST have a non-empty inner join on the
+#' shared key columns, the partition column included. Otherwise
+#' `populate_synthetic()` stops, and the error names the two tables and the
+#' shared columns. A pair with no shared key column is not checked.
+#'
+#' The join check is off by default. A task with no join groups gets no join
+#' check, and `tables` alone gets none. With `task` and `tables`, each group
+#' keeps only the tables that the call fills. A group with fewer than 2 of
+#' these tables is skipped.
 #'
 #' Each table gets its own seed, so two tables do not share a stream of
 #' random values. The seed of a table is `seed` plus the first 7 hexadecimal
@@ -363,6 +376,68 @@ synthetic_get <- function(ss, table_name, dataset, n, seed) {
   return(st$dataset(dataset, world = ss$synthetic_world))
 }
 
+# `dataset` when the catalogue of the table holds it, else NULL for random
+# data.
+synthetic_dataset_of <- function(ss, table_name, dataset) {
+  st <- ss$synthetic_tables[[table_name]]
+  if (is.null(dataset) || is.null(st)) {
+    return(NULL)
+  }
+  if (dataset %in% st$list_datasets()$name) {
+    return(dataset)
+  }
+  return(NULL)
+}
+
+# Stops unless `groups` is NULL or a list of character vectors, each with at
+# least 2 different table names of `tables`, the tables of a task.
+synthetic_check_join_groups <- function(groups, tables) {
+  if (is.null(groups)) {
+    return(invisible(NULL))
+  }
+  ok <- is.list(groups) &&
+    all(vapply(
+      groups,
+      function(g) is.character(g) && !anyNA(g) && length(unique(g)) >= 2,
+      logical(1)
+    ))
+  if (!ok) {
+    stop(
+      "synthetic_joins must be NULL or a list of character vectors, each ",
+      "with at least 2 different table names.",
+      call. = FALSE
+    )
+  }
+  known <- vapply(tables, synthetic_table_name, character(1))
+  stranger <- setdiff(unlist(groups), known)
+  if (length(stranger) > 0) {
+    stop(
+      "synthetic_joins names tables that are not in the tables of the task: ",
+      paste0(stranger, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  return(invisible(groups))
+}
+
+# Checks the join groups of a new task and stores them in synthetic_joins
+# under the task name. NULL removes the groups of an earlier task of that name.
+# add_task() calls it before it stores the task, so a refusal adds no task.
+synthetic_register_joins <- function(ss, task, groups) {
+  synthetic_check_join_groups(groups, task$tables)
+  ss$synthetic_joins[[task$name]] <- groups
+  return(invisible(NULL))
+}
+
+# The join groups of a task, given by name or as a Task.
+synthetic_task_join_groups <- function(ss, task) {
+  if (!is.character(task)) {
+    task <- task$name
+  }
+  return(ss$synthetic_joins[[task]])
+}
+
 # The tables of a task, named by table name. NULL gives none.
 synthetic_task_tables <- function(ss, task) {
   if (is.character(task)) {
@@ -445,8 +520,8 @@ synthetic_key_values <- function(d, columns) {
   return(unique(data.table::as.data.table(values)))
 }
 
-# Stops when two tables of a task share key columns and their data have no
-# row in common on those columns. A pair with no shared key column passes.
+# Stops when two tables of a join group share key columns and their data have
+# no row in common on those columns. A pair with no shared key column passes.
 synthetic_check_joins <- function(task_tables, data) {
   nms <- names(task_tables)
   if (length(nms) < 2) {
@@ -498,19 +573,38 @@ synthetic_populate <- function(ss, task, tables, dataset, n, seed) {
   # All data next, validated against the table that receives it, so a
   # failure writes nothing.
   data <- list()
+  random <- character(0)
   for (x in names(targets)) {
+    use <- synthetic_dataset_of(ss, x, dataset)
+    if (!is.null(dataset) && is.null(use)) {
+      random <- c(random, x)
+    }
     d <- synthetic_get(
       ss,
       x,
-      dataset,
+      use,
       synthetic_n(targets[[x]], n),
       synthetic_table_seed(seed, x)
     )
     synthetic_default(targets[[x]])$validate(d)
     data[[x]] <- d
   }
+  if (length(random) > 0) {
+    message(
+      "populate_synthetic() used $random() for the tables with no dataset '",
+      dataset,
+      "' in their catalogue: ",
+      paste0(random, collapse = ", "),
+      "."
+    )
+  }
+  # Only the join groups of the task, each restricted to the tables that the
+  # call fills. synthetic_check_joins() skips a group of fewer than 2 tables.
   if (!is.null(task)) {
-    synthetic_check_joins(targets, data)
+    for (group in synthetic_task_join_groups(ss, task)) {
+      group <- intersect(group, names(targets))
+      synthetic_check_joins(targets[group], data)
+    }
   }
   for (x in names(targets)) {
     # Immediately before the first write to this table.

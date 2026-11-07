@@ -53,8 +53,10 @@
 #'   See \code{vignette("rebuilding-a-table-safely")}.
 #' @param synthetic \code{TRUE} or \code{FALSE}. \code{TRUE} passes
 #'   \option{--synthetic} to \file{run-task.sh}. The child process then calls
-#'   \code{set_synthetic(TRUE)} and \code{populate_synthetic(task = task_name)}
-#'   before \code{run_task()}, and the log header holds \code{SYNTHETIC: yes}.
+#'   \code{set_synthetic(TRUE)} and
+#'   \code{populate_synthetic(task = task_name, dataset = "default")} before
+#'   \code{run_task()}, and the log header holds \code{SYNTHETIC: yes}. A table
+#'   with no dataset \code{default} in its catalogue gets random data.
 #'
 #' @return Invisibly, a list with elements \code{task}, \code{log},
 #'   \code{status}, \code{errors} and \code{pid}, all character strings. The

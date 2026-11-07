@@ -28,8 +28,9 @@
 #                          PATH. run_task_detached() passes the Rscript of the
 #                          R that calls it.
 #     --synthetic          before run_task(), call set_synthetic(TRUE) and
-#                          populate_synthetic(task = <task_name>), and write
-#                          "SYNTHETIC: yes" in the log header.
+#                          populate_synthetic(task = <task_name>,
+#                          dataset = "default"), and write "SYNTHETIC: yes" in
+#                          the log header.
 #     -h, --help           print this usage and exit.
 #
 # THE CONTRACT
@@ -172,7 +173,7 @@ fi
 SYNTHETIC_R=""
 if [ -n "$SYNTHETIC" ]; then
   SYNTHETIC_R="$SS_PREFIX\$set_synthetic(TRUE)
-$SS_PREFIX\$populate_synthetic(task = \"$TASK\")"
+$SS_PREFIX\$populate_synthetic(task = \"$TASK\", dataset = \"default\")"
 fi
 
 # The run_key reaches the driver as its first command-line argument, not as a

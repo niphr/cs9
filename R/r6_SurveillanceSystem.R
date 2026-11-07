@@ -57,6 +57,7 @@
 #' @field synthetic_tables Named list of `csdb::SyntheticTable`, by table name.
 #' @field synthetic_mode `TRUE` when synthetic mode is on. Change it with `set_synthetic()`.
 #' @field synthetic_world `NULL`, or the named list that every generator gets as `world`.
+#' @field synthetic_joins Named list of the join groups of `add_task(synthetic_joins = )`, by task name.
 #' @field sources Named list of sources from `add_source()`. Each holds a `reader` and a `simulator`.
 #' @import R6
 #' @export
@@ -71,6 +72,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     synthetic_tables = list(),
     synthetic_mode = FALSE,
     synthetic_world = NULL,
+    synthetic_joins = list(),
     sources = list(),
     #' @param name A string that you may use to track performance metrics (runtime and RAM usage).
     #' @param implementation_version A string that you may use to track performance metrics (runtime and RAM usage).
@@ -254,6 +256,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param action_fn_name The name of the function called for each analysis with arguments \code{data}, \code{argset}, \code{schema}.
     #' @param data_selector_fn_name The name of a function called to obtain the data for each analysis. The function MUST have the arguments \code{argset}, \code{schema} and MUST return a named list.
     #' @param tables A named list that maps \code{cs9::config$schemas} for use in \code{action_fn_name} and \code{data_selector_fn_name}.
+    #' @param synthetic_joins `NULL`, or a list of join groups for `populate_synthetic()`. A join group is a character vector of at least 2 table names of `tables`. See the section "Synthetic mode".
     #' @return No return value. This method is called for its side effect of adding a task to the surveillance system.
     #' @export
     add_task = function(
@@ -270,7 +273,8 @@ SurveillanceSystem_v9 <- R6::R6Class(
       insert_at_end_of_each_plan = FALSE,
       action_fn_name,
       data_selector_fn_name = NULL,
-      tables = NULL
+      tables = NULL,
+      synthetic_joins = NULL
     ) {
       force(name_grouping)
       force(name_action)
@@ -304,6 +308,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
       )
       task$ss <- self$name
       task$implementation_version <- self$implementation_version
+      synthetic_register_joins(self, task, synthetic_joins)
       return(self$tasks[[task$name]] <- task)
     },
     #' @description
@@ -408,7 +413,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @description Replace the rows of tables with synthetic data. See the section "Synthetic mode".
     #' @param task `NULL`, a task name or a `Task`. The method fills every table in its `tables`.
     #' @param tables `NULL`, or a character vector of table names to fill.
-    #' @param dataset,n,seed Passed to `synthetic()` for each table. Each table gets its own seed from `seed` and the table name.
+    #' @param dataset,n,seed A table whose catalogue holds the dataset `dataset` gets that dataset. Every other table gets `$random(n, seed)`, with its own seed from `seed` and the table name.
     #' @return Invisibly, the number of rows inserted, named by table.
     populate_synthetic = function(
       task = NULL,
