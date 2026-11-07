@@ -27,6 +27,9 @@
 #     -R, --rscript <path> the Rscript that runs the task. Default "Rscript" on
 #                          PATH. run_task_detached() passes the Rscript of the
 #                          R that calls it.
+#     --synthetic          before run_task(), call set_synthetic(TRUE) and
+#                          populate_synthetic(task = <task_name>), and write
+#                          "SYNTHETIC: yes" in the log header.
 #     -h, --help           print this usage and exit.
 #
 # THE CONTRACT
@@ -79,6 +82,7 @@ SS_PREFIX='global$ss'
 RUN_DIR=${CS9_RUN_DIR:-$HOME/.cs9/task-runs}
 RUN_KEY=""
 RSCRIPT="Rscript"
+SYNTHETIC=""
 TASK=""
 
 while [ $# -gt 0 ]; do
@@ -88,6 +92,7 @@ while [ $# -gt 0 ]; do
     -r|--runs) RUN_DIR=${2:-}; shift 2 ;;
     -k|--key)  RUN_KEY=${2:-}; shift 2 ;;
     -R|--rscript) RSCRIPT=${2:-}; shift 2 ;;
+    --synthetic) SYNTHETIC="yes"; shift ;;
     -h|--help) usage; exit 0 ;;
     -*)        echo "unknown option: $1" >&2; exit 2 ;;
     *)         if [ -n "$TASK" ]; then echo "unexpected argument: $1" >&2; exit 2; fi
@@ -107,7 +112,9 @@ if [ ! -f "$PKG/DESCRIPTION" ]; then
   exit 2
 fi
 
-PKG_ABS=$(cd "$PKG" && pwd)
+# pwd -W gives C:/... in Git Bash and MSYS2, where an R on Windows cannot read
+# the /c/... of pwd. Other shells reject -W and fall back to pwd.
+PKG_ABS=$(cd "$PKG" && { pwd -W 2>/dev/null || pwd; })
 PKG_NAME=$(sed -n 's/^Package: *//p' "$PKG/DESCRIPTION" | head -1 | tr -d '\r')
 PKG_VER=$(sed -n 's/^Version: *//p' "$PKG/DESCRIPTION" | head -1 | tr -d '\r')
 
@@ -155,8 +162,18 @@ fi
   echo "rscript:  $RSCRIPT"
   echo "started:  $(date '+%Y-%m-%d %H:%M:%S %z')"
   echo "host:     $(hostname)"
+  if [ -n "$SYNTHETIC" ]; then echo "SYNTHETIC: yes"; fi
   echo "---"
 } > "$LOG"
+
+# With --synthetic the driver fills the tables of the task with synthetic data
+# first. set_synthetic(TRUE) stops unless every database is SQLite under
+# tempdir().
+SYNTHETIC_R=""
+if [ -n "$SYNTHETIC" ]; then
+  SYNTHETIC_R="$SS_PREFIX\$set_synthetic(TRUE)
+$SS_PREFIX\$populate_synthetic(task = \"$TASK\")"
+fi
 
 # The run_key reaches the driver as its first command-line argument, not as a
 # string pasted into R code, so no quoting rule of R applies to it.
@@ -166,6 +183,7 @@ cat("cs9:     ", as.character(utils::packageVersion("cs9")), "\n", sep = "")
 devtools::load_all("$PKG_ABS")
 run_key <- commandArgs(trailingOnly = TRUE)
 run_key <- if (length(run_key) > 0) run_key[[1]] else NULL
+$SYNTHETIC_R
 $SS_PREFIX\$run_task("$TASK", run_key = run_key)
 EOF
 

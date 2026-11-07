@@ -51,6 +51,10 @@
 #'   process passes it to \code{run_task()}. Pass a key to stage the run, as a
 #'   scheduler does. With \code{NULL} the task writes its tables directly.
 #'   See \code{vignette("rebuilding-a-table-safely")}.
+#' @param synthetic \code{TRUE} or \code{FALSE}. \code{TRUE} passes
+#'   \option{--synthetic} to \file{run-task.sh}. The child process then calls
+#'   \code{set_synthetic(TRUE)} and \code{populate_synthetic(task = task_name)}
+#'   before \code{run_task()}, and the log header holds \code{SYNTHETIC: yes}.
 #'
 #' @return Invisibly, a list with elements \code{task}, \code{log},
 #'   \code{status}, \code{errors} and \code{pid}, all character strings. The
@@ -69,8 +73,12 @@ run_task_detached <- function(
   package_dir = ".",
   ss_prefix = "global$ss",
   run_dir = NULL,
-  run_key = NULL
+  run_key = NULL,
+  synthetic = FALSE
 ) {
+  if (!is.logical(synthetic) || length(synthetic) != 1 || is.na(synthetic)) {
+    stop("synthetic must be TRUE or FALSE.", call. = FALSE)
+  }
   # A wrong key stops here, in the calling session, and not in the child.
   if (!is.null(run_key)) {
     run_check_key(run_key)
@@ -100,6 +108,9 @@ run_task_detached <- function(
   if (!is.null(run_key)) {
     args <- c(args, "--key", shQuote(run_key))
   }
+  if (synthetic) {
+    args <- c(args, "--synthetic")
+  }
   args <- c(args, shQuote(task_name))
 
   out <- suppressWarnings(
@@ -107,7 +118,10 @@ run_task_detached <- function(
   )
   code <- attr(out, "status")
   if (!is.null(code) && code != 0) {
-    stop(paste(c(paste0("run-task.sh exited ", code, ":"), out), collapse = "\n"), call. = FALSE)
+    stop(
+      paste(c(paste0("run-task.sh exited ", code, ":"), out), collapse = "\n"),
+      call. = FALSE
+    )
   }
 
   # The script prints exactly TASK, LOG, STATUS, ERRORS and PID, one per line.

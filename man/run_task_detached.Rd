@@ -9,7 +9,8 @@ run_task_detached(
   package_dir = ".",
   ss_prefix = "global$ss",
   run_dir = NULL,
-  run_key = NULL
+  run_key = NULL,
+  synthetic = FALSE
 )
 }
 \arguments{
@@ -30,6 +31,11 @@ variable, and \file{~/.cs9/task-runs} when that is unset.}
 process passes it to \code{run_task()}. Pass a key to stage the run, as a
 scheduler does. With \code{NULL} the task writes its tables directly.
 See \code{vignette("rebuilding-a-table-safely")}.}
+
+\item{synthetic}{\code{TRUE} or \code{FALSE}. \code{TRUE} passes
+\option{--synthetic} to \file{run-task.sh}. The child process then calls
+\code{set_synthetic(TRUE)} and \code{populate_synthetic(task = task_name)}
+before \code{run_task()}, and the log header holds \code{SYNTHETIC: yes}.}
 }
 \value{
 Invisibly, a list with elements \code{task}, \code{log},

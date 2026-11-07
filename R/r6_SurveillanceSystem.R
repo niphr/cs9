@@ -54,6 +54,10 @@
 #' @field tasks List of surveillance tasks configured for execution.
 #' @field name Character string identifying the surveillance system instance.
 #' @field implementation_version Character string tracking the analytics code version.
+#' @field synthetic_tables Named list of `csdb::SyntheticTable`, by table name.
+#' @field synthetic_mode `TRUE` when synthetic mode is on. Change it with `set_synthetic()`.
+#' @field synthetic_world `NULL`, or the named list that every generator gets as `world`.
+#' @field sources Named list of sources from `add_source()`. Each holds a `reader` and a `simulator`.
 #' @import R6
 #' @export
 SurveillanceSystem_v9 <- R6::R6Class(
@@ -64,6 +68,10 @@ SurveillanceSystem_v9 <- R6::R6Class(
     tasks = list(),
     name = NULL,
     implementation_version = NULL,
+    synthetic_tables = list(),
+    synthetic_mode = FALSE,
+    synthetic_world = NULL,
+    sources = list(),
     #' @param name A string that you may use to track performance metrics (runtime and RAM usage).
     #' @param implementation_version A string that you may use to track performance metrics (runtime and RAM usage).
     initialize = function(
@@ -83,6 +91,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param indexes Named list, containing indexes.
     #' @param validator_field_types Function corresponding to a validator for the field types.
     #' @param validator_field_contents Function corresponding to a validator for the field contents.
+    #' @param synthetic A `csdb::SyntheticTable`, or `NULL` for the schema-only default. See the section "Synthetic mode".
     #' @examples
     #' \dontrun{
     #' global$ss$add_table(
@@ -134,7 +143,8 @@ SurveillanceSystem_v9 <- R6::R6Class(
       keys,
       indexes = NULL,
       validator_field_types = csdb::validator_field_types_blank,
-      validator_field_contents = csdb::validator_field_contents_blank
+      validator_field_contents = csdb::validator_field_contents_blank,
+      synthetic = NULL
     ) {
       force(name_access)
       force(name_grouping)
@@ -159,6 +169,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
         validator_field_types = validator_field_types,
         validator_field_contents = validator_field_contents
       )
+      synthetic_register(self, dbtable, synthetic)
 
       return(self$tables[[table_name]] <- dbtable)
     },
@@ -175,6 +186,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param indexes Named list containing index definitions.
     #' @param validator_field_types Function to validate field types.
     #' @param validator_field_contents Function to validate field contents.
+    #' @param synthetic A `csdb::SyntheticTable`, or `NULL` for the schema-only default. See the section "Synthetic mode".
     #' @return No return value. This method is called for its side effect of adding a partitioned table to the surveillance system.
     add_partitionedtable = function(
       name_access,
@@ -187,7 +199,8 @@ SurveillanceSystem_v9 <- R6::R6Class(
       keys,
       indexes = NULL,
       validator_field_types = csdb::validator_field_types_blank,
-      validator_field_contents = csdb::validator_field_contents_blank
+      validator_field_contents = csdb::validator_field_contents_blank,
+      synthetic = NULL
     ) {
       force(name_access)
       force(name_grouping)
@@ -218,6 +231,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
         validator_field_types = validator_field_types,
         validator_field_contents = validator_field_contents
       )
+      synthetic_register(self, dbtable, synthetic)
 
       return(self$partitionedtables[[table_name_base]] <- dbtable)
     },
@@ -372,6 +386,50 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @return Integer value representing the total number of analyses across all plans for the task.
     shortcut_get_num_analyses = function(task_name) {
       return(self$get_task(task_name)$num_analyses())
+    },
+    #' @description Turn synthetic mode on or off. See the section "Synthetic mode".
+    #' @param on `TRUE` or `FALSE`. `TRUE` stops unless every database is a SQLite file under `tempdir()`.
+    set_synthetic = function(on = TRUE) {
+      return(synthetic_set_mode(self, on))
+    },
+    #' @description Set the `world` that every generator gets.
+    #' @param world `NULL`, or a named list.
+    set_synthetic_world = function(world) {
+      return(synthetic_set_world(self, world))
+    },
+    #' @description Get validated synthetic data for one table.
+    #' @param table_name The name of the table.
+    #' @param dataset `NULL` for `$random(n, seed)`, or the name of a fixed dataset for `$dataset(dataset)`.
+    #' @param n,seed The number of rows and the seed of random data.
+    #' @return A validated data.table.
+    synthetic = function(table_name, dataset = NULL, n = 1000L, seed = 1L) {
+      return(synthetic_get(self, table_name, dataset, n, seed))
+    },
+    #' @description Replace the rows of tables with synthetic data. See the section "Synthetic mode".
+    #' @param task `NULL`, a task name or a `Task`. The method fills every table in its `tables`.
+    #' @param tables `NULL`, or a character vector of table names to fill.
+    #' @param dataset,n,seed Passed to `synthetic()` for each table.
+    #' @return Invisibly, the number of rows inserted, named by table.
+    populate_synthetic = function(
+      task = NULL,
+      tables = NULL,
+      dataset = NULL,
+      n = 1000L,
+      seed = 1L
+    ) {
+      return(synthetic_populate(self, task, tables, dataset, n, seed))
+    },
+    #' @description Add a source that synthetic mode can switch.
+    #' @param name The name of the source.
+    #' @param reader,simulator The functions that `source()` returns with synthetic mode off and on.
+    add_source = function(name, reader, simulator) {
+      return(synthetic_add_source(self, name, reader, simulator))
+    },
+    #' @description Get a source: the simulator with synthetic mode on, else the reader.
+    #' @param name The name of the source.
+    #' @return A function.
+    source = function(name) {
+      return(synthetic_source(self, name))
     }
   )
 )
