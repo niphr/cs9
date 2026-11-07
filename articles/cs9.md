@@ -74,13 +74,13 @@ Health.
 
 ## CS9 vs alternatives
 
-| Aspect                   | CS9                                | plnr                                     | Commercial Platforms         | R Frameworks                       | Custom Scripts             |
-|--------------------------|------------------------------------|------------------------------------------|------------------------------|------------------------------------|----------------------------|
-| Customization            | High — domain abstractions         | High — domain abstractions               | Low — vendor-limited         | Medium — computational flexibility | High — unlimited freedom   |
-| Maintenance              | Low — systematic abstractions      | Low — systematic abstractions            | Medium — vendor dependencies | Medium — framework constraints     | High — technical debt      |
-| User model               | Epidemiological concepts           | Epidemiological concepts                 | Standardized interfaces      | Computational tasks                | Complete freedom           |
-| Implementation speed     | Medium — initial setup, then rapid | High                                     | High — immediate capability  | Medium — learning curve            | Variable                   |
-| Long-term sustainability | High — structured evolution        | Medium — limited by complexity/data size | Medium — vendor dependency   | Medium — framework limitations     | Low — personnel dependency |
+| Aspect | CS9 | plnr | Commercial Platforms | R Frameworks | Custom Scripts |
+|----|----|----|----|----|----|
+| Customization | High — domain abstractions | High — domain abstractions | Low — vendor-limited | Medium — computational flexibility | High — unlimited freedom |
+| Maintenance | Low — systematic abstractions | Low — systematic abstractions | Medium — vendor dependencies | Medium — framework constraints | High — technical debt |
+| User model | Epidemiological concepts | Epidemiological concepts | Standardized interfaces | Computational tasks | Complete freedom |
+| Implementation speed | Medium — initial setup, then rapid | High | High — immediate capability | Medium — learning curve | Variable |
+| Long-term sustainability | High — structured evolution | Medium — limited by complexity/data size | Medium — vendor dependency | Medium — framework limitations | Low — personnel dependency |
 
 CS9 is built upon the [plnr](https://CRAN.R-project.org/package=plnr)
 framework. CS9 extends plnr with database integration and multi-plan
@@ -160,15 +160,15 @@ and does not warn you that it has not.
 
 ## Key concepts and definitions
 
-| Object           | Description                                                                                                                 |
-|:-----------------|:----------------------------------------------------------------------------------------------------------------------------|
-| argset           | A named list containing arguments passed between functions.                                                                 |
+| Object | Description |
+|:---|:---|
+| argset | A named list containing arguments passed between functions. |
 | data_selector_fn | A function that extracts data for each plan. Takes argset and tables as arguments and returns a named list for use as data. |
-| action_fn        | The core function that performs analysis work. Takes data (from data_selector_fn), argset, and tables as arguments.         |
-| analysis         | Individual computation within a plan. Combines 1 argset with 1 action_fn.                                                   |
-| plan             | Data processing unit containing 1 data-pull (using data_selector_fn) and multiple analyses.                                 |
-| task             | The fundamental unit scheduled in CS9. Contains multiple plans and can run in parallel. This is what Airflow schedules.     |
-| schema           | Database table definition with field types, validation rules, and access control.                                           |
+| action_fn | The core function that performs analysis work. Takes data (from data_selector_fn), argset, and tables as arguments. |
+| analysis | Individual computation within a plan. Combines 1 argset with 1 action_fn. |
+| plan | Data processing unit containing 1 data-pull (using data_selector_fn) and multiple analyses. |
+| task | The fundamental unit scheduled in CS9. Contains multiple plans and can run in parallel. This is what Airflow schedules. |
+| schema | Database table definition with field types, validation rules, and access control. |
 
 ## Surveillance system architecture
 

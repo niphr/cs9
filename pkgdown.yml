@@ -1,4 +1,4 @@
-pandoc: 3.1.3
+pandoc: 3.7.0.2
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
@@ -9,8 +9,9 @@ articles:
   how-a-task-runs: how-a-task-runs.html
   installation: installation.html
   rebuilding-a-table-safely: rebuilding-a-table-safely.html
+  synthetic-data: synthetic-data.html
   task-shapes: task-shapes.html
-last_built: 2026-10-22T12:41Z
+last_built: 2026-11-07T18:01Z
 urls:
   reference: https://niphr.github.io/cs9/reference
   article: https://niphr.github.io/cs9/articles

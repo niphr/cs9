@@ -9,15 +9,15 @@ its promise, so the build fails.
 [`vignette("how-a-task-runs")`](https://niphr.github.io/cs9/articles/how-a-task-runs.md)
 states the execution rules that every shape follows.
 
-| Shape                                                        | Use it when                                                                                          |
-|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| [Per-unit rebuild](#shape-per-unit-rebuild)                  | the rows of each unit depend only on its own data pull, and no reader needs the table during the run |
-| [Staged import](#shape-staged-import)                        | an import replaces the weeks of a run, and the live table MUST change only when every week arrived   |
-| [Per-plan staged swap](#shape-per-plan-staged-swap)          | each plan pulls one unit, and a reader MAY see units from different runs                             |
-| [Staging as a checkpoint](#shape-staging-checkpoint)         | an import is long, and a failed run MUST NOT lose the weeks that it already pulled                   |
-| [Fit then fill](#shape-fit-then-fill)                        | a fit can fail for one unit, and the fallback needs the results of all units                         |
-| [Export from a finished table](#shape-export-finished-table) | the output is files, made from tables that an earlier task finished                                  |
-| [Notify after export](#shape-notify-after-export)            | a finished export wrote the output, and a task sends it on without computing anything                |
+| Shape | Use it when |
+|----|----|
+| [Per-unit rebuild](#shape-per-unit-rebuild) | the rows of each unit depend only on its own data pull, and no reader needs the table during the run |
+| [Staged import](#shape-staged-import) | an import replaces the weeks of a run, and the live table MUST change only when every week arrived |
+| [Per-plan staged swap](#shape-per-plan-staged-swap) | each plan pulls one unit, and a reader MAY see units from different runs |
+| [Staging as a checkpoint](#shape-staging-checkpoint) | an import is long, and a failed run MUST NOT lose the weeks that it already pulled |
+| [Fit then fill](#shape-fit-then-fill) | a fit can fail for one unit, and the fallback needs the results of all units |
+| [Export from a finished table](#shape-export-finished-table) | the output is files, made from tables that an earlier task finished |
+| [Notify after export](#shape-notify-after-export) | a finished export wrote the output, and a task sends it on without computing anything |
 
 ## Setup
 

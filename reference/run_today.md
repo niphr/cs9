@@ -25,5 +25,5 @@ every attempt of a run builds the same plans.
 
 ``` r
 run_today()
-#> [1] "2026-10-22"
+#> [1] "2026-11-07"
 ```

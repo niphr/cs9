@@ -12,7 +12,8 @@ run_task_detached(
   package_dir = ".",
   ss_prefix = "global$ss",
   run_dir = NULL,
-  run_key = NULL
+  run_key = NULL,
+  synthetic = FALSE
 )
 ```
 
@@ -44,6 +45,14 @@ run_task_detached(
   `run_task()`. Pass a key to stage the run, as a scheduler does. With
   `NULL` the task writes its tables directly. See
   [`vignette("rebuilding-a-table-safely")`](https://niphr.github.io/cs9/articles/rebuilding-a-table-safely.md).
+
+- synthetic:
+
+  `TRUE` or `FALSE`. `TRUE` passes --synthetic to `run-task.sh`. The
+  child process then calls `set_synthetic(TRUE)` and
+  `populate_synthetic(task = task_name, dataset = "default")` before
+  `run_task()`, and the log header holds `SYNTHETIC: yes`. A table with
+  no dataset `default` in its catalogue gets random data.
 
 ## Value
 

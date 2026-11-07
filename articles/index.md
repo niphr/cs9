@@ -13,3 +13,5 @@
 - [Rebuilding a table
   safely](https://niphr.github.io/cs9/articles/rebuilding-a-table-safely.md):
 - [Task shapes](https://niphr.github.io/cs9/articles/task-shapes.md):
+- [Synthetic data in a surveillance
+  system](https://niphr.github.io/cs9/articles/synthetic-data.md):

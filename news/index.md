@@ -1,5 +1,31 @@
 # Changelog
 
+## Version 26.11.7
+
+- Synthetic mode. `add_table()` and `add_partitionedtable()` take
+  `synthetic`: `NULL`, a spec
+  `list(generator, dir, invariants, profile)`, or a
+  [`csdb::SyntheticTable`](https://niphr.github.io/csdb/reference/SyntheticTable.html).
+  cs9 builds the contract of a spec from the table, and adds the
+  partition column to the keys of a partitioned table.
+- New methods of `SurveillanceSystem_v9`: `set_synthetic()`, which
+  refuses unless every database is a SQLite file under
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html),
+  `set_synthetic_world()`, `synthetic()`, `populate_synthetic()`,
+  `add_source()` and [`source()`](https://rdrr.io/r/base/source.html).
+  `populate_synthetic(dataset = )` fills each table whose catalogue
+  holds that dataset with it, and every other table with `$random()`.
+- `add_task(synthetic_joins = )` declares join groups of the tables of a
+  task. `populate_synthetic(task = )` refuses two tables of a group that
+  share key columns and have no row in common on them. A task with no
+  join groups gets no join check.
+- `run_task_detached(synthetic = TRUE)` and `run-task.sh --synthetic`
+  call `populate_synthetic(task = , dataset = "default")` before the
+  run.
+  [`vignette("synthetic-data")`](https://niphr.github.io/cs9/articles/synthetic-data.md)
+  shows the whole route. cs9 needs csdb 2026.11.7, which has
+  `SyntheticTable`.
+
 ## Version 26.10.26
 
 - On a connection that the PostgreSQL server ended, a keyed run sends no

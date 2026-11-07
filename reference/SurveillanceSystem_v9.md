@@ -24,6 +24,126 @@ The surveillance system follows a structured approach:
 
 3.  Execute tasks with `run_task()` or external schedulers.
 
+## Synthetic mode
+
+Every table that `add_table()` or `add_partitionedtable()` adds gets a
+[`csdb::SyntheticTable`](https://niphr.github.io/csdb/reference/SyntheticTable.html)
+in `synthetic_tables`. The argument `synthetic` takes one of these:
+
+- `NULL`: the schema-only default. It is the spec
+  [`list()`](https://rdrr.io/r/base/list.html).
+
+- a spec: a named list with the elements `generator`, `dir`,
+  `invariants` and `profile`. Each element is optional.
+
+- a
+  [`csdb::SyntheticTable`](https://niphr.github.io/csdb/reference/SyntheticTable.html),
+  which cs9 stores as given.
+
+cs9 builds the `SyntheticTable` of a spec from the contract of the
+table. The contract is the field types of the table without
+`auto_last_updated_datetime`, the keys, and `validator_field_contents`.
+With `dir`, cs9 calls
+[`csdb::synthetic_table_from_dir()`](https://niphr.github.io/csdb/reference/synthetic_table_from_dir.html),
+which reads `profile.yaml` from `dir`. A spec MUST NOT have both `dir`
+and `profile`.
+
+The keys of the contract of a partitioned table also hold the partition
+column. Each partition is its own database table, so two partitions can
+hold the same series. The spec of a partitioned table also gets the
+invariant `partition_known`, which refuses a partition value outside
+`name_partitions`. Without `generator`, row `i` gets the partition
+`name_partitions[(i - 1) %% length(name_partitions) + 1]`.
+
+`set_synthetic(TRUE)` stops unless every database is a SQLite file under
+[`tempdir()`](https://rdrr.io/r/base/tempfile.html). It checks each
+entry of `config$dbconfigs` and the database of each table in `tables`
+and `partitionedtables`. The check compares normalised paths with
+[`fs::path_has_parent()`](https://fs.r-lib.org/reference/path_math.html).
+
+`populate_synthetic()` stops unless `synthetic_mode` is `TRUE`. It stops
+when it gets neither `task`, a task name or a `Task`, nor `tables`. It
+fills these tables:
+
+- `task` alone: every table in the `tables` of the task.
+
+- `tables` alone: the tables named in `tables`.
+
+- `task` and `tables`: only the tables named in `tables`. Each of them
+  MUST be in the `tables` of the task. Otherwise the call stops, and the
+  error names the tables that are not.
+
+cs9 cannot tell the input tables of a task from its output tables. When
+the `tables` of a task hold output tables, name the input tables in
+`tables`.
+
+It then works in this order:
+
+1.  It checks the database of every table, and of every partition. One
+    database that is not SQLite under
+    [`tempdir()`](https://rdrr.io/r/base/tempfile.html) stops the whole
+    call.
+
+2.  It gets the data of each table. With `dataset`, a table whose
+    catalogue holds a dataset of that name gets that dataset. Every
+    other table gets `$random(n, seed)`, and a message names those
+    tables. With a number `n`, a partitioned table gets
+    `max(n, length(name_partitions))` rows. Every table gets `n = NULL`
+    unchanged, which means the generator's own size. With `n = NULL`,
+    the default generator of a partitioned table draws the size of
+    [`csdb::simulate_from_profile()`](https://niphr.github.io/csdb/reference/simulate_from_profile.html),
+    and at least `length(name_partitions)` rows. The default generator
+    therefore fills every partition. A custom generator decides which
+    partitions get rows.
+
+3.  It validates the data against the contract of the table that
+    receives it. A `SyntheticTable` from the caller can be looser than
+    the table.
+
+4.  With `task`, it checks the join groups of the task. The next
+    paragraphs describe this join check.
+
+5.  For each table, it checks the database of the table again, then
+    calls `drop_all_rows()`, then `insert_data()`. `drop_all_rows()`
+    empties every partition, so a partition that the data does not name
+    is left empty.
+
+A failure in steps 1 to 4 therefore writes nothing. The check in step 5
+refuses a database that changed after step 1.
+
+`add_task(synthetic_joins = )` declares the join groups of a task, and
+cs9 stores them in the field `synthetic_joins` by task name. A join
+group is a character vector of at least 2 table names of the `tables` of
+the task. `add_task()` stops when a group names another table. Two
+tables of a group that share key columns MUST have a non-empty inner
+join on the shared key columns, the partition column included. Otherwise
+`populate_synthetic()` stops, and the error names the two tables and the
+shared columns. A pair with no shared key column is not checked.
+
+The join check is off by default. A task with no join groups gets no
+join check, and `tables` alone gets none. With `task` and `tables`, each
+group keeps only the tables that the call fills. A group with fewer than
+2 of these tables is skipped.
+
+Each table gets its own seed, so two tables do not share a stream of
+random values. The seed of a table is `seed` plus the first 7
+hexadecimal digits of the md5 of the table name, modulo
+`.Machine$integer.max`. `synthetic(table_name, seed = s)` uses `s` as
+given.
+
+A detached run has its own
+[`tempdir()`](https://rdrr.io/r/base/tempfile.html). With
+`run-task.sh --synthetic`, the implementation package MUST point its
+`CS9_DBCONFIG_DB_*` variables under
+[`tempdir()`](https://rdrr.io/r/base/tempfile.html) in its `.onLoad()`.
+It MUST then call
+[`reload_db_config()`](https://niphr.github.io/cs9/reference/reload_db_config.md).
+
+`source(name)` returns the `simulator` of `add_source()` when
+`synthetic_mode` is `TRUE`, and the `reader` otherwise. `add_source()`
+stops unless the `reader` and the `simulator` have the same names of
+formal arguments, in the same order. The error names both lists.
+
 ## Public fields
 
 - `tables`:
@@ -45,6 +165,30 @@ The surveillance system follows a structured approach:
 - `implementation_version`:
 
   Character string tracking the analytics code version.
+
+- `synthetic_tables`:
+
+  Named list of
+  [`csdb::SyntheticTable`](https://niphr.github.io/csdb/reference/SyntheticTable.html),
+  by table name.
+
+- `synthetic_mode`:
+
+  `TRUE` when synthetic mode is on. Change it with `set_synthetic()`.
+
+- `synthetic_world`:
+
+  `NULL`, or the named list that every generator gets as `world`.
+
+- `synthetic_joins`:
+
+  Named list of the join groups of `add_task(synthetic_joins = )`, by
+  task name.
+
+- `sources`:
+
+  Named list of sources from `add_source()`. Each holds a `reader` and a
+  `simulator`.
 
 ## Methods
 
@@ -71,6 +215,18 @@ The surveillance system follows a structured approach:
 - [`SurveillanceSystem_v9$shortcut_get_plans_argsets_as_dt()`](#method-SurveillanceSystem_v9-shortcut_get_plans_argsets_as_dt)
 
 - [`SurveillanceSystem_v9$shortcut_get_num_analyses()`](#method-SurveillanceSystem_v9-shortcut_get_num_analyses)
+
+- [`SurveillanceSystem_v9$set_synthetic()`](#method-SurveillanceSystem_v9-set_synthetic)
+
+- [`SurveillanceSystem_v9$set_synthetic_world()`](#method-SurveillanceSystem_v9-set_synthetic_world)
+
+- [`SurveillanceSystem_v9$synthetic()`](#method-SurveillanceSystem_v9-synthetic)
+
+- [`SurveillanceSystem_v9$populate_synthetic()`](#method-SurveillanceSystem_v9-populate_synthetic)
+
+- [`SurveillanceSystem_v9$add_source()`](#method-SurveillanceSystem_v9-add_source)
+
+- [`SurveillanceSystem_v9$source()`](#method-SurveillanceSystem_v9-source)
 
 - [`SurveillanceSystem_v9$clone()`](#method-SurveillanceSystem_v9-clone)
 
@@ -113,7 +269,8 @@ Add a table.
       keys,
       indexes = NULL,
       validator_field_types = csdb::validator_field_types_blank,
-      validator_field_contents = csdb::validator_field_contents_blank
+      validator_field_contents = csdb::validator_field_contents_blank,
+      synthetic = NULL
     )
 
 #### Arguments
@@ -153,6 +310,13 @@ Add a table.
 - `validator_field_contents`:
 
   Function corresponding to a validator for the field contents.
+
+- `synthetic`:
+
+  `NULL` for the schema-only default, a spec
+  `list(generator = , dir = , invariants = , profile = )`, or a
+  [`csdb::SyntheticTable`](https://niphr.github.io/csdb/reference/SyntheticTable.html).
+  See the section "Synthetic mode".
 
 #### Returns
 
@@ -220,7 +384,8 @@ Add a partitioned table to the surveillance system.
       keys,
       indexes = NULL,
       validator_field_types = csdb::validator_field_types_blank,
-      validator_field_contents = csdb::validator_field_contents_blank
+      validator_field_contents = csdb::validator_field_contents_blank,
+      synthetic = NULL
     )
 
 #### Arguments
@@ -270,6 +435,13 @@ Add a partitioned table to the surveillance system.
 
   Function to validate field contents.
 
+- `synthetic`:
+
+  `NULL` for the schema-only default, a spec
+  `list(generator = , dir = , invariants = , profile = )`, or a
+  [`csdb::SyntheticTable`](https://niphr.github.io/csdb/reference/SyntheticTable.html).
+  See the section "Synthetic mode".
+
 #### Returns
 
 No return value. This method is called for its side effect of adding a
@@ -299,7 +471,8 @@ date of the run.
       insert_at_end_of_each_plan = FALSE,
       action_fn_name,
       data_selector_fn_name = NULL,
-      tables = NULL
+      tables = NULL,
+      synthetic_joins = NULL
     )
 
 #### Arguments
@@ -371,6 +544,12 @@ date of the run.
 
   A named list that maps `cs9::config$schemas` for use in
   `action_fn_name` and `data_selector_fn_name`.
+
+- `synthetic_joins`:
+
+  `NULL`, or a list of join groups for `populate_synthetic()`. A join
+  group is a character vector of at least 2 table names of `tables`. See
+  the section "Synthetic mode".
 
 #### Returns
 
@@ -552,6 +731,153 @@ Get the total number of analyses for a task.
 
 Integer value representing the total number of analyses across all plans
 for the task.
+
+------------------------------------------------------------------------
+
+### `SurveillanceSystem_v9$set_synthetic()`
+
+Turn synthetic mode on or off. See the section "Synthetic mode".
+
+#### Usage
+
+    SurveillanceSystem_v9$set_synthetic(on = TRUE)
+
+#### Arguments
+
+- `on`:
+
+  `TRUE` or `FALSE`. `TRUE` stops unless every database is a SQLite file
+  under [`tempdir()`](https://rdrr.io/r/base/tempfile.html).
+
+------------------------------------------------------------------------
+
+### `SurveillanceSystem_v9$set_synthetic_world()`
+
+Set the `world` that every generator gets.
+
+#### Usage
+
+    SurveillanceSystem_v9$set_synthetic_world(world)
+
+#### Arguments
+
+- `world`:
+
+  `NULL`, or a named list.
+
+------------------------------------------------------------------------
+
+### `SurveillanceSystem_v9$synthetic()`
+
+Get validated synthetic data for one table.
+
+#### Usage
+
+    SurveillanceSystem_v9$synthetic(
+      table_name,
+      dataset = NULL,
+      n = 1000L,
+      seed = 1L
+    )
+
+#### Arguments
+
+- `table_name`:
+
+  The name of the table.
+
+- `dataset`:
+
+  `NULL` for `$random(n, seed)`, or the name of a fixed dataset for
+  `$dataset(dataset)`.
+
+- `n, seed`:
+
+  The number of rows and the seed of random data.
+
+#### Returns
+
+A validated data.table.
+
+------------------------------------------------------------------------
+
+### `SurveillanceSystem_v9$populate_synthetic()`
+
+Replace the rows of tables with synthetic data. See the section
+"Synthetic mode".
+
+#### Usage
+
+    SurveillanceSystem_v9$populate_synthetic(
+      task = NULL,
+      tables = NULL,
+      dataset = NULL,
+      n = 1000L,
+      seed = 1L
+    )
+
+#### Arguments
+
+- `task`:
+
+  `NULL`, a task name or a `Task`. The method fills every table in its
+  `tables`.
+
+- `tables`:
+
+  `NULL`, or a character vector of table names to fill.
+
+- `dataset, n, seed`:
+
+  A table whose catalogue holds the dataset `dataset` gets that dataset.
+  Every other table gets `$random(n, seed)`, with its own seed from
+  `seed` and the table name.
+
+#### Returns
+
+Invisibly, the number of rows inserted, named by table.
+
+------------------------------------------------------------------------
+
+### `SurveillanceSystem_v9$add_source()`
+
+Add a source that synthetic mode can switch.
+
+#### Usage
+
+    SurveillanceSystem_v9$add_source(name, reader, simulator)
+
+#### Arguments
+
+- `name`:
+
+  The name of the source.
+
+- `reader, simulator`:
+
+  The functions that [`source()`](https://rdrr.io/r/base/source.html)
+  returns with synthetic mode off and on. They MUST have the same names
+  of formal arguments.
+
+------------------------------------------------------------------------
+
+### `SurveillanceSystem_v9$source()`
+
+Get a source: the simulator with synthetic mode on, else the reader.
+
+#### Usage
+
+    SurveillanceSystem_v9$source(name)
+
+#### Arguments
+
+- `name`:
+
+  The name of the source.
+
+#### Returns
+
+A function.
 
 ------------------------------------------------------------------------
 
