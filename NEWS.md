@@ -1,3 +1,10 @@
+# Version 26.11.7
+
+- Synthetic mode. `add_table()` and `add_partitionedtable()` take `synthetic`: `NULL`, a spec `list(generator, dir, invariants, profile)`, or a `csdb::SyntheticTable`. cs9 builds the contract of a spec from the table, and adds the partition column to the keys of a partitioned table.
+- New methods of `SurveillanceSystem_v9`: `set_synthetic()`, which refuses unless every database is a SQLite file under `tempdir()`, `set_synthetic_world()`, `synthetic()`, `populate_synthetic()`, `add_source()` and `source()`. `populate_synthetic(dataset = )` fills each table whose catalogue holds that dataset with it, and every other table with `$random()`.
+- `add_task(synthetic_joins = )` declares join groups of the tables of a task. `populate_synthetic(task = )` refuses two tables of a group that share key columns and have no row in common on them. A task with no join groups gets no join check.
+- `run_task_detached(synthetic = TRUE)` and `run-task.sh --synthetic` call `populate_synthetic(task = , dataset = "default")` before the run. `vignette("synthetic-data")` shows the whole route. cs9 needs csdb 2026.11.7, which has `SyntheticTable`.
+
 # Version 26.10.26
 
 - On a connection that the PostgreSQL server ended, a keyed run sends no advisory unlock and no `RESET ROLE`, and stops with an R error. Before, the unlock crashed R with a segfault in odbc, exit code 139, as in a CNPG primary failover, and R skipped every cleanup. cs9 needs csdb 2026.10.23.

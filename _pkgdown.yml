@@ -30,6 +30,7 @@ articles:
   - how-a-task-runs
   - rebuilding-a-table-safely
   - task-shapes
+  - synthetic-data
 
 reference:
 - title: "Core Classes"
