@@ -91,7 +91,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param indexes Named list, containing indexes.
     #' @param validator_field_types Function corresponding to a validator for the field types.
     #' @param validator_field_contents Function corresponding to a validator for the field contents.
-    #' @param synthetic A `csdb::SyntheticTable`, or `NULL` for the schema-only default. See the section "Synthetic mode".
+    #' @param synthetic `NULL` for the schema-only default, a spec `list(generator = , dir = , invariants = , profile = )`, or a `csdb::SyntheticTable`. See the section "Synthetic mode".
     #' @examples
     #' \dontrun{
     #' global$ss$add_table(
@@ -186,7 +186,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param indexes Named list containing index definitions.
     #' @param validator_field_types Function to validate field types.
     #' @param validator_field_contents Function to validate field contents.
-    #' @param synthetic A `csdb::SyntheticTable`, or `NULL` for the schema-only default. See the section "Synthetic mode".
+    #' @param synthetic `NULL` for the schema-only default, a spec `list(generator = , dir = , invariants = , profile = )`, or a `csdb::SyntheticTable`. See the section "Synthetic mode".
     #' @return No return value. This method is called for its side effect of adding a partitioned table to the surveillance system.
     add_partitionedtable = function(
       name_access,
@@ -408,7 +408,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @description Replace the rows of tables with synthetic data. See the section "Synthetic mode".
     #' @param task `NULL`, a task name or a `Task`. The method fills every table in its `tables`.
     #' @param tables `NULL`, or a character vector of table names to fill.
-    #' @param dataset,n,seed Passed to `synthetic()` for each table.
+    #' @param dataset,n,seed Passed to `synthetic()` for each table. Each table gets its own seed from `seed` and the table name.
     #' @return Invisibly, the number of rows inserted, named by table.
     populate_synthetic = function(
       task = NULL,
@@ -421,7 +421,7 @@ SurveillanceSystem_v9 <- R6::R6Class(
     },
     #' @description Add a source that synthetic mode can switch.
     #' @param name The name of the source.
-    #' @param reader,simulator The functions that `source()` returns with synthetic mode off and on.
+    #' @param reader,simulator The functions that `source()` returns with synthetic mode off and on. They MUST have the same names of formal arguments.
     add_source = function(name, reader, simulator) {
       return(synthetic_add_source(self, name, reader, simulator))
     },

@@ -28,46 +28,87 @@ The surveillance system follows a structured approach:
 \section{Synthetic mode}{
 
 Every table that \code{add_table()} or \code{add_partitionedtable()} adds gets a
-\code{csdb::SyntheticTable} in \code{synthetic_tables}. With \code{synthetic = NULL} it is
-the schema-only default. The default uses the field types and keys of the
-table, without \code{auto_last_updated_datetime}, and the table's
-\code{validator_field_contents}.
+\code{csdb::SyntheticTable} in \code{synthetic_tables}. The argument \code{synthetic} takes
+one of these:
+\itemize{
+\item \code{NULL}: the schema-only default. It is the spec \code{list()}.
+\item a spec: a named list with the elements \code{generator}, \code{dir}, \code{invariants}
+and \code{profile}. Each element is optional.
+\item a \code{csdb::SyntheticTable}, which cs9 stores as given.
+}
 
-The default of a partitioned table gives row \code{i} the partition
-\code{name_partitions[(i - 1) \%\% length(name_partitions) + 1]}. An invariant
-refuses a partition value outside \code{name_partitions}.
+cs9 builds the \code{SyntheticTable} of a spec from the contract of the table.
+The contract is the field types of the table without
+\code{auto_last_updated_datetime}, the keys, and \code{validator_field_contents}.
+With \code{dir}, cs9 calls \code{csdb::synthetic_table_from_dir()}, which reads
+\code{profile.yaml} from \code{dir}. A spec MUST NOT have both \code{dir} and \code{profile}.
+
+The keys of the contract of a partitioned table also hold the partition
+column. Each partition is its own database table, so two partitions can
+hold the same series. The spec of a partitioned table also gets the
+invariant \code{partition_known}, which refuses a partition value outside
+\code{name_partitions}. Without \code{generator}, row \code{i} gets the partition
+\code{name_partitions[(i - 1) \%\% length(name_partitions) + 1]}.
 
 \code{set_synthetic(TRUE)} stops unless every database is a SQLite file under
 \code{tempdir()}. It checks each entry of \code{config$dbconfigs} and the database of
 each table in \code{tables} and \code{partitionedtables}. The check compares
 normalised paths with \code{fs::path_has_parent()}.
 
-\code{populate_synthetic()} stops unless \code{synthetic_mode} is \code{TRUE}. It takes
-the tables of \code{task}, a task name or a \code{Task}, and the tables named in
-\code{tables}. It stops when it gets neither. It then works in this order:
+\code{populate_synthetic()} stops unless \code{synthetic_mode} is \code{TRUE}. It stops
+when it gets neither \code{task}, a task name or a \code{Task}, nor \code{tables}. It
+fills these tables:
+\itemize{
+\item \code{task} alone: every table in the \code{tables} of the task.
+\item \code{tables} alone: the tables named in \code{tables}.
+\item \code{task} and \code{tables}: only the tables named in \code{tables}. Each of them
+MUST be in the \code{tables} of the task. Otherwise the call stops, and the
+error names the tables that are not.
+}
+
+cs9 cannot tell the input tables of a task from its output tables. When
+the \code{tables} of a task hold output tables, name the input tables in
+\code{tables}.
+
+It then works in this order:
 \enumerate{
 \item It checks the database of every table, and of every partition. One
 database that is not SQLite under \code{tempdir()} stops the whole call.
-\item It gets the data of each table from \code{synthetic()}. A partitioned table
-gets \code{max(n, length(name_partitions))} rows. The default generator
-therefore fills every partition at any \code{n} of at least 1. A custom
-\code{SyntheticTable} decides which partitions get rows.
+\item It gets the data of each table from \code{synthetic()}. With a number \code{n}, a
+partitioned table gets \code{max(n, length(name_partitions))} rows. Every
+table gets \code{n = NULL} unchanged, which means the generator's own size.
+With \code{n = NULL}, the default generator of a partitioned table draws the
+size of \code{csdb::simulate_from_profile()}, and at least
+\code{length(name_partitions)} rows. The default generator therefore fills
+every partition. A custom generator decides which partitions get rows.
 \item It validates the data against the contract of the table that receives
 it. A \code{SyntheticTable} from the caller can be looser than the table.
+\item With \code{task}, it checks the join contract of the tables that it fills.
+Two of these tables that share key columns MUST have a non-empty inner
+join on the shared key columns. Otherwise the call stops, and the error
+names the two tables and the shared columns. A pair with no shared key
+column is not checked. With \code{tables} alone, there is no join check.
 \item For each table, it checks the database of the table again, then calls
 \code{drop_all_rows()}, then \code{insert_data()}. \code{drop_all_rows()} empties every
 partition, so a partition that the data does not name is left empty.
 }
 
-A failure in steps 1 to 3 therefore writes nothing. The check in step 4
+A failure in steps 1 to 4 therefore writes nothing. The check in step 5
 refuses a database that changed after step 1.
+
+Each table gets its own seed, so two tables do not share a stream of
+random values. The seed of a table is \code{seed} plus the first 7 hexadecimal
+digits of the md5 of the table name, modulo \code{.Machine$integer.max}.
+\code{synthetic(table_name, seed = s)} uses \code{s} as given.
 
 A detached run has its own \code{tempdir()}. With \code{run-task.sh --synthetic}, the
 implementation package MUST point its \verb{CS9_DBCONFIG_DB_*} variables under
 \code{tempdir()} in its \code{.onLoad()}. It MUST then call \code{\link[=reload_db_config]{reload_db_config()}}.
 
 \code{source(name)} returns the \code{simulator} of \code{add_source()} when
-\code{synthetic_mode} is \code{TRUE}, and the \code{reader} otherwise.
+\code{synthetic_mode} is \code{TRUE}, and the \code{reader} otherwise. \code{add_source()}
+stops unless the \code{reader} and the \code{simulator} have the same names of
+formal arguments, in the same order. The error names both lists.
 }
 
 \examples{
@@ -246,7 +287,7 @@ global$ss$add_table(
       \item{\code{indexes}}{Named list, containing indexes.}
       \item{\code{validator_field_types}}{Function corresponding to a validator for the field types.}
       \item{\code{validator_field_contents}}{Function corresponding to a validator for the field contents.}
-      \item{\code{synthetic}}{A \code{csdb::SyntheticTable}, or \code{NULL} for the schema-only default. See the section "Synthetic mode".}
+      \item{\code{synthetic}}{\code{NULL} for the schema-only default, a spec \code{list(generator = , dir = , invariants = , profile = )}, or a \code{csdb::SyntheticTable}. See the section "Synthetic mode".}
     }
     \if{html}{\out{</div>}}
   }
@@ -336,7 +377,7 @@ global$ss$add_table(
       \item{\code{indexes}}{Named list containing index definitions.}
       \item{\code{validator_field_types}}{Function to validate field types.}
       \item{\code{validator_field_contents}}{Function to validate field contents.}
-      \item{\code{synthetic}}{A \code{csdb::SyntheticTable}, or \code{NULL} for the schema-only default. See the section "Synthetic mode".}
+      \item{\code{synthetic}}{\code{NULL} for the schema-only default, a spec \code{list(generator = , dir = , invariants = , profile = )}, or a \code{csdb::SyntheticTable}. See the section "Synthetic mode".}
     }
     \if{html}{\out{</div>}}
   }
@@ -655,7 +696,7 @@ A second call with the same \code{run_key} resumes a failed run. It skips each p
     \describe{
       \item{\code{task}}{\code{NULL}, a task name or a \code{Task}. The method fills every table in its \code{tables}.}
       \item{\code{tables}}{\code{NULL}, or a character vector of table names to fill.}
-      \item{\code{dataset, n, seed}}{Passed to \code{synthetic()} for each table.}
+      \item{\code{dataset, n, seed}}{Passed to \code{synthetic()} for each table. Each table gets its own seed from \code{seed} and the table name.}
     }
     \if{html}{\out{</div>}}
   }
@@ -678,7 +719,7 @@ A second call with the same \code{run_key} resumes a failed run. It skips each p
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{name}}{The name of the source.}
-      \item{\code{reader, simulator}}{The functions that \code{source()} returns with synthetic mode off and on.}
+      \item{\code{reader, simulator}}{The functions that \code{source()} returns with synthetic mode off and on. They MUST have the same names of formal arguments.}
     }
     \if{html}{\out{</div>}}
   }

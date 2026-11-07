@@ -161,6 +161,39 @@ seed_synth_rows <- function(table) {
   return(invisible(NULL))
 }
 
+# The seed that populate_synthetic() gives a table, from the documented rule:
+# seed plus the first 7 hexadecimal digits of the md5 of the table name,
+# modulo .Machine$integer.max.
+synth_seed_of <- function(seed, table_name) {
+  f <- withr::local_tempfile()
+  writeBin(charToRaw(table_name), f)
+  offset <- strtoi(substr(unname(tools::md5sum(f)), 1, 7), 16L)
+  return(as.integer((seed + offset) %% .Machine$integer.max))
+}
+
+# Every row of each plain table, every column, ordered by every column.
+synth_snapshot <- function(tables) {
+  return(lapply(tables, function(t) {
+    d <- data.table::as.data.table(dplyr::collect(t$tbl()))
+    data.table::setorderv(d, names(d))
+    return(d)
+  }))
+}
+
+# A generator of the columns x and n. Row i gets x = paste0(prefix, i). With
+# partitions, row i also gets part = partitions[(i - 1) %% 2 + 1].
+synth_prefix_generator <- function(prefix, partitions = NULL) {
+  force(prefix)
+  force(partitions)
+  return(function(profile, n, seed, world) {
+    d <- data.table::data.table(x = paste0(prefix, seq_len(n)), n = seq_len(n))
+    if (!is.null(partitions)) {
+      data.table::set(d, j = "part", value = rep_len(partitions, nrow(d)))
+    }
+    return(d)
+  })
+}
+
 refusal_cases <- expand.grid(
   kind = c("plain", "partitioned"),
   bad = c("pg", "outside"),
@@ -290,7 +323,11 @@ test_that("populate_synthetic fills every table and partition of a task", {
   expect_equal(
     synth_rows(plain)[, c("x", "n")],
     data.table::setorderv(
-      ss$synthetic("anon_synth_plain", n = 20L, seed = 3L),
+      ss$synthetic(
+        "anon_synth_plain",
+        n = 20L,
+        seed = synth_seed_of(3L, "anon_synth_plain")
+      ),
       "x"
     )
   )
@@ -611,6 +648,473 @@ test_that("a task runs on populated synthetic inputs", {
   both <- merge(input, output, by = "id")
   expect_equal(nrow(both), 50L)
   expect_equal(both$doubled, 2L * both$n)
+})
+
+# fixes from the synthetic-data trial ----
+
+test_that("item 8: one populate fills two partitions holding the same series", {
+  local_staging_db()
+  ss <- local_synth_system()
+  # The keys omit the partition column, as in the tables of norsyss.cs9.
+  add_series_table <- function(variant, synthetic = NULL) {
+    ss$add_partitionedtable(
+      name_access = "anon",
+      name_grouping = "synth",
+      name_variant = variant,
+      name_partitions = c("p1", "p2"),
+      column_name_partition = "part",
+      field_types = synth_fields,
+      keys = "x",
+      synthetic = synthetic
+    )
+    return(ss$partitionedtables[[paste0("anon_synth_", variant)]])
+  }
+  # The series x_1, x_2 and x_3, each in p1 and in p2.
+  same_series <- function(profile, n, seed, world) {
+    return(data.table::data.table(
+      x = rep(paste0("x_", 1:3), 2),
+      n = 1:6,
+      part = rep(c("p1", "p2"), each = 3)
+    ))
+  }
+  add_series_table("series_default")
+  part <- add_series_table("series_spec", list(generator = same_series))
+  default <- ss$synthetic_tables$anon_synth_series_default
+  spec <- ss$synthetic_tables$anon_synth_series_spec
+  for (t in part$tables) {
+    suppressMessages(invisible(t$tbl()))
+  }
+  ss$set_synthetic(TRUE)
+
+  err_default <- synth_error(default$validate(same_series()))
+  err_spec <- synth_error(ss$populate_synthetic(
+    tables = "anon_synth_series_spec",
+    n = 6L
+  ))
+
+  expect_equal(default$keys, c("x", "part"))
+  expect_equal(spec$keys, c("x", "part"))
+  expect_equal(err_default, "")
+  expect_equal(err_spec, "")
+  expect_equal(
+    vapply(part$tables, function(t) t$nrow(), numeric(1)),
+    c(p1 = 3, p2 = 3)
+  )
+  rows <- synth_rows(part)
+  expect_equal(rows$x[rows$part == "p1"], paste0("x_", 1:3))
+  expect_equal(rows$x[rows$part == "p2"], paste0("x_", 1:3))
+})
+
+test_that("item 9: each table gets its own seed from seed and the table name", {
+  local_staging_db()
+  ss <- local_synth_system()
+  a <- add_synth_table(ss, "plain", "anon", "seed_a")
+  b <- add_synth_table(ss, "plain", "anon", "seed_b")
+  names_ab <- c("anon_synth_seed_a", "anon_synth_seed_b")
+  ss$set_synthetic(TRUE)
+
+  ss$populate_synthetic(tables = names_ab, n = 50L, seed = 1L)
+  first <- lapply(list(a, b), function(t) synth_rows(t)[, c("x", "n")])
+  ss$populate_synthetic(tables = names_ab, n = 50L, seed = 1L)
+  second <- lapply(list(a, b), function(t) synth_rows(t)[, c("x", "n")])
+
+  # The keys are the same, row i gives x_i. The value streams differ.
+  expect_equal(first[[1]]$x, first[[2]]$x)
+  expect_false(identical(first[[1]]$n, first[[2]]$n))
+  expect_equal(second, first)
+  for (i in 1:2) {
+    expect_equal(
+      first[[i]],
+      data.table::setorderv(
+        ss$synthetic(
+          names_ab[i],
+          n = 50L,
+          seed = synth_seed_of(1L, names_ab[i])
+        ),
+        "x"
+      )
+    )
+  }
+})
+
+test_that("item 10: a spec list or a SyntheticTable works for both table kinds", {
+  local_staging_db()
+  ss <- local_synth_system()
+  n_not_negative <- function(data) {
+    return(all(data$n >= 0))
+  }
+  profile <- csdb::profile_schema(synth_fields[c("x", "n")], "x")
+  dir <- withr::local_tempdir()
+  add_synth_table(
+    ss,
+    "plain",
+    "anon",
+    "spec_plain",
+    validator_field_contents = n_not_negative,
+    synthetic = list(
+      generator = synth_prefix_generator("g_"),
+      invariants = list(n_known = function(d) all(!is.na(d$n))),
+      profile = profile
+    )
+  )
+  add_synth_table(
+    ss,
+    "partitioned",
+    "anon",
+    "spec_part",
+    validator_field_contents = n_not_negative,
+    synthetic = list(
+      generator = synth_prefix_generator("g_", c("p1", "p2")),
+      dir = dir
+    )
+  )
+  given <- list(
+    anon_synth_st_plain = csdb::SyntheticTable$new(
+      name = "anon_synth_st_plain",
+      field_types = synth_fields[c("x", "n")],
+      keys = "x",
+      generator = synth_prefix_generator("g_")
+    ),
+    anon_synth_st_part = csdb::SyntheticTable$new(
+      name = "anon_synth_st_part",
+      field_types = synth_fields[c("x", "n", "part")],
+      keys = c("x", "part"),
+      generator = synth_prefix_generator("g_", c("p1", "p2"))
+    )
+  )
+  add_synth_table(ss, "plain", "anon", "st_plain", synthetic = given[[1]])
+  add_synth_table(ss, "partitioned", "anon", "st_part", synthetic = given[[2]])
+  spec_of <- function(x) ss$synthetic_tables[[x]]$.__enclos_env__$private$spec
+  ss$set_synthetic(TRUE)
+
+  filled <- ss$populate_synthetic(
+    tables = c(
+      "anon_synth_spec_plain",
+      "anon_synth_spec_part",
+      "anon_synth_st_plain",
+      "anon_synth_st_part"
+    ),
+    n = 4L
+  )
+
+  # The spec-built contract is the contract of the table.
+  plain <- spec_of("anon_synth_spec_plain")
+  expect_equal(plain$field_types, c(x = "TEXT", n = "INTEGER"))
+  expect_equal(plain$keys, "x")
+  expect_identical(plain$validator_field_contents, n_not_negative)
+  expect_named(plain$invariants, "n_known")
+  expect_identical(plain$profile, profile)
+  part <- spec_of("anon_synth_spec_part")
+  expect_equal(part$field_types, c(x = "TEXT", n = "INTEGER", part = "TEXT"))
+  expect_equal(part$keys, c("x", "part"))
+  expect_identical(part$validator_field_contents, n_not_negative)
+  expect_named(part$invariants, "partition_known")
+  expect_equal(part$dir, dir)
+  # A SyntheticTable is stored as given.
+  for (x in names(given)) {
+    expect_identical(ss$synthetic_tables[[x]], given[[x]])
+  }
+  expect_equal(
+    filled,
+    c(
+      anon_synth_spec_plain = 4L,
+      anon_synth_spec_part = 4L,
+      anon_synth_st_plain = 4L,
+      anon_synth_st_part = 4L
+    )
+  )
+  all_tables <- c(ss$tables, ss$partitionedtables)
+  for (x in names(filled)) {
+    expect_equal(synth_rows(all_tables[[x]])$x, paste0("g_", 1:4))
+  }
+})
+
+test_that("item 10: a spec with an unknown element or with dir and profile is refused", {
+  local_staging_db()
+  ss <- local_synth_system()
+  err_unknown <- synth_error(add_synth_table(
+    ss,
+    "plain",
+    "anon",
+    "spec_bad",
+    synthetic = list(generatr = synth_prefix_generator("g_"))
+  ))
+  err_both <- synth_error(add_synth_table(
+    ss,
+    "plain",
+    "anon",
+    "spec_both",
+    synthetic = list(
+      dir = withr::local_tempdir(),
+      profile = csdb::profile_schema(synth_fields[c("x", "n")], "x")
+    )
+  ))
+  expect_match(err_unknown, "unknown elements: 'generatr'", fixed = TRUE)
+  expect_match(err_both, "MUST NOT have both dir and profile", fixed = TRUE)
+})
+
+# Three plain tables. join_a and join_b share the key x, and join_y has the
+# key y. join_b2 has the same x as join_a.
+add_join_tables <- function(ss) {
+  tables <- list(
+    a = add_synth_table(
+      ss,
+      "plain",
+      "anon",
+      "join_a",
+      synthetic = list(generator = synth_prefix_generator("a_"))
+    ),
+    b = add_synth_table(
+      ss,
+      "plain",
+      "anon",
+      "join_b",
+      synthetic = list(generator = synth_prefix_generator("b_"))
+    ),
+    b2 = add_synth_table(
+      ss,
+      "plain",
+      "anon",
+      "join_b2",
+      synthetic = list(generator = synth_prefix_generator("a_"))
+    )
+  )
+  ss$add_table(
+    name_access = "anon",
+    name_grouping = "synth",
+    name_variant = "join_y",
+    field_types = c(y = "TEXT", n = "INTEGER"),
+    keys = "y"
+  )
+  tables$y <- ss$tables$anon_synth_join_y
+  return(tables)
+}
+
+test_that("item 11: populate_synthetic(task = ) refuses tables that share keys and do not join", {
+  local_staging_db()
+  ss <- local_synth_system()
+  t <- add_join_tables(ss)
+  seed_synth_rows(t$a)
+  seed_synth_rows(t$b)
+  ss$add_task(
+    name_grouping = "synth",
+    name_action = "nojoin",
+    for_each_plan = plnr::expand_list(plan = 1),
+    action_fn_name = "identity",
+    tables = list(a = t$a, b = t$b, y = t$y)
+  )
+  before <- synth_snapshot(t[c("a", "b", "y")])
+  ss$set_synthetic(TRUE)
+
+  err <- synth_error(ss$populate_synthetic(task = "synth_nojoin", n = 5L))
+
+  expect_match(
+    err,
+    "the tables anon_synth_join_a and anon_synth_join_b have no row in common",
+    fixed = TRUE
+  )
+  expect_match(err, "shared key columns x.", fixed = TRUE)
+  # Every column of every table, auto_last_updated_datetime too, is as before.
+  expect_equal(synth_snapshot(t[c("a", "b", "y")]), before)
+  expect_equal(before$a$x, c("old-1", "old-2"))
+})
+
+test_that("item 11: a pair with no shared key column is not checked", {
+  local_staging_db()
+  ss <- local_synth_system()
+  t <- add_join_tables(ss)
+  ss$add_task(
+    name_grouping = "synth",
+    name_action = "join",
+    for_each_plan = plnr::expand_list(plan = 1),
+    action_fn_name = "identity",
+    tables = list(a = t$a, b2 = t$b2, y = t$y)
+  )
+  ss$set_synthetic(TRUE)
+
+  err <- synth_error(ss$populate_synthetic(task = "synth_join", n = 5L))
+
+  # join_y shares no key column with join_a or join_b2, and holds y_1 to y_5.
+  expect_equal(err, "")
+  expect_equal(
+    vapply(t[c("a", "b2", "y")], function(x) x$nrow(), numeric(1)),
+    c(a = 5, b2 = 5, y = 5)
+  )
+})
+
+test_that("item 11: naming the inputs excludes an output table from the join check", {
+  local_staging_db()
+  ss <- local_synth_system()
+  # Two inputs that join on x, and an output with the key x and other values.
+  io <- list(
+    in1 = add_synth_table(
+      ss,
+      "plain",
+      "anon",
+      "io_in1",
+      synthetic = list(generator = synth_prefix_generator("a_"))
+    ),
+    in2 = add_synth_table(
+      ss,
+      "plain",
+      "anon",
+      "io_in2",
+      synthetic = list(generator = synth_prefix_generator("a_"))
+    ),
+    out = add_synth_table(
+      ss,
+      "plain",
+      "anon",
+      "io_out",
+      synthetic = list(generator = synth_prefix_generator("z_"))
+    )
+  )
+  add_synth_table(ss, "plain", "anon", "io_other")
+  for (t in io) {
+    seed_synth_rows(t)
+  }
+  ss$add_task(
+    name_grouping = "synth",
+    name_action = "io",
+    for_each_plan = plnr::expand_list(plan = 1),
+    action_fn_name = "identity",
+    tables = io
+  )
+  before <- synth_snapshot(io)
+  ss$set_synthetic(TRUE)
+  inputs <- c("anon_synth_io_in1", "anon_synth_io_in2")
+
+  err_task <- synth_error(ss$populate_synthetic(task = "synth_io", n = 5L))
+  after_task <- synth_snapshot(io)
+  err_stranger <- synth_error(ss$populate_synthetic(
+    task = "synth_io",
+    tables = c(inputs, "anon_synth_io_other"),
+    n = 5L
+  ))
+  err_inputs <- synth_error(ss$populate_synthetic(
+    task = "synth_io",
+    tables = inputs,
+    n = 5L
+  ))
+  after_inputs <- synth_snapshot(io)
+
+  # The task alone checks the output too, and refuses.
+  expect_match(
+    err_task,
+    "the tables anon_synth_io_in1 and anon_synth_io_out have no row in common",
+    fixed = TRUE
+  )
+  expect_equal(after_task, before)
+  expect_match(
+    err_stranger,
+    "not in the tables of the task: anon_synth_io_other.",
+    fixed = TRUE
+  )
+  # The named inputs are filled, and the output is as before.
+  expect_equal(err_inputs, "")
+  expect_equal(after_inputs$in1$x, paste0("a_", 1:5))
+  expect_equal(after_inputs$in2$x, paste0("a_", 1:5))
+  expect_equal(after_inputs$out, before$out)
+})
+
+test_that("item 12: add_source() refuses a reader and a simulator with different arguments", {
+  local_staging_db()
+  ss <- local_synth_system()
+
+  err_missing <- synth_error(ss$add_source(
+    "visits",
+    reader = function(date_from, date_to) "real",
+    simulator = function(date_from) "synthetic"
+  ))
+  err_order <- synth_error(ss$add_source(
+    "visits",
+    reader = function(date_from, date_to) "real",
+    simulator = function(date_to, date_from) "synthetic"
+  ))
+  err_same <- synth_error(ss$add_source(
+    "visits",
+    reader = function(date_from, date_to) "real",
+    simulator = function(date_from, date_to) "synthetic"
+  ))
+
+  expect_match(
+    err_missing,
+    "reader has (date_from, date_to), simulator has (date_from).",
+    fixed = TRUE
+  )
+  expect_match(
+    err_order,
+    "reader has (date_from, date_to), simulator has (date_to, date_from).",
+    fixed = TRUE
+  )
+  expect_equal(err_same, "")
+  expect_named(ss$sources, "visits")
+  expect_equal(ss$source("visits")("2026-01-01", "2026-01-07"), "real")
+})
+
+test_that("populate_synthetic(n = NULL) passes NULL to a custom generator and fills every partition with the default", {
+  local_staging_db()
+  ss <- local_synth_system()
+  # Each custom generator records the n it gets.
+  seen <- new.env()
+  recording <- function(name, partitions = NULL) {
+    inner <- synth_prefix_generator("g_", partitions)
+    return(function(profile, n, seed, world) {
+      seen[[name]] <- list(n = n)
+      return(inner(profile, 4L, seed, world))
+    })
+  }
+  add_synth_table(
+    ss,
+    "plain",
+    "anon",
+    "null_plain",
+    synthetic = list(generator = recording("plain"))
+  )
+  add_synth_table(
+    ss,
+    "partitioned",
+    "anon",
+    "null_part",
+    synthetic = list(generator = recording("part", c("p1", "p2")))
+  )
+  default <- add_synth_table(ss, "partitioned", "anon", "null_default")
+  ss$set_synthetic(TRUE)
+
+  filled <- ss$populate_synthetic(
+    tables = c(
+      "anon_synth_null_plain",
+      "anon_synth_null_part",
+      "anon_synth_null_default"
+    ),
+    n = NULL
+  )
+
+  expect_null(seen$plain$n)
+  expect_null(seen$part$n)
+  # csdb::simulate_from_profile() gives 1000 rows for n = NULL.
+  expect_equal(
+    filled,
+    c(
+      anon_synth_null_plain = 4L,
+      anon_synth_null_part = 4L,
+      anon_synth_null_default = 1000L
+    )
+  )
+  expect_equal(
+    vapply(default$tables, function(t) t$nrow(), numeric(1)),
+    c(p1 = 500, p2 = 500)
+  )
+  # With more partitions than that size, the default draws one row for each.
+  partitions <- paste0("p", 1:1001)
+  d <- synthetic_partition_generator("part", partitions)(
+    csdb::profile_schema(c(x = "TEXT", part = "TEXT"), c("x", "part")),
+    NULL,
+    1L,
+    NULL
+  )
+  expect_equal(nrow(d), 1001L)
+  expect_setequal(d$part, partitions)
 })
 
 # run-task.sh ----
