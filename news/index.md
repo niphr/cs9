@@ -1,5 +1,16 @@
 # Changelog
 
+## Version 26.11.10
+
+- New [`path_put()`](https://niphr.github.io/cs9/reference/path_put.md),
+  [`path_get()`](https://niphr.github.io/cs9/reference/path_get.md) and
+  [`path_ls()`](https://niphr.github.io/cs9/reference/path_ls.md) take
+  the arguments of
+  [`path()`](https://niphr.github.io/cs9/reference/path.md). They
+  upload, download and list the same relative path on the SMB share in
+  `CS9_SHARE`, through `smbclient` with Kerberos. `CS9_SHARE` is
+  optional: when it is empty, the three functions copy nothing.
+
 ## Version 26.11.7
 
 - Synthetic mode. `add_table()` and `add_partitionedtable()` take

@@ -414,6 +414,29 @@ weather_export_plots_action <- function(data, argset, tables) {
 }
 ```
 
+## Files on a share
+
+Set `CS9_SHARE` to an SMB share, for example `//server/share`, and cs9
+copies files between `CS9_PATH` and that share. The path under
+`CS9_PATH` is the path on the share.
+[`path_get()`](https://niphr.github.io/cs9/reference/path_get.md),
+[`path_ls()`](https://niphr.github.io/cs9/reference/path_ls.md) and
+[`path_put()`](https://niphr.github.io/cs9/reference/path_put.md) take
+the arguments of
+[`path()`](https://niphr.github.io/cs9/reference/path.md) and run
+`smbclient` with a Kerberos ticket.
+
+``` r
+cs9::path_get("input", "weather")  # download the folder
+cs9::path_ls("input", "weather")   # list the folder on the share
+saveRDS(results, cs9::path("output", "weather", "results.rds"))
+cs9::path_put("output", "weather", "results.rds")  # upload the file
+```
+
+When `CS9_SHARE` is empty, the three functions copy nothing, and
+[`path_ls()`](https://niphr.github.io/cs9/reference/path_ls.md) lists
+the local folder.
+
 ## Notes
 
 - **Initialization order**: Files are numbered to match the loading

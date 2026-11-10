@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,6 +58,10 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.11.10" id="version-261110">Version 26.11.10<a class="anchor" aria-label="anchor" href="#version-261110"></a></h2>
+<ul><li>New <code><a href="../reference/path_put.html">path_put()</a></code>, <code><a href="../reference/path_get.html">path_get()</a></code> and <code><a href="../reference/path_ls.html">path_ls()</a></code> take the arguments of <code><a href="../reference/path.html">path()</a></code>. They upload, download and list the same relative path on the SMB share in <code>CS9_SHARE</code>, through <code>smbclient</code> with Kerberos. <code>CS9_SHARE</code> is optional: when it is empty, the three functions copy nothing.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.11.7" id="version-26117">Version 26.11.7<a class="anchor" aria-label="anchor" href="#version-26117"></a></h2>
 <ul><li>Synthetic mode. <code>add_table()</code> and <code>add_partitionedtable()</code> take <code>synthetic</code>: <code>NULL</code>, a spec <code>list(generator, dir, invariants, profile)</code>, or a <code><a href="https://niphr.github.io/csdb/reference/SyntheticTable.html" class="external-link">csdb::SyntheticTable</a></code>. cs9 builds the contract of a spec from the table, and adds the partition column to the keys of a partitioned table.</li>

@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -487,6 +487,24 @@ order.</p>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
+</div>
+<div class="section level2">
+<h2 id="files-on-a-share">Files on a share<a class="anchor" aria-label="anchor" href="#files-on-a-share"></a>
+</h2>
+<p>Set <code>CS9_SHARE</code> to an SMB share, for example
+<code>//server/share</code>, and cs9 copies files between
+<code>CS9_PATH</code> and that share. The path under
+<code>CS9_PATH</code> is the path on the share. <code><a href="../reference/path_get.html">path_get()</a></code>,
+<code><a href="../reference/path_ls.html">path_ls()</a></code> and <code><a href="../reference/path_put.html">path_put()</a></code> take the arguments of
+<code><a href="../reference/path.html">path()</a></code> and run <code>smbclient</code> with a Kerberos
+ticket.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/path_get.html">path_get</a></span><span class="op">(</span><span class="st">"input"</span>, <span class="st">"weather"</span><span class="op">)</span>  <span class="co"># download the folder</span></span>
+<span><span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/path_ls.html">path_ls</a></span><span class="op">(</span><span class="st">"input"</span>, <span class="st">"weather"</span><span class="op">)</span>   <span class="co"># list the folder on the share</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">results</span>, <span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/path.html">path</a></span><span class="op">(</span><span class="st">"output"</span>, <span class="st">"weather"</span>, <span class="st">"results.rds"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/path_put.html">path_put</a></span><span class="op">(</span><span class="st">"output"</span>, <span class="st">"weather"</span>, <span class="st">"results.rds"</span><span class="op">)</span>  <span class="co"># upload the file</span></span></code></pre></div>
+<p>When <code>CS9_SHARE</code> is empty, the three functions copy
+nothing, and <code><a href="../reference/path_ls.html">path_ls()</a></code> lists the local folder.</p>
 </div>
 <div class="section level2">
 <h2 id="notes">Notes<a class="anchor" aria-label="anchor" href="#notes"></a>

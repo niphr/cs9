@@ -70,6 +70,13 @@ Utilities for managing directories and file paths
 
 - [`path()`](https://niphr.github.io/cs9/reference/path.md) : Get
   Results Folder Path
+- [`path_put()`](https://niphr.github.io/cs9/reference/path_put.md) :
+  Upload a file under CS9_PATH to the same path on the share
+- [`path_get()`](https://niphr.github.io/cs9/reference/path_get.md) :
+  Download a file or a folder under CS9_PATH from the same path on the
+  share
+- [`path_ls()`](https://niphr.github.io/cs9/reference/path_ls.md) : List
+  the entries of a folder on the share
 - [`create_folder_if_doesnt_exist()`](https://niphr.github.io/cs9/reference/create_folder_if_doesnt_exist.md)
   : Create Folder If It Doesn't Exist
 - [`create_latest_folder()`](https://niphr.github.io/cs9/reference/create_latest_folder.md)
