@@ -59,6 +59,9 @@ reference:
   desc: "Utilities for managing directories and file paths"
   contents:
   - path
+  - path_put
+  - path_get
+  - path_ls
   - create_folder_if_doesnt_exist
   - create_latest_folder
 
