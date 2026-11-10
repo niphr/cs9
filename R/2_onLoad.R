@@ -202,6 +202,10 @@ set_env_vars <- function() {
   # Set auto mode with fallback
   config$is_auto <- isTRUE(Sys.getenv("CS9_AUTO") == "1")
 
+  # The SMB share of path_put(), path_get() and path_ls(). Optional: empty
+  # means no share.
+  config$share <- Sys.getenv("CS9_SHARE", unset = "")
+
   # Set path with fallback to empty string
   return(config$path <- Sys.getenv("CS9_PATH", unset = ""))
 }

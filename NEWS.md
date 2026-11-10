@@ -1,3 +1,7 @@
+# Version 26.11.10
+
+- New `path_put()`, `path_get()` and `path_ls()` take the arguments of `path()`. They upload, download and list the same relative path on the SMB share in `CS9_SHARE`, through `smbclient` with Kerberos. `CS9_SHARE` is optional: when it is empty, the three functions copy nothing.
+
 # Version 26.11.7
 
 - Synthetic mode. `add_table()` and `add_partitionedtable()` take `synthetic`: `NULL`, a spec `list(generator, dir, invariants, profile)`, or a `csdb::SyntheticTable`. cs9 builds the contract of a spec from the table, and adds the partition column to the keys of a partitioned table.

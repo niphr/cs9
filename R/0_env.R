@@ -6,6 +6,9 @@ config$is_auto <- FALSE
 config$verbose <- FALSE
 config$in_parallel <- FALSE
 config$tables <- list()
+# The SMB share of path_put(), path_get() and path_ls(), from CS9_SHARE. Empty
+# means no share: the three functions copy nothing.
+config$share <- ""
 
 # cs9 runs each plan once since 26.10.12, so plan_attempt_index is always 1.
 # The scheduler retries the whole task. The value stays for callers that read
