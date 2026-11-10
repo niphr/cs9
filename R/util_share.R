@@ -4,16 +4,16 @@
 
 # The one runner. Kerberos only: no credential goes into the argument vector.
 share_smbclient <- function(commands) {
-  processx::run(
+  return(processx::run(
     "smbclient",
     c(config$share, "--use-kerberos=required", "-N", "-c", commands),
     env = c("current", TZ = "UTC"),
     error_on_status = FALSE
-  )
+  ))
 }
 
 share_enabled <- function() {
-  isTRUE(nzchar(config$share))
+  return(isTRUE(nzchar(config$share)))
 }
 
 # NT status codes that mean "the remote path does not exist".
@@ -57,12 +57,12 @@ share_target <- function(dots, create_dir, trailing_slash, auto, envir) {
   parts <- strsplit(substring(file, nchar(prefix) + 1), "/", fixed = TRUE)[[1]]
   parts <- parts[parts != ""]
   share_check_parts(parts, local)
-  list(
+  return(list(
     local = local,
     file = file,
     parts = parts,
     remote = paste(parts, collapse = "\\")
-  )
+  ))
 }
 
 share_check_parts <- function(parts, what) {
@@ -72,7 +72,7 @@ share_check_parts <- function(parts, what) {
       call. = FALSE
     )
   }
-  invisible(parts)
+  return(invisible(parts))
 }
 
 # The checks that matter only for smbclient. They run after the share check, so
@@ -88,7 +88,7 @@ share_check_names <- function(target) {
     )
   }
   share_check_name_parts(target$parts, target$local)
-  invisible(target)
+  return(invisible(target))
 }
 
 share_check_name_parts <- function(parts, what) {
@@ -104,12 +104,12 @@ share_check_name_parts <- function(parts, what) {
       call. = FALSE
     )
   }
-  invisible(parts)
+  return(invisible(parts))
 }
 
 # Double quotes around one path argument, for the command parser of smbclient.
 share_quote <- function(x) {
-  paste0("\"", x, "\"")
+  return(paste0("\"", x, "\""))
 }
 
 # Runs `commands` and stops, naming `what`, on any NT_STATUS line and on any
@@ -187,25 +187,25 @@ share_parse_ls <- function(stdout) {
       format = "%Y-%m-%d %H:%M:%S"
     )
   )
-  retval[!retval$name %in% c(".", "..")]
+  return(retval[!retval$name %in% c(".", "..")])
 }
 
 share_list <- function(mask, what, missing = NULL) {
   res <- share_run(paste("ls", share_quote(mask)), what, missing = missing)
-  share_parse_ls(res$stdout)
+  return(share_parse_ls(res$stdout))
 }
 
 share_hex <- function() {
   # tempfile() draws its name outside the R random number generator, so the
   # caller's .Random.seed stays the same.
-  basename(tempfile(""))
+  return(basename(tempfile("")))
 }
 
 # Deletes a temporary remote name after a failure. The result is not checked:
 # the error that called it is the one the caller needs.
 share_discard <- function(remote) {
   try(share_smbclient(paste("del", share_quote(remote))), silent = TRUE)
-  invisible(NULL)
+  return(invisible(NULL))
 }
 
 share_mkdirs <- function(parts, what) {
@@ -222,7 +222,7 @@ share_mkdirs <- function(parts, what) {
     what,
     mkdir = TRUE
   )
-  invisible(NULL)
+  return(invisible(NULL))
 }
 
 #' Upload a file under CS9_PATH to the same path on the share
@@ -324,7 +324,7 @@ path_put <- function(
     paste("rename", share_quote(temp), share_quote(target$remote), "-f"),
     target$file
   )
-  invisible(target$local)
+  return(invisible(target$local))
 }
 
 share_check_size <- function(temp, temp_name, file) {
@@ -346,7 +346,7 @@ share_check_size <- function(temp, temp_name, file) {
       call. = FALSE
     )
   }
-  invisible(TRUE)
+  return(invisible(TRUE))
 }
 
 #' Download a file or a folder under CS9_PATH from the same path on the share
@@ -431,7 +431,7 @@ path_get <- function(
     share_run(paste(chunk, collapse = "; "), target$file)
   }
   share_check_local(files, target$file)
-  target$local
+  return(target$local)
 }
 
 # Lists a remote folder and every folder below it.
@@ -448,7 +448,7 @@ share_walk <- function(remote, local) {
     which(entries$type == "directory"),
     function(i) share_walk(entries$remote[i], entries$local[i])
   )
-  data.table::rbindlist(c(list(entries), below))
+  return(data.table::rbindlist(c(list(entries), below)))
 }
 
 # Splits commands into groups well below the 128 KiB limit of one argument.
@@ -457,7 +457,7 @@ share_chunks <- function(commands, max_bytes = 30000) {
     return(list())
   }
   bytes <- cumsum(nchar(commands, type = "bytes") + 2)
-  unname(split(commands, (bytes - 1) %/% max_bytes))
+  return(unname(split(commands, (bytes - 1) %/% max_bytes)))
 }
 
 share_check_local <- function(files, what) {
@@ -478,7 +478,7 @@ share_check_local <- function(files, what) {
       call. = FALSE
     )
   }
-  invisible(TRUE)
+  return(invisible(TRUE))
 }
 
 #' List the entries of a folder on the share
@@ -541,10 +541,10 @@ path_ls <- function(
     target$file,
     missing = missing
   )
-  data.table::data.table(
+  return(data.table::data.table(
     path = paste0(target$file, "/", listed$name),
     type = listed$type,
     size = listed$size,
     modification_time = listed$modification_time
-  )
+  ))
 }
