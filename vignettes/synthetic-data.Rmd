@@ -234,6 +234,67 @@ invisible(utils::capture.output(ss$run_task("vignette_rates")))
 dplyr::collect(ss$tables$anon_vignette_rates$tbl())[, c("isoyearweek", "region", "rate")]
 ```
 
+## synthetic_grid_generator()
+
+A generator often gives every series every week. `synthetic_grid_generator(grid)` builds that generator from the world. `grid` names world elements. The generator gives one row for each combination of their values, and `csdb::simulate_from_profile()` draws the other columns. It ignores `n`.
+
+A world element can be a data.frame. Its rows stay together, so a `location_code` keeps its `granularity_geo`. `synthetic_weeks()` and `synthetic_years()` give the 12 time columns of csfmt_rts_data_v2 as such a data.frame. Each table gets the columns of an element that it holds:
+
+```{r grid}
+ss$add_table(
+  name_access = "anon",
+  name_grouping = "vignette",
+  name_variant = "weekly",
+  field_types = c(
+    region = "TEXT",
+    isoyearweek = "TEXT",
+    isoyear = "INTEGER",
+    isoweek = "INTEGER",
+    visits = "INTEGER"
+  ),
+  keys = c("region", "isoyearweek"),
+  synthetic = list(
+    generator = cs9::synthetic_grid_generator(c("region", "weeks"))
+  )
+)
+ss$set_synthetic_world(list(
+  isoyearweek = c("2026-01", "2026-02", "2026-03", "2026-04"),
+  region = c("north", "south"),
+  weeks = cs9::synthetic_weeks("2026-01", "2026-04")
+))
+print(ss$synthetic("anon_vignette_weekly", n = NULL))
+```
+
+The grid makes the rows unique, so the generator draws without the keys. `finish = function(d, seed, world)` can then set values that one table needs.
+
+## populate_synthetic(derive = )
+
+A random draw of the rates does not follow the cases and the population. `derive` computes a table from the tables that the call drew. Element `x = f` replaces the data of table `x` with `f(data, world, seed)`, where `data` holds the data of every table:
+
+```{r derive}
+derive_rates <- function(data, world, seed) {
+  d <- merge(data$anon_vignette_cases, data$anon_vignette_population, by = "region")
+  return(d[, .(isoyearweek, region, rate = 100000 * cases / pop)])
+}
+# n = 1: the random draw of the rates needs one row only, because derive
+# replaces it. The generators of the inputs ignore n.
+ss$populate_synthetic(
+  task = "vignette_rates",
+  n = 1L,
+  derive = list(anon_vignette_rates = derive_rates)
+)
+cases <- rbindlist(lapply(
+  ss$partitionedtables$anon_vignette_cases$tables,
+  function(x) dplyr::collect(x$tbl())
+))
+rates <- dplyr::collect(ss$tables$anon_vignette_rates$tbl())
+both <- merge(cases, rates, by = c("isoyearweek", "region"))
+nrow(both)
+all.equal(both$rate, 100000 * both$cases / 50000)
+```
+
+cs9 runs the functions in list order, after every draw. It then validates every table again, so a function that breaks any table stops the call before the first write. A name of a table that the call does not fill stops the call before the first draw.
+
 ## add_source() and source()
 
 In synthetic mode, a task MUST NOT read an external source, such as a register or an SQL Server. `add_source()` registers a reader and a simulator under one name. `source(name)` returns the simulator with synthetic mode on, and the reader otherwise. The two MUST have the same formal arguments.

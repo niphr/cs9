@@ -85,6 +85,9 @@ size of \code{csdb::simulate_from_profile()}, and at least
 every partition. A custom generator decides which partitions get rows.
 \item It validates the data against the contract of the table that receives
 it. A \code{SyntheticTable} from the caller can be looser than the table.
+\item With \code{derive}, it replaces the data of each table that \code{derive} names,
+in list order. Then it validates the data of every table again. The
+paragraphs on \code{derive} below describe this step.
 \item With \code{task}, it checks the join groups of the task. The next paragraphs
 describe this join check.
 \item For each table, it checks the database of the table again, then calls
@@ -92,8 +95,20 @@ describe this join check.
 partition, so a partition that the data does not name is left empty.
 }
 
-A failure in steps 1 to 4 therefore writes nothing. The check in step 5
+A failure in steps 1 to 5 therefore writes nothing. The check in step 6
 refuses a database that changed after step 1.
+
+\code{derive} is \code{NULL} or a list of functions, each named by a table that the
+call fills. A name of another table stops the call before the first draw.
+Element \code{x = f} replaces the data of table \code{x} with
+\code{data.table::as.data.table(f(data, world, seed))}. \code{data} is the named list
+of the data of every table, after the draws and the earlier elements of
+\code{derive}. \code{world} is the world of \code{set_synthetic_world()}. \code{seed} is the
+seed of table \code{x}. A function can therefore compute a table from the
+tables that the call drew. Every table is validated after the last
+function, so a function that breaks another table by reference also stops
+the call. Without \code{derive}, the call works as it
+did before cs9 26.11.12.
 
 \code{add_task(synthetic_joins = )} declares the join groups of a task, and
 cs9 stores them in the field \code{synthetic_joins} by task name. A join
@@ -704,7 +719,8 @@ A second call with the same \code{run_key} resumes a failed run. It skips each p
   tables = NULL,
   dataset = NULL,
   n = 1000L,
-  seed = 1L
+  seed = 1L,
+  derive = NULL
 )}
     \if{html}{\out{</div>}}
   }
@@ -714,6 +730,7 @@ A second call with the same \code{run_key} resumes a failed run. It skips each p
       \item{\code{task}}{\code{NULL}, a task name or a \code{Task}. The method fills every table in its \code{tables}.}
       \item{\code{tables}}{\code{NULL}, or a character vector of table names to fill.}
       \item{\code{dataset, n, seed}}{A table whose catalogue holds the dataset \code{dataset} gets that dataset. Every other table gets \verb{$random(n, seed)}, with its own seed from \code{seed} and the table name.}
+      \item{\code{derive}}{\code{NULL}, or a list of functions named by tables that the call fills. Element \code{x = f} replaces the data of table \code{x} with \code{f(data, world, seed)}, after every draw and before the validation of every table.}
     }
     \if{html}{\out{</div>}}
   }

@@ -54,6 +54,7 @@ reference:
   contents:
   - check_environment_setup
   - reload_db_config
+  - use_sqlite_default
 
 - title: "File and Path Management"
   desc: "Utilities for managing directories and file paths"
@@ -69,6 +70,13 @@ reference:
   desc: "Helper functions for data manipulation and filtering"
   contents:
   - mandatory_db_filter
+
+- title: "Synthetic Data"
+  desc: "Generators and time columns for synthetic tables"
+  contents:
+  - synthetic_grid_generator
+  - synthetic_weeks
+  - synthetic_years
 
 - title: "Task Management"
   desc: "Functions for running and managing surveillance tasks"

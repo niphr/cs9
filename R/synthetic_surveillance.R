@@ -61,14 +61,29 @@
 #'    every partition. A custom generator decides which partitions get rows.
 #' 3. It validates the data against the contract of the table that receives
 #'    it. A `SyntheticTable` from the caller can be looser than the table.
-#' 4. With `task`, it checks the join groups of the task. The next paragraphs
+#' 4. With `derive`, it replaces the data of each table that `derive` names,
+#'    in list order. Then it validates the data of every table again. The
+#'    paragraphs on `derive` below describe this step.
+#' 5. With `task`, it checks the join groups of the task. The next paragraphs
 #'    describe this join check.
-#' 5. For each table, it checks the database of the table again, then calls
+#' 6. For each table, it checks the database of the table again, then calls
 #'    `drop_all_rows()`, then `insert_data()`. `drop_all_rows()` empties every
 #'    partition, so a partition that the data does not name is left empty.
 #'
-#' A failure in steps 1 to 4 therefore writes nothing. The check in step 5
+#' A failure in steps 1 to 5 therefore writes nothing. The check in step 6
 #' refuses a database that changed after step 1.
+#'
+#' `derive` is `NULL` or a list of functions, each named by a table that the
+#' call fills. A name of another table stops the call before the first draw.
+#' Element `x = f` replaces the data of table `x` with
+#' `data.table::as.data.table(f(data, world, seed))`. `data` is the named list
+#' of the data of every table, after the draws and the earlier elements of
+#' `derive`. `world` is the world of `set_synthetic_world()`. `seed` is the
+#' seed of table `x`. A function can therefore compute a table from the
+#' tables that the call drew. Every table is validated after the last
+#' function, so a function that breaks another table by reference also stops
+#' the call. Without `derive`, the call works as it
+#' did before cs9 26.11.12.
 #'
 #' `add_task(synthetic_joins = )` declares the join groups of a task, and
 #' cs9 stores them in the field `synthetic_joins` by task name. A join
@@ -555,7 +570,68 @@ synthetic_check_joins <- function(task_tables, data) {
   return(invisible(NULL))
 }
 
-synthetic_populate <- function(ss, task, tables, dataset, n, seed) {
+# TRUE when `derive` is a list of functions with different, non-empty names.
+synthetic_derive_ok <- function(derive) {
+  nms <- names(derive)
+  if (!is.list(derive) || is.null(nms)) {
+    return(FALSE)
+  }
+  fns <- vapply(derive, is.function, logical(1))
+  return(all(!is.na(nms) & nzchar(nms) & fns) && anyDuplicated(nms) == 0)
+}
+
+# Stops unless `derive` is NULL or a named list of functions, each named by a
+# table in `targets`. populate_synthetic() calls it before any draw.
+synthetic_check_derive <- function(derive, targets) {
+  if (length(derive) == 0 && (is.null(derive) || is.list(derive))) {
+    return(invisible(NULL))
+  }
+  if (!synthetic_derive_ok(derive)) {
+    stop(
+      "derive must be NULL or a list of functions, each named by a ",
+      "different table.",
+      call. = FALSE
+    )
+  }
+  stranger <- setdiff(names(derive), names(targets))
+  if (length(stranger) > 0) {
+    stop(
+      "derive names tables that populate_synthetic() does not fill: ",
+      paste0(stranger, collapse = ", "),
+      ". Nothing was written.",
+      call. = FALSE
+    )
+  }
+  return(invisible(derive))
+}
+
+# Replaces data[[x]] with f(data, world, seed of x) for each element x = f of
+# `derive`, in list order. Then validates every table of `targets` against its
+# contract, because a function can change any table of `data`. Without
+# `derive` it returns `data` unchanged and validates nothing.
+synthetic_apply_derive <- function(ss, derive, targets, data, seed) {
+  if (length(derive) == 0) {
+    return(data)
+  }
+  for (x in names(derive)) {
+    d <- derive[[x]](data, ss$synthetic_world, synthetic_table_seed(seed, x))
+    data[[x]] <- data.table::as.data.table(d)
+  }
+  for (x in names(targets)) {
+    synthetic_default(targets[[x]])$validate(data[[x]])
+  }
+  return(data)
+}
+
+synthetic_populate <- function(
+  ss,
+  task,
+  tables,
+  dataset,
+  n,
+  seed,
+  derive = NULL
+) {
   if (!isTRUE(ss$synthetic_mode)) {
     stop(
       "populate_synthetic() needs synthetic mode. Call set_synthetic(TRUE).",
@@ -563,6 +639,7 @@ synthetic_populate <- function(ss, task, tables, dataset, n, seed) {
     )
   }
   targets <- synthetic_targets(ss, task, tables)
+  synthetic_check_derive(derive, targets)
   # Every table first, so one unsafe table stops the call before any write.
   for (x in names(targets)) {
     synthetic_check_dbconfigs(
@@ -598,6 +675,7 @@ synthetic_populate <- function(ss, task, tables, dataset, n, seed) {
       "."
     )
   }
+  data <- synthetic_apply_derive(ss, derive, targets, data, seed)
   # Only the join groups of the task, each restricted to the tables that the
   # call fills. synthetic_check_joins() skips a group of fewer than 2 tables.
   if (!is.null(task)) {

@@ -414,15 +414,17 @@ SurveillanceSystem_v9 <- R6::R6Class(
     #' @param task `NULL`, a task name or a `Task`. The method fills every table in its `tables`.
     #' @param tables `NULL`, or a character vector of table names to fill.
     #' @param dataset,n,seed A table whose catalogue holds the dataset `dataset` gets that dataset. Every other table gets `$random(n, seed)`, with its own seed from `seed` and the table name.
+    #' @param derive `NULL`, or a list of functions named by tables that the call fills. Element `x = f` replaces the data of table `x` with `f(data, world, seed)`, after every draw and before the validation of every table.
     #' @return Invisibly, the number of rows inserted, named by table.
     populate_synthetic = function(
       task = NULL,
       tables = NULL,
       dataset = NULL,
       n = 1000L,
-      seed = 1L
+      seed = 1L,
+      derive = NULL
     ) {
-      return(synthetic_populate(self, task, tables, dataset, n, seed))
+      return(synthetic_populate(self, task, tables, dataset, n, seed, derive))
     },
     #' @description Add a source that synthetic mode can switch.
     #' @param name The name of the source.

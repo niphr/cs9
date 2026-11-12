@@ -1,3 +1,9 @@
+# Version 26.11.12
+
+- New `use_sqlite_default(dir)` points the database configuration at SQLite files in `dir`, and sets no environment variable.
+- New `synthetic_weeks()` and `synthetic_years()` give the 12 time columns of csfmt_rts_data_v2 from cstime. New `synthetic_grid_generator(grid)` gives one row per combination of the world elements in `grid`. In the grid, the rows of a data.frame element of the world stay together.
+- `populate_synthetic(derive = )` computes a table from the tables that the call drew, then validates every table before the first write.
+
 # Version 26.11.10
 
 - New `path_put()`, `path_get()` and `path_ls()` take the arguments of `path()`. They upload, download and list the same relative path on the SMB share in `CS9_SHARE`, through `smbclient` with Kerberos. `CS9_SHARE` is optional: when it is empty, the three functions copy nothing.
