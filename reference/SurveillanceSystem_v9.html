@@ -11,7 +11,7 @@ epidemiological monitoring and public health surveillance."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -128,13 +128,27 @@ size of <code><a href="https://niphr.github.io/csdb/reference/simulate_from_prof
 every partition. A custom generator decides which partitions get rows.</p></li>
 <li><p>It validates the data against the contract of the table that receives
 it. A <code>SyntheticTable</code> from the caller can be looser than the table.</p></li>
+<li><p>With <code>derive</code>, it replaces the data of each table that <code>derive</code> names,
+in list order. Then it validates the data of every table again. The
+paragraphs on <code>derive</code> below describe this step.</p></li>
 <li><p>With <code>task</code>, it checks the join groups of the task. The next paragraphs
 describe this join check.</p></li>
 <li><p>For each table, it checks the database of the table again, then calls
 <code>drop_all_rows()</code>, then <code>insert_data()</code>. <code>drop_all_rows()</code> empties every
 partition, so a partition that the data does not name is left empty.</p></li>
-</ol><p>A failure in steps 1 to 4 therefore writes nothing. The check in step 5
+</ol><p>A failure in steps 1 to 5 therefore writes nothing. The check in step 6
 refuses a database that changed after step 1.</p>
+<p><code>derive</code> is <code>NULL</code> or a list of functions, each named by a table that the
+call fills. A name of another table stops the call before the first draw.
+Element <code>x = f</code> replaces the data of table <code>x</code> with
+<code>data.table::as.data.table(f(data, world, seed))</code>. <code>data</code> is the named list
+of the data of every table, after the draws and the earlier elements of
+<code>derive</code>. <code>world</code> is the world of <code>set_synthetic_world()</code>. <code>seed</code> is the
+seed of table <code>x</code>. A function can therefore compute a table from the
+tables that the call drew. Every table is validated after the last
+function, so a function that breaks another table by reference also stops
+the call. Without <code>derive</code>, the call works as it
+did before cs9 26.11.12.</p>
 <p><code>add_task(synthetic_joins = )</code> declares the join groups of a task, and
 cs9 stores them in the field <code>synthetic_joins</code> by task name. A join
 group is a character vector of at least 2 table names of the <code>tables</code> of
@@ -714,7 +728,8 @@ A second call with the same <code>run_key</code> resumes a failed run. It skips 
 <span>  tables <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dataset <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n <span class="op">=</span> <span class="fl">1000L</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">1L</span></span>
+<span>  seed <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  derive <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-14">Arguments<a class="anchor" aria-label="anchor" href="#arguments-14"></a></h4>
@@ -726,6 +741,9 @@ A second call with the same <code>run_key</code> resumes a failed run. It skips 
 
       <dt><code>dataset, n, seed</code></dt>
 <dd><p>A table whose catalogue holds the dataset <code>dataset</code> gets that dataset. Every other table gets <code>$random(n, seed)</code>, with its own seed from <code>seed</code> and the table name.</p></dd>
+
+      <dt><code>derive</code></dt>
+<dd><p><code>NULL</code>, or a list of functions named by tables that the call fills. Element <code>x = f</code> replaces the data of table <code>x</code> with <code>f(data, world, seed)</code>, after every draw and before the validation of every table.</p></dd>
 
 
 </dl><p></p></div>

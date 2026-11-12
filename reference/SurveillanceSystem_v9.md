@@ -100,16 +100,32 @@ It then works in this order:
     receives it. A `SyntheticTable` from the caller can be looser than
     the table.
 
-4.  With `task`, it checks the join groups of the task. The next
+4.  With `derive`, it replaces the data of each table that `derive`
+    names, in list order. Then it validates the data of every table
+    again. The paragraphs on `derive` below describe this step.
+
+5.  With `task`, it checks the join groups of the task. The next
     paragraphs describe this join check.
 
-5.  For each table, it checks the database of the table again, then
+6.  For each table, it checks the database of the table again, then
     calls `drop_all_rows()`, then `insert_data()`. `drop_all_rows()`
     empties every partition, so a partition that the data does not name
     is left empty.
 
-A failure in steps 1 to 4 therefore writes nothing. The check in step 5
+A failure in steps 1 to 5 therefore writes nothing. The check in step 6
 refuses a database that changed after step 1.
+
+`derive` is `NULL` or a list of functions, each named by a table that
+the call fills. A name of another table stops the call before the first
+draw. Element `x = f` replaces the data of table `x` with
+`data.table::as.data.table(f(data, world, seed))`. `data` is the named
+list of the data of every table, after the draws and the earlier
+elements of `derive`. `world` is the world of `set_synthetic_world()`.
+`seed` is the seed of table `x`. A function can therefore compute a
+table from the tables that the call drew. Every table is validated after
+the last function, so a function that breaks another table by reference
+also stops the call. Without `derive`, the call works as it did before
+cs9 26.11.12.
 
 `add_task(synthetic_joins = )` declares the join groups of a task, and
 cs9 stores them in the field `synthetic_joins` by task name. A join
@@ -813,7 +829,8 @@ Replace the rows of tables with synthetic data. See the section
       tables = NULL,
       dataset = NULL,
       n = 1000L,
-      seed = 1L
+      seed = 1L,
+      derive = NULL
     )
 
 #### Arguments
@@ -832,6 +849,13 @@ Replace the rows of tables with synthetic data. See the section
   A table whose catalogue holds the dataset `dataset` gets that dataset.
   Every other table gets `$random(n, seed)`, with its own seed from
   `seed` and the table name.
+
+- `derive`:
+
+  `NULL`, or a list of functions named by tables that the call fills.
+  Element `x = f` replaces the data of table `x` with
+  `f(data, world, seed)`, after every draw and before the validation of
+  every table.
 
 #### Returns
 

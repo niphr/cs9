@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 26.11.12
+
+- New `use_sqlite_default(dir)` points the database configuration at
+  SQLite files in `dir`, and sets no environment variable.
+- New
+  [`synthetic_weeks()`](https://niphr.github.io/cs9/reference/synthetic_weeks.md)
+  and
+  [`synthetic_years()`](https://niphr.github.io/cs9/reference/synthetic_weeks.md)
+  give the 12 time columns of csfmt_rts_data_v2 from cstime. New
+  `synthetic_grid_generator(grid)` gives one row per combination of the
+  world elements in `grid`. In the grid, the rows of a data.frame
+  element of the world stay together.
+- `populate_synthetic(derive = )` computes a table from the tables that
+  the call drew, then validates every table before the first write.
+
 ## Version 26.11.10
 
 - New [`path_put()`](https://niphr.github.io/cs9/reference/path_put.md),

@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -366,6 +366,92 @@ holds that dataset with it, and every other table with random data.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> 2026-04     south     42</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="synthetic_grid_generator">synthetic_grid_generator()<a class="anchor" aria-label="anchor" href="#synthetic_grid_generator"></a>
+</h2>
+<p>A generator often gives every series every week.
+<code>synthetic_grid_generator(grid)</code> builds that generator from
+the world. <code>grid</code> names world elements. The generator gives
+one row for each combination of their values, and
+<code><a href="https://niphr.github.io/csdb/reference/simulate_from_profile.html" class="external-link">csdb::simulate_from_profile()</a></code> draws the other columns. It
+ignores <code>n</code>.</p>
+<p>A world element can be a data.frame. Its rows stay together, so a
+<code>location_code</code> keeps its <code>granularity_geo</code>.
+<code><a href="../reference/synthetic_weeks.html">synthetic_weeks()</a></code> and <code><a href="../reference/synthetic_weeks.html">synthetic_years()</a></code> give
+the 12 time columns of csfmt_rts_data_v2 as such a data.frame. Each
+table gets the columns of an element that it holds:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_table</span><span class="op">(</span></span>
+<span>  name_access <span class="op">=</span> <span class="st">"anon"</span>,</span>
+<span>  name_grouping <span class="op">=</span> <span class="st">"vignette"</span>,</span>
+<span>  name_variant <span class="op">=</span> <span class="st">"weekly"</span>,</span>
+<span>  field_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    region <span class="op">=</span> <span class="st">"TEXT"</span>,</span>
+<span>    isoyearweek <span class="op">=</span> <span class="st">"TEXT"</span>,</span>
+<span>    isoyear <span class="op">=</span> <span class="st">"INTEGER"</span>,</span>
+<span>    isoweek <span class="op">=</span> <span class="st">"INTEGER"</span>,</span>
+<span>    visits <span class="op">=</span> <span class="st">"INTEGER"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  keys <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"isoyearweek"</span><span class="op">)</span>,</span>
+<span>  synthetic <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    generator <span class="op">=</span> <span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/synthetic_grid_generator.html">synthetic_grid_generator</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"weeks"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">set_synthetic_world</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  isoyearweek <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2026-01"</span>, <span class="st">"2026-02"</span>, <span class="st">"2026-03"</span>, <span class="st">"2026-04"</span><span class="op">)</span>,</span>
+<span>  region <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"north"</span>, <span class="st">"south"</span><span class="op">)</span>,</span>
+<span>  weeks <span class="op">=</span> <span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/synthetic_weeks.html">synthetic_weeks</a></span><span class="op">(</span><span class="st">"2026-01"</span>, <span class="st">"2026-04"</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="fu">synthetic</span><span class="op">(</span><span class="st">"anon_vignette_weekly"</span>, n <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    region isoyearweek isoyear isoweek visits</span></span>
+<span><span class="co">#&gt;    &lt;char&gt;      &lt;char&gt;   &lt;int&gt;   &lt;int&gt;  &lt;int&gt;</span></span>
+<span><span class="co">#&gt; 1:  north     2026-01    2026       1     34</span></span>
+<span><span class="co">#&gt; 2:  north     2026-02    2026       2     69</span></span>
+<span><span class="co">#&gt; 3:  north     2026-03    2026       3     73</span></span>
+<span><span class="co">#&gt; 4:  north     2026-04    2026       4     41</span></span>
+<span><span class="co">#&gt; 5:  south     2026-01    2026       1     37</span></span>
+<span><span class="co">#&gt; 6:  south     2026-02    2026       2     19</span></span>
+<span><span class="co">#&gt; 7:  south     2026-03    2026       3     27</span></span>
+<span><span class="co">#&gt; 8:  south     2026-04    2026       4     19</span></span></code></pre></div>
+<p>The grid makes the rows unique, so the generator draws without the
+keys. <code>finish = function(d, seed, world)</code> can then set values
+that one table needs.</p>
+</div>
+<div class="section level2">
+<h2 id="populate_syntheticderive">populate_synthetic(derive = )<a class="anchor" aria-label="anchor" href="#populate_syntheticderive"></a>
+</h2>
+<p>A random draw of the rates does not follow the cases and the
+population. <code>derive</code> computes a table from the tables that
+the call drew. Element <code>x = f</code> replaces the data of table
+<code>x</code> with <code>f(data, world, seed)</code>, where
+<code>data</code> holds the data of every table:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">derive_rates</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">world</span>, <span class="va">seed</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">anon_vignette_cases</span>, <span class="va">data</span><span class="op">$</span><span class="va">anon_vignette_population</span>, by <span class="op">=</span> <span class="st">"region"</span><span class="op">)</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">d</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">isoyearweek</span>, <span class="va">region</span>, rate <span class="op">=</span> <span class="fl">100000</span> <span class="op">*</span> <span class="va">cases</span> <span class="op">/</span> <span class="va">pop</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="co"># n = 1: the random draw of the rates needs one row only, because derive</span></span>
+<span><span class="co"># replaces it. The generators of the inputs ignore n.</span></span>
+<span><span class="va">ss</span><span class="op">$</span><span class="fu">populate_synthetic</span><span class="op">(</span></span>
+<span>  task <span class="op">=</span> <span class="st">"vignette_rates"</span>,</span>
+<span>  n <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  derive <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>anon_vignette_rates <span class="op">=</span> <span class="va">derive_rates</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">cases</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/rbindlist.html" class="external-link">rbindlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">ss</span><span class="op">$</span><span class="va">partitionedtables</span><span class="op">$</span><span class="va">anon_vignette_cases</span><span class="op">$</span><span class="va">tables</span>,</span>
+<span>  <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">rates</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="va">ss</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">anon_vignette_rates</span><span class="op">$</span><span class="fu">tbl</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">both</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span><span class="va">cases</span>, <span class="va">rates</span>, by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"isoyearweek"</span>, <span class="st">"region"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">both</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 8</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">both</span><span class="op">$</span><span class="va">rate</span>, <span class="fl">100000</span> <span class="op">*</span> <span class="va">both</span><span class="op">$</span><span class="va">cases</span> <span class="op">/</span> <span class="fl">50000</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>cs9 runs the functions in list order, after every draw. It then
+validates every table again, so a function that breaks any table stops
+the call before the first write. A name of a table that the call does
+not fill stops the call before the first draw.</p>
+</div>
+<div class="section level2">
 <h2 id="add_source-and-source">add_source() and source()<a class="anchor" aria-label="anchor" href="#add_source-and-source"></a>
 </h2>
 <p>In synthetic mode, a task MUST NOT read an external source, such as a
@@ -373,7 +459,7 @@ register or an SQL Server. <code>add_source()</code> registers a reader
 and a simulator under one name. <code>source(name)</code> returns the
 simulator with synthetic mode on, and the reader otherwise. The two MUST
 have the same formal arguments.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_source</span><span class="op">(</span></span>
 <span>  <span class="st">"register"</span>,</span>
 <span>  reader <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">isoyearweek</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"The register is not reachable here."</span><span class="op">)</span>,</span>
@@ -385,7 +471,7 @@ have the same formal arguments.</p>
 <span><span class="co">#&gt; 1:     2026-04     3</span></span></code></pre></div>
 <p>The call site reads <code>ss$source("register")(isoyearweek)</code>
 in both modes. A simulator with other arguments is refused:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">add_source</span><span class="op">(</span></span>
 <span>  <span class="st">"register_2"</span>,</span>
 <span>  reader <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">isoyearweek</span><span class="op">)</span> <span class="cn">NULL</span>,</span>
@@ -394,7 +480,7 @@ in both modes. A simulator with other arguments is refused:</p>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> reader and simulator of source register_2 MUST have the same formal arguments. reader has (isoyearweek), simulator has (week).</span></span></code></pre></div>
 <p>With synthetic mode off, the same call reaches the reader:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ss</span><span class="op">$</span><span class="fu">set_synthetic</span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">ss</span><span class="op">$</span><span class="kw">source</span><span class="op">(</span><span class="st">"register"</span><span class="op">)</span><span class="op">(</span><span class="st">"2026-04"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
@@ -406,11 +492,11 @@ in both modes. A simulator with other arguments is refused:</p>
 <p>A detached run of a task of an implementation package can start in
 synthetic mode. <code>run_task_detached(synthetic = TRUE)</code> passes
 <code>--synthetic</code> to <code>run-task.sh</code>:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">cs9</span><span class="fu">::</span><span class="fu"><a href="../reference/run_task_detached.html">run_task_detached</a></span><span class="op">(</span><span class="st">"my_task"</span>, package_dir <span class="op">=</span> <span class="st">"."</span>, synthetic <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>From a shell, the same run is:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="va">RUN</span><span class="op">=</span><span class="va">$(</span><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'cat(system.file("scripts", "run-task.sh", package = "cs9"))'</span><span class="va">)</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="st">"</span><span class="va">$RUN</span><span class="st">"</span> <span class="at">-d</span> . <span class="at">--synthetic</span> my_task</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="va">RUN</span><span class="op">=</span><span class="va">$(</span><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'cat(system.file("scripts", "run-task.sh", package = "cs9"))'</span><span class="va">)</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="st">"</span><span class="va">$RUN</span><span class="st">"</span> <span class="at">-d</span> . <span class="at">--synthetic</span> my_task</span></code></pre></div>
 <p>The child process calls <code>set_synthetic(TRUE)</code> and
 <code>populate_synthetic(task = "my_task", dataset = "default")</code>
 before <code>run_task()</code>. The log header then holds

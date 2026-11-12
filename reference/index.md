@@ -35,6 +35,8 @@ configuration
   : Check Environment Setup
 - [`reload_db_config()`](https://niphr.github.io/cs9/reference/reload_db_config.md)
   : Reload the database configuration from the environment
+- [`use_sqlite_default()`](https://niphr.github.io/cs9/reference/use_sqlite_default.md)
+  : Use SQLite databases in one directory as the database configuration
 
 ## File and Path Management
 
@@ -60,6 +62,16 @@ Helper functions for data manipulation and filtering
 
 - [`mandatory_db_filter()`](https://niphr.github.io/cs9/reference/mandatory_db_filter.md)
   : Filter surveillance data by standard epidemiological dimensions
+
+## Synthetic Data
+
+Generators and time columns for synthetic tables
+
+- [`synthetic_grid_generator()`](https://niphr.github.io/cs9/reference/synthetic_grid_generator.md)
+  : A generator that gives one row per combination of world elements
+- [`synthetic_weeks()`](https://niphr.github.io/cs9/reference/synthetic_weeks.md)
+  [`synthetic_years()`](https://niphr.github.io/cs9/reference/synthetic_weeks.md)
+  : The time columns of weeks and of isoyears
 
 ## Task Management
 

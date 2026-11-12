@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,6 +58,13 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.11.12" id="version-261112">Version 26.11.12<a class="anchor" aria-label="anchor" href="#version-261112"></a></h2>
+<ul><li>New <code>use_sqlite_default(dir)</code> points the database configuration at SQLite files in <code>dir</code>, and sets no environment variable.</li>
+<li>New <code><a href="../reference/synthetic_weeks.html">synthetic_weeks()</a></code> and <code><a href="../reference/synthetic_weeks.html">synthetic_years()</a></code> give the 12 time columns of csfmt_rts_data_v2 from cstime. New <code>synthetic_grid_generator(grid)</code> gives one row per combination of the world elements in <code>grid</code>. In the grid, the rows of a data.frame element of the world stay together.</li>
+<li>
+<code>populate_synthetic(derive = )</code> computes a table from the tables that the call drew, then validates every table before the first write.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.11.10" id="version-261110">Version 26.11.10<a class="anchor" aria-label="anchor" href="#version-261110"></a></h2>
 <ul><li>New <code><a href="../reference/path_put.html">path_put()</a></code>, <code><a href="../reference/path_get.html">path_get()</a></code> and <code><a href="../reference/path_ls.html">path_ls()</a></code> take the arguments of <code><a href="../reference/path.html">path()</a></code>. They upload, download and list the same relative path on the SMB share in <code>CS9_SHARE</code>, through <code>smbclient</code> with Kerberos. <code>CS9_SHARE</code> is optional: when it is empty, the three functions copy nothing.</li>
