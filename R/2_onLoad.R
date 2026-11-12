@@ -150,7 +150,7 @@ get_db_acess_from_env <- function() {
 }
 
 get_db_from_env <- function(access) {
-  retval <- list(
+  return(new_dbconfig(
     access = access,
     driver = Sys.getenv("CS9_DBCONFIG_DRIVER"),
     port = as.integer(Sys.getenv("CS9_DBCONFIG_PORT")),
@@ -162,6 +162,37 @@ get_db_from_env <- function(access) {
     server = Sys.getenv("CS9_DBCONFIG_SERVER"),
     schema = Sys.getenv(paste0("CS9_DBCONFIG_SCHEMA_", toupper(access))),
     db = Sys.getenv(paste0("CS9_DBCONFIG_DB_", toupper(access)))
+  ))
+}
+
+# One dbconfig entry of config$dbconfigs. get_db_from_env() and
+# use_sqlite_default() both build their entries here, so the two routes give
+# the same fields and the same id rule.
+new_dbconfig <- function(
+  access,
+  driver,
+  port,
+  user,
+  password,
+  trusted_connection,
+  sslmode,
+  role_create_table,
+  server,
+  schema,
+  db
+) {
+  retval <- list(
+    access = access,
+    driver = driver,
+    port = port,
+    user = user,
+    password = password,
+    trusted_connection = trusted_connection,
+    sslmode = sslmode,
+    role_create_table = role_create_table,
+    server = server,
+    schema = schema,
+    db = db
   )
 
   retval$schema <- gsub("\\\\", "\\\\", retval$schema)
@@ -256,6 +287,16 @@ set_env_vars <- function() {
 #' cs9::reload_db_config()
 #' }
 reload_db_config <- function() {
+  discard_tables()
+  set_env_vars()
+  setup_database_tables()
+
+  return(invisible(NULL))
+}
+
+# Disconnect every table in config$tables, then empty the list.
+# reload_db_config() and use_sqlite_default() call this before they rebuild.
+discard_tables <- function() {
   # release the connections held by the objects about to be discarded
   for (tab in config$tables) {
     tryCatch(tab$disconnect(), error = function(e) invisible(NULL))
@@ -264,9 +305,6 @@ reload_db_config <- function() {
   # empty first, so a failure below leaves an honest "not configured" rather
   # than tables describing the previous configuration
   config$tables <- list()
-
-  set_env_vars()
-  setup_database_tables()
 
   return(invisible(NULL))
 }
