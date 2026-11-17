@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 26.11.17
+
+- `staged_tbl()` returns a lazy table that carries the primary key of
+  the live table, with
+  [`csdb::set_pk()`](https://niphr.github.io/csdb/reference/set_pk.html).
+  [`csdb::collect_and_sort_by_pk()`](https://niphr.github.io/csdb/reference/collect_and_sort_by_pk.html)
+  can then sort the staged rows, as it sorts the rows of `tbl()`. cs9
+  needs csdb 2026.11.17.
+
 ## Version 26.11.12
 
 - New `use_sqlite_default(dir)` points the database configuration at

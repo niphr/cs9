@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cs9</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">26.11.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,6 +58,11 @@
       <small>Source: <a href="https://github.com/niphr/cs9/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="26.11.17" id="version-261117">Version 26.11.17<a class="anchor" aria-label="anchor" href="#version-261117"></a></h2>
+<ul><li>
+<code>staged_tbl()</code> returns a lazy table that carries the primary key of the live table, with <code><a href="https://niphr.github.io/csdb/reference/set_pk.html" class="external-link">csdb::set_pk()</a></code>. <code><a href="https://niphr.github.io/csdb/reference/collect_and_sort_by_pk.html" class="external-link">csdb::collect_and_sort_by_pk()</a></code> can then sort the staged rows, as it sorts the rows of <code>tbl()</code>. cs9 needs csdb 2026.11.17.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="26.11.12" id="version-261112">Version 26.11.12<a class="anchor" aria-label="anchor" href="#version-261112"></a></h2>
 <ul><li>New <code>use_sqlite_default(dir)</code> points the database configuration at SQLite files in <code>dir</code>, and sets no environment variable.</li>
