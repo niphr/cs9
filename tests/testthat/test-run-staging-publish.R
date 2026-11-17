@@ -96,6 +96,16 @@ for (kind in c("plain", "partitioned")) {
         fn <- tables$out$staged_tbl
         got <- if (is.function(fn)) nrow(dplyr::collect(fn())) else -1
         cat(got, "\n", sep = "", file = file.path(ctl$dir, "staged-4"))
+        # The staged rows carry the primary key of the live table, so
+        # csdb::collect_and_sort_by_pk() can sort them.
+        pk <- if (is.function(fn)) attr(fn(), "csdb_pk") else "none"
+        cat(pk, sep = "\n", file = file.path(ctl$dir, "staged-4-pk"))
+        sorted <- if (is.function(fn)) {
+          nrow(csdb::collect_and_sort_by_pk(fn()))
+        } else {
+          -1
+        }
+        cat(sorted, "\n", sep = "", file = file.path(ctl$dir, "staged-4-sorted"))
         return(invisible(NULL))
       }
 
@@ -104,6 +114,16 @@ for (kind in c("plain", "partitioned")) {
       expect_null(err)
       # Plans 1 to 3 staged 3 rows each before plan 4 wrote its own.
       expect_equal(as.numeric(readLines(file.path(ctl$dir, "staged-4"))), 9)
+      pk_expected <- if (inherits(out, "DBPartitionedTableExtended_v9")) {
+        unique(c(out$column_name_partition, out$tables[[1]]$keys))
+      } else {
+        out$keys
+      }
+      expect_identical(readLines(file.path(ctl$dir, "staged-4-pk")), pk_expected)
+      expect_equal(
+        as.numeric(readLines(file.path(ctl$dir, "staged-4-sorted"))),
+        9
+      )
     }
   )
 

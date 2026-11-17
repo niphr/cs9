@@ -512,7 +512,8 @@ DBPartitionedTableExtended_v9 <- R6::R6Class(
       return(run_staged_tbl(
         private$staging(),
         self$table_name_base,
-        names(self$tables[[1]]$field_types)
+        names(self$tables[[1]]$field_types),
+        unique(c(self$column_name_partition, self$tables[[1]]$keys))
       ))
     }
   ),

@@ -610,8 +610,10 @@ run_stage_operation <- function(
   return(invisible(NULL))
 }
 
-# Reads the rows that this run staged in a table, with the live columns.
-run_staged_tbl <- function(staging, live_name, columns) {
+# Reads the rows that this run staged in a table, with the live columns. The
+# result carries `keys`, the primary key of the live table, so that
+# csdb::collect_and_sort_by_pk() can sort it.
+run_staged_tbl <- function(staging, live_name, columns, keys) {
   if (isTRUE(config$planning)) {
     stop(
       "cs9: plans may only read published tables. staged_tbl() on ",
@@ -640,7 +642,7 @@ run_staged_tbl <- function(staging, live_name, columns) {
     " WHERE ",
     run_where_run(con)
   )
-  return(dplyr::tbl(con, dplyr::sql(sql)))
+  return(csdb::set_pk(dplyr::tbl(con, dplyr::sql(sql)), keys))
 }
 
 # Creates a live table when it does not exist yet. The publish inserts into it,

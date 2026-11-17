@@ -131,7 +131,12 @@ DBTableExtended_v9 <- R6::R6Class(
     # dplyr table. The publish at the end of the run moves them into this
     # table. It stops outside a task run and while the run builds its plans.
     staged_tbl = function() {
-      return(run_staged_tbl(private$staging(), self$table_name, names(self$field_types)))
+      return(run_staged_tbl(
+        private$staging(),
+        self$table_name,
+        names(self$field_types),
+        self$keys
+      ))
     }
   ),
   private = list(
