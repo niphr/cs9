@@ -295,6 +295,8 @@ all.equal(both$rate, 100000 * both$cases / 50000)
 
 cs9 runs the functions in list order, after every draw. It then validates every table again, so a function that breaks any table stops the call before the first write. A name of a table that the call does not fill stops the call before the first draw.
 
+Put computed values in `derive`, not in a generator or a `finish` function. A csdb dataset stores the md5 of the data that the generator draws, and `check_hashes()` compares it on every platform. Functions such as `pnorm()`, `qnorm()` and `exp()` can differ in the last bit between Windows and Linux, so a generator that calls them can give a hash that passes on one platform and fails on the other. The output of `derive` is computed at populate time and has no stored hash.
+
 ## add_source() and source()
 
 In synthetic mode, a task MUST NOT read an external source, such as a register or an SQL Server. `add_source()` registers a reader and a simulator under one name. `source(name)` returns the simulator with synthetic mode on, and the reader otherwise. The two MUST have the same formal arguments.
