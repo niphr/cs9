@@ -390,6 +390,16 @@ validates every table again, so a function that breaks any table stops
 the call before the first write. A name of a table that the call does
 not fill stops the call before the first draw.
 
+Put computed values in `derive`, not in a generator or a `finish`
+function. A csdb dataset stores the md5 of the data that the generator
+draws, and `check_hashes()` compares it on every platform. Functions
+such as [`pnorm()`](https://rdrr.io/r/stats/Normal.html),
+[`qnorm()`](https://rdrr.io/r/stats/Normal.html) and
+[`exp()`](https://rdrr.io/r/base/Log.html) can differ in the last bit
+between Windows and Linux, so a generator that calls them can give a
+hash that passes on one platform and fails on the other. The output of
+`derive` is computed at populate time and has no stored hash.
+
 ## add_source() and source()
 
 In synthetic mode, a task MUST NOT read an external source, such as a

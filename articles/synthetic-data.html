@@ -450,6 +450,15 @@ the call drew. Element <code>x = f</code> replaces the data of table
 validates every table again, so a function that breaks any table stops
 the call before the first write. A name of a table that the call does
 not fill stops the call before the first draw.</p>
+<p>Put computed values in <code>derive</code>, not in a generator or a
+<code>finish</code> function. A csdb dataset stores the md5 of the data
+that the generator draws, and <code>check_hashes()</code> compares it on
+every platform. Functions such as <code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm()</a></code>,
+<code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm()</a></code> and <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp()</a></code> can differ in the last bit
+between Windows and Linux, so a generator that calls them can give a
+hash that passes on one platform and fails on the other. The output of
+<code>derive</code> is computed at populate time and has no stored
+hash.</p>
 </div>
 <div class="section level2">
 <h2 id="add_source-and-source">add_source() and source()<a class="anchor" aria-label="anchor" href="#add_source-and-source"></a>
