@@ -85,3 +85,7 @@ Functions for running and managing surveillance tasks
   : Run a cs9 task in a detached process
 - [`run_today()`](https://niphr.github.io/cs9/reference/run_today.md) :
   The date of the task run
+- [`compare_staged_to_live()`](https://niphr.github.io/cs9/reference/compare_staged_to_live.md)
+  : Compare the staged rows of a task run with the live rows
+- [`check_staged_against_live()`](https://niphr.github.io/cs9/reference/check_staged_against_live.md)
+  : Check a comparison of staged and live rows against rules

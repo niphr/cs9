@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 26.11.18
+
+- New
+  [`compare_staged_to_live()`](https://niphr.github.io/cs9/reference/compare_staged_to_live.md)
+  gives the staged and the live values of one column per key and
+  partition, during a task run. New
+  [`check_staged_against_live()`](https://niphr.github.io/cs9/reference/check_staged_against_live.md)
+  stops with an error that names each key that fails the rules
+  `partitions_agree`, `no_missing` or `no_decrease`.
+
 ## Version 26.11.17
 
 - `staged_tbl()` returns a lazy table that carries the primary key of
