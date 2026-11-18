@@ -3,6 +3,8 @@
 export(SurveillanceSystem_v9)
 export(TaskJob)
 export(check_environment_setup)
+export(check_staged_against_live)
+export(compare_staged_to_live)
 export(config)
 export(create_folder_if_doesnt_exist)
 export(create_latest_folder)

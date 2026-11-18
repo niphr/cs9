@@ -85,6 +85,8 @@ reference:
   - run_task_sequentially_as_callr_bg_using_load_all
   - run_task_detached
   - run_today
+  - compare_staged_to_live
+  - check_staged_against_live
 
 authors:
   footer:

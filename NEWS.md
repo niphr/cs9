@@ -1,3 +1,7 @@
+# Version 26.11.18
+
+- New `compare_staged_to_live()` gives the staged and the live values of one column per key and partition, during a task run. New `check_staged_against_live()` stops with an error that names each key that fails the rules `partitions_agree`, `no_missing` or `no_decrease`.
+
 # Version 26.11.17
 
 - `staged_tbl()` returns a lazy table that carries the primary key of the live table, with `csdb::set_pk()`. `csdb::collect_and_sort_by_pk()` can then sort the staged rows, as it sorts the rows of `tbl()`. cs9 needs csdb 2026.11.17.
